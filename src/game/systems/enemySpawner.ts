@@ -25,19 +25,18 @@ function pickEnemyType(): EnemyType {
 }
 
 function getEnemyCap(elapsedTimeSec: number): number {
-  // addons.md: controlled active enemy cap ramp
-  // 0:00–0:30 -> 2
-  // 0:30–1:00 -> 3
-  // 1:00–1:15 -> 4
-  // 1:15–1:30 -> 5
-  // then +1 every 15 seconds, max 12
-  if (elapsedTimeSec < 30) return 2;
-  if (elapsedTimeSec < 60) return 3;
-  if (elapsedTimeSec < 75) return 4;
+  // Active enemy cap ramp for a fuller opening minute without
+  // forcing an immediate swarm.
+  // 0:00–0:30 -> 3
+  // 0:30–1:00 -> 4
+  // 1:00–1:30 -> 5
+  // 1:30+      -> +1 every 15 seconds, max 12
+  if (elapsedTimeSec < 30) return 3;
+  if (elapsedTimeSec < 60) return 4;
   if (elapsedTimeSec < 90) return 5;
   const after = elapsedTimeSec - 90;
   const ramp = Math.floor(after / 15);
-  return Math.min(12, 5 + ramp);
+  return Math.min(12, 6 + ramp);
 }
 
 function spawnEnemyOutsideCamera(
@@ -136,7 +135,7 @@ export function updateEnemySpawning(
     return 0;
   }
 
-  const spawnInterval = Math.max(MIN_SPAWN_INTERVAL, BASE_SPAWN_INTERVAL - elapsedTime * 0.006);
+  const spawnInterval = Math.max(MIN_SPAWN_INTERVAL, BASE_SPAWN_INTERVAL - elapsedTime * 0.0085);
   spawnTimerRef.value -= delta;
 
   while (spawnTimerRef.value <= 0 && enemies.length < cap) {

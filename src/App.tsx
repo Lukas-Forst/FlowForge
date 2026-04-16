@@ -20,7 +20,8 @@ function isRecognizedAbilityKey(code: string): boolean {
 }
 
 export default function App(): ReactElement {
-  const { snapshot, startRun, restartRun, setMovementKey, triggerCannon, chooseUpgrade, tick } = useGameState();
+  const { snapshot, startRun, restartRun, setMovementKey, triggerCannon, triggerBoost, chooseUpgrade, tick } =
+    useGameState();
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
@@ -32,6 +33,12 @@ export default function App(): ReactElement {
 
       if (event.code === "KeyQ" && !event.repeat) {
         triggerCannon();
+        return;
+      }
+
+      if (event.code === "Space" && !event.repeat) {
+        event.preventDefault();
+        triggerBoost();
         return;
       }
 
@@ -61,7 +68,7 @@ export default function App(): ReactElement {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [restartRun, setMovementKey, snapshot.phase, startRun, triggerCannon]);
+  }, [restartRun, setMovementKey, snapshot.phase, startRun, triggerBoost, triggerCannon]);
 
   useEffect(() => {
     let raf = 0;

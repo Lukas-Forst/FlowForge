@@ -2,10 +2,13 @@ import { useCallback, useRef, useState } from "react";
 import {
   BASE_AUTO_ATTACK_INTERVAL,
   BASE_CANNON_COOLDOWN,
+  BOOST_ACTIVE_TIME,
+  BOOST_COOLDOWN,
   BASE_PLAYER_HP,
   BASE_PLAYER_SPEED,
 } from "./constants";
 import { runAutoAttack } from "./systems/autoAttack";
+import { getBoostSpeedMultiplier, tryActivateBoost } from "./systems/boostAbility";
 import { tryFireCannon } from "./systems/cannonAbility";
 import { resolveCollisions, updateEnemyMovement, updateProjectileMotion } from "./systems/collision";
 import { collectNearbyCoins } from "./systems/coins";
@@ -38,6 +41,10 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "start"): GameSnap
     cooldowns: {
       cannonRemaining: 0,
       cannonDuration: BASE_CANNON_COOLDOWN,
+      boostRemaining: 0,
+      boostDuration: BOOST_COOLDOWN,
+      boostActiveRemaining: 0,
+      boostActiveDuration: BOOST_ACTIVE_TIME,
     },
     stats: {
       timeSurvived: 0,
@@ -76,6 +83,7 @@ export interface UseGameStateApi {
   restartRun: () => void;
   setMovementKey: (key: MovementKey, pressed: boolean) => void;
   triggerCannon: () => void;
+  triggerBoost: () => void;
   chooseUpgrade: (type: UpgradeType) => void;
   tick: (delta: number) => void;
 }
@@ -152,6 +160,23 @@ export function useGameState(): UseGameStateApi {
     syncState();
   }, [setMessage, syncState]);
 
+  const triggerBoost = useCallback(() => {
+    const state = stateRef.current;
+    if (state.phase !== "playing") {
+      return;
+    }
+    const boosted = tryActivateBoost(state.cooldowns);
+    if (!boosted) {
+      setMessage({
+        text: "Boost recharging...",
+        remaining: 0.65,
+      });
+    } else {
+      setMessage(null);
+    }
+    syncState();
+  }, [setMessage, syncState]);
+
   const chooseUpgrade = useCallback((type: UpgradeType) => {
     const state = stateRef.current;
     if (state.phase !== "upgrade") {
@@ -182,8 +207,15 @@ export function useGameState(): UseGameStateApi {
     state.stats.timeSurvived += delta;
     state.stats.score = Math.floor(state.stats.timeSurvived) + state.stats.enemiesKilled * 10;
     state.cooldowns.cannonRemaining = Math.max(0, state.cooldowns.cannonRemaining - delta);
+    state.cooldowns.boostRemaining = Math.max(0, state.cooldowns.boostRemaining - delta);
+    state.cooldowns.boostActiveRemaining = Math.max(0, state.cooldowns.boostActiveRemaining - delta);
 
-    updatePlayerMovement(state.player, inputRef.current, delta, state.upgrades.speedMult);
+    updatePlayerMovement(
+      state.player,
+      inputRef.current,
+      delta,
+      state.upgrades.speedMult * getBoostSpeedMultiplier(state.cooldowns),
+    );
     runAutoAttack(
       state.enemies,
       state.player,
@@ -246,6 +278,7 @@ export function useGameState(): UseGameStateApi {
     restartRun,
     setMovementKey,
     triggerCannon,
+    triggerBoost,
     chooseUpgrade,
     tick,
   };

@@ -32,8 +32,12 @@ export const BASE_ENEMY_SPEED = 3.25;
 export const BASE_ENEMY_DAMAGE = 6;
 export const ENEMY_TOUCH_COOLDOWN = 0.8;
 
-export const BASE_SPAWN_INTERVAL = 0.9;
-export const MIN_SPAWN_INTERVAL = 0.22;
+export const BASE_SPAWN_INTERVAL = 0.82;
+export const MIN_SPAWN_INTERVAL = 0.2;
+
+export const BOOST_COOLDOWN = 4.5;
+export const BOOST_ACTIVE_TIME = 0.22;
+export const BOOST_SPEED_MULTIPLIER = 3.1;
 
 export const COIN_PICKUP_RADIUS = 1.4;
 export const PLAYER_HIT_RADIUS = 1.15;

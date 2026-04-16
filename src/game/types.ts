@@ -54,6 +54,10 @@ export interface UpgradeStats {
 export interface Cooldowns {
   cannonRemaining: number;
   cannonDuration: number;
+  boostRemaining: number;
+  boostDuration: number;
+  boostActiveRemaining: number;
+  boostActiveDuration: number;
 }
 
 export interface GameStats {

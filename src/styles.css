@@ -118,6 +118,10 @@ button:hover {
   background: linear-gradient(90deg, #f09b22, #ffe37f);
 }
 
+.meter-fill.boost {
+  background: linear-gradient(90deg, #5f9cff, #9ff2ff);
+}
+
 .toast {
   margin-top: 0.35rem;
   padding: 0.24rem 0.45rem;

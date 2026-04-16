@@ -13,9 +13,18 @@ function cooldownPercent(snapshot: GameSnapshot): number {
   return Math.min(1, Math.max(0, ratio));
 }
 
+function boostPercent(snapshot: GameSnapshot): number {
+  if (snapshot.cooldowns.boostDuration <= 0) {
+    return 1;
+  }
+  const ratio = 1 - snapshot.cooldowns.boostRemaining / snapshot.cooldowns.boostDuration;
+  return Math.min(1, Math.max(0, ratio));
+}
+
 export function Hud({ snapshot }: HudProps): ReactElement {
   const hpRatio = snapshot.player.hp / snapshot.player.maxHp;
   const cannonReady = snapshot.cooldowns.cannonRemaining <= 0;
+  const boostReady = snapshot.cooldowns.boostRemaining <= 0;
 
   return (
     <div className="hud">
@@ -38,6 +47,12 @@ export function Hud({ snapshot }: HudProps): ReactElement {
         <div className="hud-item">Q Cannon: {cannonReady ? "Ready" : `${snapshot.cooldowns.cannonRemaining.toFixed(1)}s`}</div>
         <div className="meter">
           <div className="meter-fill cannon" style={{ width: `${cooldownPercent(snapshot) * 100}%` }} />
+        </div>
+      </div>
+      <div className="hud-row">
+        <div className="hud-item">Space Boost: {boostReady ? "Ready" : `${snapshot.cooldowns.boostRemaining.toFixed(1)}s`}</div>
+        <div className="meter">
+          <div className="meter-fill boost" style={{ width: `${boostPercent(snapshot) * 100}%` }} />
         </div>
       </div>
       {snapshot.message ? <div className="toast">{snapshot.message.text}</div> : null}

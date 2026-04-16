@@ -10,7 +10,7 @@ export function StartScreen({ onStart }: StartScreenProps): ReactElement {
       <div className="panel">
         <h1>FlowForge</h1>
         <p>Sail the storm. Sink raiders. Upgrade your ship.</p>
-        <p className="hint">Move with WASD. Fire cannon salvo with Q.</p>
+        <p className="hint">Move with WASD. Fire cannon salvo with Q. Boost forward with Space.</p>
         <button type="button" onClick={onStart}>
           Start Run
         </button>
