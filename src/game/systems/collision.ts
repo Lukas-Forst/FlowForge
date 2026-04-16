@@ -1,5 +1,5 @@
 import { ENEMY_TOUCH_COOLDOWN, PLAYER_HIT_RADIUS, PROJECTILE_DESPAWN_PADDING, WORLD_HALF_SIZE } from "../constants";
-import { angleFromDirection, clampToBounds, distance, normalize } from "../utils";
+import { clampToBounds, distance, normalize } from "../utils";
 import type { CoinState, EnemyState, PlayerState, ProjectileState } from "../types";
 
 interface CollisionResult {
@@ -33,9 +33,6 @@ export function updateEnemyMovement(enemies: EnemyState[], player: PlayerState, 
       x: player.position.x - enemy.position.x,
       y: player.position.y - enemy.position.y,
     });
-    if (direction.x !== 0 || direction.y !== 0) {
-      enemy.facing = angleFromDirection(direction);
-    }
     enemy.position.x += direction.x * enemy.speed * delta;
     enemy.position.y += direction.y * enemy.speed * delta;
     enemy.position = clampToBounds(enemy.position, WORLD_HALF_SIZE);
@@ -47,7 +44,6 @@ export function resolveCollisions(
   player: PlayerState,
   enemies: EnemyState[],
   projectiles: ProjectileState[],
-  enemyProjectiles: ProjectileState[],
   coinIdRef: { value: number },
 ): CollisionResult {
   let killsGained = 0;
@@ -84,15 +80,6 @@ export function resolveCollisions(
     if (touching && enemy.touchTimer <= 0) {
       playerDamageTaken += enemy.touchDamage;
       enemy.touchTimer = ENEMY_TOUCH_COOLDOWN;
-    }
-  }
-
-  // Enemy projectiles -> player damage
-  for (let projectileIdx = enemyProjectiles.length - 1; projectileIdx >= 0; projectileIdx -= 1) {
-    const projectile = enemyProjectiles[projectileIdx];
-    if (distance(projectile.position, player.position) <= projectile.radius + PLAYER_HIT_RADIUS) {
-      playerDamageTaken += projectile.damage;
-      enemyProjectiles.splice(projectileIdx, 1);
     }
   }
 

@@ -2,7 +2,6 @@ import {
   BASE_ENEMY_DAMAGE,
   BASE_ENEMY_HP,
   BASE_ENEMY_SPEED,
-  ENEMY_BOMBER_RANGED_COOLDOWN,
   BASE_SPAWN_INTERVAL,
   CAMERA_VIEW_HALF,
   ENEMY_TOUCH_COOLDOWN,
@@ -13,6 +12,17 @@ import {
 } from "../constants";
 import { distance } from "../utils";
 import type { EnemyState, EnemyType } from "../types";
+
+function pickEnemyType(): EnemyType {
+  const roll = Math.random();
+  if (roll < 0.5) {
+    return "corsair";
+  }
+  if (roll < 0.8) {
+    return "bomber";
+  }
+  return "brute";
+}
 
 function getEnemyCap(elapsedTimeSec: number): number {
   // addons.md: controlled active enemy cap ramp
@@ -30,28 +40,6 @@ function getEnemyCap(elapsedTimeSec: number): number {
   return Math.min(12, 5 + ramp);
 }
 
-function chooseEnemyType(elapsedTimeSec: number): EnemyType {
-  const r = Math.random();
-  if (elapsedTimeSec < 30) {
-    if (r < 0.7) return "corsair";
-    if (r < 0.9) return "bomber";
-    return "brute";
-  }
-  if (elapsedTimeSec < 60) {
-    if (r < 0.55) return "corsair";
-    if (r < 0.85) return "bomber";
-    return "brute";
-  }
-  if (r < 120) {
-    if (r < 0.45) return "corsair";
-    if (r < 0.8) return "bomber";
-    return "brute";
-  }
-  if (r < 0.4) return "corsair";
-  if (r < 0.7) return "bomber";
-  return "brute";
-}
-
 function spawnEnemyOutsideCamera(
   enemies: EnemyState[],
   enemyIdRef: { value: number },
@@ -63,8 +51,6 @@ function spawnEnemyOutsideCamera(
   const spawnRadiusMax = CAMERA_VIEW_HALF * 2.0 + 10;
 
   const attempts = 32;
-  const enemyType = chooseEnemyType(elapsedTime);
-
   for (let a = 0; a < attempts; a += 1) {
     const angle = Math.random() * Math.PI * 2;
     const radius = spawnRadiusMin + Math.random() * (spawnRadiusMax - spawnRadiusMin);
@@ -88,25 +74,18 @@ function spawnEnemyOutsideCamera(
     }
     if (tooClose) continue;
 
-    const hpScale = 1 + Math.min(0.35, elapsedTime * 0.003);
-    const speedScale = 1 + Math.min(0.35, elapsedTime * 0.0025);
-    const touchDamage = BASE_ENEMY_DAMAGE + Math.floor(elapsedTime / 120);
-
-    const typeHpMult = enemyType === "brute" ? 1.35 : enemyType === "bomber" ? 0.8 : 1.0;
-    const typeSpeedMult = enemyType === "brute" ? 0.82 : enemyType === "bomber" ? 0.9 : 1.15;
-    const typeTouchMult = enemyType === "brute" ? 1.35 : enemyType === "bomber" ? 0.85 : 1.0;
+    const hpScale = 1 + Math.min(0.55, elapsedTime * 0.004);
+    const speedScale = Math.min(1.6, elapsedTime * 0.008);
+    const touchDamage = BASE_ENEMY_DAMAGE + Math.floor(elapsedTime / 60);
 
     enemies.push({
       id: enemyIdRef.value++,
+      type: pickEnemyType(),
       position: { x, y },
-      type: enemyType,
-      facing: 0,
-      hp: BASE_ENEMY_HP * hpScale * typeHpMult,
-      speed: BASE_ENEMY_SPEED * speedScale * typeSpeedMult,
-      touchDamage: touchDamage * typeTouchMult,
+      hp: BASE_ENEMY_HP * hpScale,
+      speed: BASE_ENEMY_SPEED + speedScale,
+      touchDamage,
       touchTimer: ENEMY_TOUCH_COOLDOWN,
-      rangedCooldownRemaining:
-        enemyType === "bomber" ? Math.random() * ENEMY_BOMBER_RANGED_COOLDOWN : 0,
     });
     return true;
   }
@@ -116,22 +95,14 @@ function spawnEnemyOutsideCamera(
     const x = -WORLD_HALF_SIZE + Math.random() * (WORLD_HALF_SIZE * 2);
     const y = -WORLD_HALF_SIZE + Math.random() * (WORLD_HALF_SIZE * 2);
     if (distance({ x, y }, playerPosition) < minDistFromPlayer) continue;
-    const fallbackType = chooseEnemyType(elapsedTime);
-    const typeHpMult = fallbackType === "brute" ? 1.35 : fallbackType === "bomber" ? 0.8 : 1.0;
-    const typeSpeedMult = fallbackType === "brute" ? 0.82 : fallbackType === "bomber" ? 0.9 : 1.15;
-    const typeTouchMult = fallbackType === "brute" ? 1.35 : fallbackType === "bomber" ? 0.85 : 1.0;
-
     enemies.push({
       id: enemyIdRef.value++,
+      type: pickEnemyType(),
       position: { x, y },
-      type: fallbackType,
-      facing: 0,
-      hp: BASE_ENEMY_HP * typeHpMult,
-      speed: BASE_ENEMY_SPEED * typeSpeedMult,
-      touchDamage: BASE_ENEMY_DAMAGE * typeTouchMult,
+      hp: BASE_ENEMY_HP,
+      speed: BASE_ENEMY_SPEED,
+      touchDamage: BASE_ENEMY_DAMAGE,
       touchTimer: ENEMY_TOUCH_COOLDOWN,
-      rangedCooldownRemaining:
-        fallbackType === "bomber" ? Math.random() * ENEMY_BOMBER_RANGED_COOLDOWN : 0,
     });
     return true;
   }

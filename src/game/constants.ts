@@ -32,11 +32,6 @@ export const BASE_ENEMY_SPEED = 3.25;
 export const BASE_ENEMY_DAMAGE = 6;
 export const ENEMY_TOUCH_COOLDOWN = 0.8;
 
-export const ENEMY_BOMBER_RANGED_RANGE = 20;
-export const ENEMY_BOMBER_RANGED_COOLDOWN = 1.7;
-export const ENEMY_PROJECTILE_SPEED = 16;
-export const ENEMY_PROJECTILE_DAMAGE = 18;
-
 export const BASE_SPAWN_INTERVAL = 0.9;
 export const MIN_SPAWN_INTERVAL = 0.22;
 

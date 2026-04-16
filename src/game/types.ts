@@ -1,6 +1,7 @@
 export type RunPhase = "start" | "playing" | "upgrade" | "gameover";
 
 export type UpgradeType = "fireRate" | "speed" | "cooldown";
+export type EnemyType = "corsair" | "bomber" | "brute";
 
 export type MovementKey = "w" | "a" | "s" | "d";
 
@@ -17,19 +18,14 @@ export interface PlayerState {
   baseSpeed: number;
 }
 
-export type EnemyType = "corsair" | "bomber" | "brute";
-
 export interface EnemyState {
   id: number;
-  position: Vec2;
   type: EnemyType;
-  facing: number;
+  position: Vec2;
   hp: number;
   speed: number;
   touchDamage: number;
   touchTimer: number;
-  // Bomber ranged attack cooldown (seconds). Other types may keep this at 0 or ignore it.
-  rangedCooldownRemaining: number;
 }
 
 export interface ProjectileState {
@@ -90,7 +86,6 @@ export interface GameSnapshot {
   player: PlayerState;
   enemies: EnemyState[];
   projectiles: ProjectileState[];
-  enemyProjectiles: ProjectileState[];
   coins: CoinState[];
   upgrades: UpgradeStats;
   cooldowns: Cooldowns;

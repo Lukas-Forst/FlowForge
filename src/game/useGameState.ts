@@ -7,7 +7,6 @@ import {
 } from "./constants";
 import { runAutoAttack } from "./systems/autoAttack";
 import { tryFireCannon } from "./systems/cannonAbility";
-import { runEnemyAttack } from "./systems/enemyAttack";
 import { resolveCollisions, updateEnemyMovement, updateProjectileMotion } from "./systems/collision";
 import { collectNearbyCoins } from "./systems/coins";
 import { getEnemyCap, spawnEnemiesToCap, updateEnemySpawning } from "./systems/enemySpawner";
@@ -27,7 +26,6 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "start"): GameSnap
     },
     enemies: [],
     projectiles: [],
-    enemyProjectiles: [],
     coins: [],
     upgrades: {
       level: 0,
@@ -63,11 +61,6 @@ function copySnapshot(snapshot: GameSnapshot): GameSnapshot {
       position: { ...projectile.position },
       velocity: { ...projectile.velocity },
     })),
-    enemyProjectiles: snapshot.enemyProjectiles.map((projectile) => ({
-      ...projectile,
-      position: { ...projectile.position },
-      velocity: { ...projectile.velocity },
-    })),
     coins: snapshot.coins.map((coin) => ({ ...coin, position: { ...coin.position } })),
     upgrades: { ...snapshot.upgrades },
     cooldowns: { ...snapshot.cooldowns },
@@ -93,7 +86,6 @@ export function useGameState(): UseGameStateApi {
   const inputRef = useRef({ w: false, a: false, s: false, d: false });
   const enemyIdRef = useRef({ value: 1 });
   const projectileIdRef = useRef({ value: 1 });
-  const enemyProjectileIdRef = useRef({ value: 1 });
   const coinIdRef = useRef({ value: 1 });
   const spawnTimerRef = useRef({ value: 0.2 });
   const autoAttackTimerRef = useRef({ value: BASE_AUTO_ATTACK_INTERVAL });
@@ -111,7 +103,6 @@ export function useGameState(): UseGameStateApi {
     inputRef.current = { w: false, a: false, s: false, d: false };
     enemyIdRef.current.value = 1;
     projectileIdRef.current.value = 1;
-    enemyProjectileIdRef.current.value = 1;
     coinIdRef.current.value = 1;
     spawnTimerRef.current.value = 0.2;
     autoAttackTimerRef.current.value = BASE_AUTO_ATTACK_INTERVAL;
@@ -203,7 +194,6 @@ export function useGameState(): UseGameStateApi {
       delta,
     );
     updateProjectileMotion(state.projectiles, delta);
-    updateProjectileMotion(state.enemyProjectiles, delta);
     state.spawnIntensity = updateEnemySpawning(
       state.enemies,
       enemyIdRef.current,
@@ -213,19 +203,11 @@ export function useGameState(): UseGameStateApi {
       state.player.position,
     );
     updateEnemyMovement(state.enemies, state.player, delta);
-    runEnemyAttack(
-      state.enemies,
-      state.player,
-      enemyProjectileIdRef.current,
-      delta,
-      state.enemyProjectiles,
-    );
 
     const collisionResult = resolveCollisions(
       state.player,
       state.enemies,
       state.projectiles,
-      state.enemyProjectiles,
       coinIdRef.current,
     );
 

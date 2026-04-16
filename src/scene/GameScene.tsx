@@ -53,8 +53,6 @@ export function GameScene({ snapshot }: GameSceneProps): ReactElement {
       camera={{ position: [0, CAMERA_HEIGHT, CAMERA_DISTANCE], fov: 44 }}
     >
       <color attach="background" args={["#0c2438"]} />
-      {/* addons.md: reduce fog haze so ships remain readable */}
-      <fog attach="fog" args={["#0c2438", 45, 180]} />
       <ambientLight intensity={0.45} />
       <directionalLight
         castShadow
@@ -97,7 +95,6 @@ export function GameScene({ snapshot }: GameSceneProps): ReactElement {
           key={enemy.id}
           type={enemy.type}
           position={[enemy.position.x, 0, enemy.position.y]}
-          rotation={[0, enemy.facing, 0]}
         />
       ))}
 
@@ -105,13 +102,6 @@ export function GameScene({ snapshot }: GameSceneProps): ReactElement {
         <mesh key={projectile.id} position={[projectile.position.x, 0.55, projectile.position.y]}>
           <sphereGeometry args={[0.2, 12, 12]} />
           <meshStandardMaterial color="#f7d085" emissive="#8f4f16" emissiveIntensity={0.9} />
-        </mesh>
-      ))}
-
-      {snapshot.enemyProjectiles.map((projectile) => (
-        <mesh key={projectile.id} position={[projectile.position.x, 0.55, projectile.position.y]}>
-          <sphereGeometry args={[0.18, 12, 12]} />
-          <meshStandardMaterial color="#ff5b5b" emissive="#7a1111" emissiveIntensity={0.85} />
         </mesh>
       ))}
 
