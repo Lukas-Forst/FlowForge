@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "skills": {
+    "checklist": {
+      "source": "unlearndev/skills",
+      "sourceType": "github",
+      "computedHash": "59d7e670571153eda757eb69f941caa750fc44eabf6f9f53412e0888956ae544"
+    },
+    "code-review": {
+      "source": "unlearndev/skills",
+      "sourceType": "github",
+      "computedHash": "483b507c52271c5846c18f6da15884fe12bd6660671a2caea8e535c52540a37d"
+    },
+    "feature-generator": {
+      "source": "unlearndev/skills",
+      "sourceType": "github",
+      "computedHash": "f6e2ee6217fa60c57b437a56dc70f2561c720a5bfaa6cf349e54d4331f2a7bd5"
+    },
+    "spec-generator": {
+      "source": "unlearndev/skills",
+      "sourceType": "github",
+      "computedHash": "5fb617be71805a5f6da278b665931ee2110d4631606f69f197b9dd59a5af42f2"
+    }
+  }
+}
