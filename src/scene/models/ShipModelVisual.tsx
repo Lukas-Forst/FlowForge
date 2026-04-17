@@ -41,6 +41,7 @@ const FORWARD_AXIS_ROTATION_Y: Record<ForwardAxis, number> = {
 
 export const PLAYER_SHIP_MODEL_CONFIG: ShipModelConfig = {
   candidatePaths: [
+    "/assets/models/ships/main-ship.glb",
     "/assets/models/ships/Main_ship.glb",
     "/assets/models/ships/player-steamboat.glb",
     "/assets/models/ships/Meshy_AI_Steamboat_0417102926_generate.glb",
@@ -102,6 +103,22 @@ function chooseSteamboatMaterialRole(meshName: string, relativeHeight: number): 
   return relativeHeight < 0.38 ? "hull" : "cabin";
 }
 
+function hasUsableTexture(material: THREE.Material): boolean {
+  if (!(material instanceof THREE.MeshStandardMaterial)) {
+    return false;
+  }
+  return material.map !== null;
+}
+
+function keepImportedMaterial(material: THREE.Material): void {
+  if (material instanceof THREE.MeshStandardMaterial) {
+    // Preserve imported textures while slightly tuning for gameplay readability.
+    material.roughness = Math.max(0.2, Math.min(0.95, material.roughness));
+    material.metalness = Math.max(0, Math.min(0.75, material.metalness));
+  }
+  material.needsUpdate = true;
+}
+
 function applySteamboatMaterials(root: THREE.Group): void {
   const sceneBox = new THREE.Box3().setFromObject(root);
   const sceneHeight = Math.max(0.001, sceneBox.max.y - sceneBox.min.y);
@@ -127,9 +144,22 @@ function applySteamboatMaterials(root: THREE.Group): void {
     const role = chooseSteamboatMaterialRole(meshName, relativeHeight);
     const styledMaterial = palette[role];
     if (Array.isArray(mesh.material)) {
-      mesh.material = mesh.material.map(() => styledMaterial);
+      const updatedMaterials = mesh.material.map((material) => {
+        if (hasUsableTexture(material)) {
+          keepImportedMaterial(material);
+          return material;
+        }
+        return styledMaterial;
+      });
+      mesh.material = updatedMaterials;
       return;
     }
+
+    if (hasUsableTexture(mesh.material)) {
+      keepImportedMaterial(mesh.material);
+      return;
+    }
+
     mesh.material = styledMaterial;
   });
 

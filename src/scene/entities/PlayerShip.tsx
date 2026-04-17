@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import type { ThreeElements } from "@react-three/fiber";
+import { ShipSmoke } from "../effects/ShipSmoke";
 import { PLAYER_SHIP_MODEL_CONFIG, ShipModelVisual } from "../models/ShipModelVisual";
 
 type PlayerShipProps = ThreeElements["group"] & {
@@ -82,6 +83,7 @@ export function PlayerShip({ upgradeLevel, ...props }: PlayerShipProps): ReactEl
   return (
     <group {...props}>
       <ShipModelVisual config={PLAYER_SHIP_MODEL_CONFIG} fallback={<PlayerShipPrimitive />} />
+      <ShipSmoke stackPositions={[[-0.26, 1.95, -0.08], [0.26, 1.95, -0.08]]} intensity={1.1} />
       <DeckCannons upgradeLevel={upgradeLevel} />
     </group>
   );

@@ -1,9 +1,50 @@
 import type { ReactElement } from "react";
 import type { ThreeElements } from "@react-three/fiber";
 import type { EnemyType } from "../../game/types";
+import { ShipSmoke } from "../effects/ShipSmoke";
+import { ShipModelVisual } from "../models/ShipModelVisual";
+import type { ShipModelConfig } from "../models/ShipModelVisual";
 
 type EnemyShipProps = ThreeElements["group"] & {
   type: EnemyType;
+};
+
+const ENEMY_MODEL_CONFIGS: Record<EnemyType, ShipModelConfig> = {
+  corsair: {
+    candidatePaths: [
+      "/assets/models/ships/Enemy_ship_basic.glb",
+      "/assets/models/ships/enemy_ship_basic.glb",
+      "/assets/models/ships/enemy-ship-basic.glb",
+    ],
+    targetLength: 2.25,
+    forwardAxis: "positiveZ",
+    rotationOffsetY: Math.PI / 2,
+    positionOffset: [0, 0.01, 0],
+  },
+  bomber: {
+    candidatePaths: [
+      "/assets/models/ships/Enemy_ship_fast.glb",
+      "/assets/models/ships/enemy_ship_fast.glb",
+      "/assets/models/ships/enemy-ship-fast.glb",
+    ],
+    targetLength: 2.65,
+    forwardAxis: "positiveZ",
+    rotationOffsetY: Math.PI / 2,
+    positionOffset: [0, 0.01, 0],
+  },
+  brute: {
+    candidatePaths: [
+      "/assets/models/ships/Enemy_ship_tank.glb",
+      "/assets/models/ships/enemy_ship_tank.glb",
+      "/assets/models/ships/enemy-ship-tank.glb",
+      // Fallback candidate for future boss variant reuse.
+      "/assets/models/ships/Enemy_ship_boss.glb",
+    ],
+    targetLength: 3.1,
+    forwardAxis: "positiveZ",
+    rotationOffsetY: Math.PI / 2,
+    positionOffset: [0, 0.01, 0],
+  },
 };
 
 function CorsairMesh(): ReactElement {
@@ -128,9 +169,21 @@ export function EnemyShip({ type, ...props }: EnemyShipProps): ReactElement {
     variant = <BruteMesh />;
   }
 
+  let smokeStacks: Array<[number, number, number]> = [[0, 1.65, 0]];
+  let smokeIntensity = 0.75;
+  if (type === "bomber") {
+    smokeStacks = [[-0.32, 2.0, 0], [0.32, 2.0, 0]];
+    smokeIntensity = 0.95;
+  }
+  if (type === "brute") {
+    smokeStacks = [[0, 2.2, 0]];
+    smokeIntensity = 1.35;
+  }
+
   return (
     <group {...props}>
-      {variant}
+      <ShipModelVisual config={ENEMY_MODEL_CONFIGS[type]} fallback={variant} />
+      <ShipSmoke stackPositions={smokeStacks} intensity={smokeIntensity} />
     </group>
   );
 }
