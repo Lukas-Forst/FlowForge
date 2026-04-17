@@ -48,6 +48,7 @@ export function tryFireCannon(
 
       projectiles.push({
         id: projectileIdRef.value++,
+        kind: "playerCannon",
         position: {
           x: player.position.x + originOffset.x * CANNON_SIDE_ORIGIN_OFFSET,
           y: player.position.y + originOffset.y * CANNON_SIDE_ORIGIN_OFFSET,
@@ -58,7 +59,7 @@ export function tryFireCannon(
         },
         ttl: 1.75,
         damage: CANNON_PROJECTILE_DAMAGE,
-        radius: 0.4,
+        radius: 0.48,
       });
     }
   };

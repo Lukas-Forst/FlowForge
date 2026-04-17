@@ -1,4 +1,4 @@
-import { WORLD_HALF_SIZE } from "../constants";
+import { WORLD_HALF_HEIGHT, WORLD_HALF_WIDTH } from "../constants";
 import { angleFromDirection, clampToBounds, normalize } from "../utils";
 import type { InputState, PlayerState } from "../types";
 
@@ -27,7 +27,7 @@ export function updatePlayerMovement(
       x: player.position.x + movement.x * speed * delta,
       y: player.position.y + movement.y * speed * delta,
     };
-    player.position = clampToBounds(nextPosition, WORLD_HALF_SIZE);
+    player.position = clampToBounds(nextPosition, WORLD_HALF_WIDTH, WORLD_HALF_HEIGHT);
 
     const targetFacing = angleFromDirection(movement);
     const adjustment = angleDelta(targetFacing, player.facing) * Math.min(1, delta * FACING_SMOOTHING);

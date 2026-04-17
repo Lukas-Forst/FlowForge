@@ -8,7 +8,8 @@ import {
   MIN_ENEMY_SEPARATION,
   MIN_SPAWN_INTERVAL,
   SPAWN_OUTSIDE_VIEW_MIN_DIST,
-  WORLD_HALF_SIZE,
+  WORLD_HALF_HEIGHT,
+  WORLD_HALF_WIDTH,
 } from "../constants";
 import { distance } from "../utils";
 import type { EnemyState, EnemyType } from "../types";
@@ -56,7 +57,7 @@ function spawnEnemyOutsideCamera(
     const x = playerPosition.x + Math.cos(angle) * radius;
     const y = playerPosition.y + Math.sin(angle) * radius;
 
-    if (x < -WORLD_HALF_SIZE || x > WORLD_HALF_SIZE || y < -WORLD_HALF_SIZE || y > WORLD_HALF_SIZE) {
+    if (x < -WORLD_HALF_WIDTH || x > WORLD_HALF_WIDTH || y < -WORLD_HALF_HEIGHT || y > WORLD_HALF_HEIGHT) {
       continue;
     }
 
@@ -85,14 +86,15 @@ function spawnEnemyOutsideCamera(
       speed: BASE_ENEMY_SPEED + speedScale,
       touchDamage,
       touchTimer: ENEMY_TOUCH_COOLDOWN,
+      rangedCooldown: 0.35 + Math.random() * 1.1,
     });
     return true;
   }
 
   // Fallback: try a random in-bounds point that's at least somewhat separated.
   for (let a = 0; a < 16; a += 1) {
-    const x = -WORLD_HALF_SIZE + Math.random() * (WORLD_HALF_SIZE * 2);
-    const y = -WORLD_HALF_SIZE + Math.random() * (WORLD_HALF_SIZE * 2);
+    const x = -WORLD_HALF_WIDTH + Math.random() * (WORLD_HALF_WIDTH * 2);
+    const y = -WORLD_HALF_HEIGHT + Math.random() * (WORLD_HALF_HEIGHT * 2);
     if (distance({ x, y }, playerPosition) < minDistFromPlayer) continue;
     enemies.push({
       id: enemyIdRef.value++,
@@ -102,6 +104,7 @@ function spawnEnemyOutsideCamera(
       speed: BASE_ENEMY_SPEED,
       touchDamage: BASE_ENEMY_DAMAGE,
       touchTimer: ENEMY_TOUCH_COOLDOWN,
+      rangedCooldown: 0.4 + Math.random() * 0.9,
     });
     return true;
   }

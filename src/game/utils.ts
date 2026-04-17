@@ -25,10 +25,10 @@ export function clampToRadius(point: Vec2, radius: number): Vec2 {
   return { x: point.x * scale, y: point.y * scale };
 }
 
-export function clampToBounds(point: Vec2, halfSize: number): Vec2 {
+export function clampToBounds(point: Vec2, halfWidth: number, halfHeight: number): Vec2 {
   return {
-    x: Math.max(-halfSize, Math.min(halfSize, point.x)),
-    y: Math.max(-halfSize, Math.min(halfSize, point.y)),
+    x: Math.max(-halfWidth, Math.min(halfWidth, point.x)),
+    y: Math.max(-halfHeight, Math.min(halfHeight, point.y)),
   };
 }
 

@@ -55,13 +55,13 @@ export const PLAYER_SHIP_MODEL_CONFIG: ShipModelConfig = {
 };
 
 const STEAMBOAT_MATERIAL_SETTINGS: Record<SteamboatMaterialRole, THREE.MeshStandardMaterialParameters> = {
-  hull: { color: "#202d42", roughness: 0.7, metalness: 0.12 },
+  hull: { color: "#3f5d76", roughness: 0.62, metalness: 0.1 },
   cabin: { color: "#efe4cc", roughness: 0.58, metalness: 0.04 },
   stack: { color: "#b13f37", roughness: 0.55, metalness: 0.1 },
-  cannon: { color: "#232629", roughness: 0.42, metalness: 0.72 },
+  cannon: { color: "#3d4854", roughness: 0.4, metalness: 0.62 },
   accent: { color: "#9f8350", roughness: 0.38, metalness: 0.64 },
   window: { color: "#8ea8bf", roughness: 0.24, metalness: 0.08 },
-  metal: { color: "#4d5258", roughness: 0.45, metalness: 0.58 },
+  metal: { color: "#697889", roughness: 0.42, metalness: 0.52 },
 };
 
 function createSteamboatMaterialPalette(): Record<SteamboatMaterialRole, THREE.MeshStandardMaterial> {
@@ -113,8 +113,9 @@ function hasUsableTexture(material: THREE.Material): boolean {
 function keepImportedMaterial(material: THREE.Material): void {
   if (material instanceof THREE.MeshStandardMaterial) {
     // Preserve imported textures while slightly tuning for gameplay readability.
-    material.roughness = Math.max(0.2, Math.min(0.95, material.roughness));
-    material.metalness = Math.max(0, Math.min(0.75, material.metalness));
+    const r = material.roughness;
+    material.roughness = Math.max(0.18, Math.min(0.92, r * 0.94));
+    material.metalness = Math.max(0, Math.min(0.72, material.metalness));
   }
   material.needsUpdate = true;
 }

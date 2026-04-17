@@ -12,6 +12,7 @@ import { getBoostSpeedMultiplier, tryActivateBoost } from "./systems/boostAbilit
 import { tryFireCannon } from "./systems/cannonAbility";
 import { resolveCollisions, updateEnemyMovement, updateProjectileMotion } from "./systems/collision";
 import { collectNearbyCoins } from "./systems/coins";
+import { runEnemyRangedAttacks } from "./systems/enemyRanged";
 import { getEnemyCap, spawnEnemiesToCap, updateEnemySpawning } from "./systems/enemySpawner";
 import { updatePlayerMovement } from "./systems/playerController";
 import { applyUpgrade, buildUpgradeChoices } from "./systems/upgrades";
@@ -29,6 +30,7 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "start"): GameSnap
     },
     enemies: [],
     projectiles: [],
+    visualEffects: [],
     coins: [],
     upgrades: {
       level: 0,
@@ -68,6 +70,10 @@ function copySnapshot(snapshot: GameSnapshot): GameSnapshot {
       position: { ...projectile.position },
       velocity: { ...projectile.velocity },
     })),
+    visualEffects: snapshot.visualEffects.map((effect) => ({
+      ...effect,
+      position: { ...effect.position },
+    })),
     coins: snapshot.coins.map((coin) => ({ ...coin, position: { ...coin.position } })),
     upgrades: { ...snapshot.upgrades },
     cooldowns: { ...snapshot.cooldowns },
@@ -95,6 +101,7 @@ export function useGameState(): UseGameStateApi {
   const enemyIdRef = useRef({ value: 1 });
   const projectileIdRef = useRef({ value: 1 });
   const coinIdRef = useRef({ value: 1 });
+  const effectIdRef = useRef({ value: 1 });
   const spawnTimerRef = useRef({ value: 0.2 });
   const autoAttackTimerRef = useRef({ value: BASE_AUTO_ATTACK_INTERVAL });
 
@@ -112,6 +119,7 @@ export function useGameState(): UseGameStateApi {
     enemyIdRef.current.value = 1;
     projectileIdRef.current.value = 1;
     coinIdRef.current.value = 1;
+    effectIdRef.current.value = 1;
     spawnTimerRef.current.value = 0.2;
     autoAttackTimerRef.current.value = BASE_AUTO_ATTACK_INTERVAL;
     syncState();
@@ -225,7 +233,6 @@ export function useGameState(): UseGameStateApi {
       state.projectiles,
       delta,
     );
-    updateProjectileMotion(state.projectiles, delta);
     state.spawnIntensity = updateEnemySpawning(
       state.enemies,
       enemyIdRef.current,
@@ -235,12 +242,16 @@ export function useGameState(): UseGameStateApi {
       state.player.position,
     );
     updateEnemyMovement(state.enemies, state.player, delta);
+    runEnemyRangedAttacks(state.enemies, state.player, projectileIdRef.current, state.projectiles, delta);
+    updateProjectileMotion(state.projectiles, delta, state.visualEffects, effectIdRef.current);
 
     const collisionResult = resolveCollisions(
       state.player,
       state.enemies,
       state.projectiles,
       coinIdRef.current,
+      state.visualEffects,
+      effectIdRef.current,
     );
 
     if (collisionResult.spawnedCoins.length > 0) {
@@ -251,6 +262,13 @@ export function useGameState(): UseGameStateApi {
 
     const coinsCollectedNow = collectNearbyCoins(state.coins, state.player);
     state.stats.collectedCoins += coinsCollectedNow;
+
+    for (let i = state.visualEffects.length - 1; i >= 0; i -= 1) {
+      state.visualEffects[i].remaining -= delta;
+      if (state.visualEffects[i].remaining <= 0) {
+        state.visualEffects.splice(i, 1);
+      }
+    }
 
     if (state.player.hp <= 0) {
       state.phase = "gameover";

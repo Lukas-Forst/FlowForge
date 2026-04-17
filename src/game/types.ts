@@ -26,15 +26,32 @@ export interface EnemyState {
   speed: number;
   touchDamage: number;
   touchTimer: number;
+  rangedCooldown: number;
+}
+
+export type ProjectileKind = "playerAuto" | "playerCannon" | "enemyCorsair" | "enemyBomber" | "enemyBrute";
+
+export function isEnemyProjectileKind(kind: ProjectileKind): boolean {
+  return kind === "enemyCorsair" || kind === "enemyBomber" || kind === "enemyBrute";
 }
 
 export interface ProjectileState {
   id: number;
+  kind: ProjectileKind;
   position: Vec2;
   velocity: Vec2;
   ttl: number;
   damage: number;
   radius: number;
+}
+
+export type VisualEffectKind = "waterSplash" | "hitBurst";
+
+export interface VisualEffect {
+  id: number;
+  kind: VisualEffectKind;
+  position: Vec2;
+  remaining: number;
 }
 
 export interface CoinState {
@@ -90,6 +107,7 @@ export interface GameSnapshot {
   player: PlayerState;
   enemies: EnemyState[];
   projectiles: ProjectileState[];
+  visualEffects: VisualEffect[];
   coins: CoinState[];
   upgrades: UpgradeStats;
   cooldowns: Cooldowns;

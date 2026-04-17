@@ -18,7 +18,7 @@ const ENEMY_MODEL_CONFIGS: Record<EnemyType, ShipModelConfig> = {
     ],
     targetLength: 2.25,
     forwardAxis: "positiveZ",
-    rotationOffsetY: Math.PI / 2,
+    rotationOffsetY: 0,
     positionOffset: [0, 0.01, 0],
   },
   bomber: {
@@ -29,7 +29,7 @@ const ENEMY_MODEL_CONFIGS: Record<EnemyType, ShipModelConfig> = {
     ],
     targetLength: 2.65,
     forwardAxis: "positiveZ",
-    rotationOffsetY: Math.PI / 2,
+    rotationOffsetY: 0,
     positionOffset: [0, 0.01, 0],
   },
   brute: {
@@ -42,7 +42,7 @@ const ENEMY_MODEL_CONFIGS: Record<EnemyType, ShipModelConfig> = {
     ],
     targetLength: 3.1,
     forwardAxis: "positiveZ",
-    rotationOffsetY: Math.PI / 2,
+    rotationOffsetY: 0,
     positionOffset: [0, 0.01, 0],
   },
 };

@@ -1,12 +1,15 @@
-import type { UpgradeOption } from "./types";
+import type { EnemyType, UpgradeOption } from "./types";
 
-// v1 world bounds (approx 400 x 400)
-export const WORLD_HALF_SIZE = 200;
-export const WORLD_SIZE = WORLD_HALF_SIZE * 2;
+// Rectangular arcade arena (world units, x × y play plane → scene x × z).
+export const WORLD_HALF_WIDTH = 135;
+export const WORLD_HALF_HEIGHT = 80;
+/** @deprecated Use WORLD_HALF_WIDTH / WORLD_HALF_HEIGHT; kept for quick greps during migration. */
+export const WORLD_HALF_SIZE = WORLD_HALF_WIDTH;
 
 // Camera and spawning heuristics (world units)
-export const CAMERA_VIEW_HALF = 80;
-export const CAMERA_EDGE_MARGIN = 90;
+export const CAMERA_VIEW_HALF = 48;
+export const CAMERA_EDGE_MARGIN_X = 48;
+export const CAMERA_EDGE_MARGIN_Z = 32;
 export const SPAWN_OUTSIDE_VIEW_MIN_DIST = CAMERA_VIEW_HALF + 25;
 export const MIN_ENEMY_SEPARATION = 2.8;
 
@@ -18,7 +21,7 @@ export const BASE_PLAYER_SPEED = 9;
 
 export const BASE_AUTO_ATTACK_INTERVAL = 0.55;
 export const BASE_AUTO_ATTACK_DAMAGE = 24;
-export const AUTO_ATTACK_SPEED = 18;
+export const AUTO_ATTACK_SPEED = 20;
 
 export const BASE_CANNON_COOLDOWN = 5;
 export const CANNON_PROJECTILE_SPEED = 22;
@@ -41,6 +44,28 @@ export const BOOST_SPEED_MULTIPLIER = 3.1;
 
 export const COIN_PICKUP_RADIUS = 1.4;
 export const PLAYER_HIT_RADIUS = 1.15;
+
+/** Enemy ranged attack tuning (decorative islands stay non-collidable). */
+export const ENEMY_RANGED_COOLDOWN: Record<EnemyType, number> = {
+  corsair: 2.35,
+  bomber: 1.65,
+  brute: 3.1,
+};
+export const ENEMY_RANGED_SPEED: Record<EnemyType, number> = {
+  corsair: 13,
+  bomber: 21,
+  brute: 10,
+};
+export const ENEMY_RANGED_DAMAGE: Record<EnemyType, number> = {
+  corsair: 4,
+  bomber: 3,
+  brute: 7,
+};
+export const ENEMY_RANGED_RADIUS: Record<EnemyType, number> = {
+  corsair: 0.26,
+  bomber: 0.18,
+  brute: 0.34,
+};
 
 export const UPGRADE_OPTIONS: Record<UpgradeOption["type"], UpgradeOption> = {
   fireRate: {
