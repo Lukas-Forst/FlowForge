@@ -21,7 +21,7 @@ These were settled during brainstorming and should not be re-litigated:
 | What does this pass change? | Visuals only — no gameplay, no enemy variety, no new mechanics. |
 | Which biomes? | **Open Sea**, **Island Chain**, **Deep Waters** (new — replaces the `fog_bank` slot). |
 | Do we keep `fog_bank`? | No. `pickRunBiome` rolls only the three above. The `fog_bank` branch in `pickEnemyType` (`enemySpawner.ts:26`) is removed at the same time; `fog_bank` literal is dropped from `BiomeType`. |
-| Does biome still affect enemy spawn mix? | **Open question — see §10.** Today `pickEnemyType` already filters spawn type by biome (e.g. Island Chain always rolls shore_battery + bomber + swarmer + corsair; never brute/sniper). Switching to one-biome-per-run turns that per-chunk variation into a per-run lock. That is a gameplay change in disguise. Spec needs a decision before implementation. |
+| Does biome still affect enemy spawn mix? | **No.** `pickEnemyType` is simplified to ignore biome entirely — every run uses the time-progressed default mix that already exists in `enemySpawner.ts:30–49`. The half-built per-biome enemy filter (lines 19–29) is removed. Rationale: keeps this pass truly visual-only; per-biome rosters can return as a future gameplay spec. (See §10.) |
 | Does water itself change per biome? | **Yes** — color, roughness, and shimmer overlay tuning all differ per biome. |
 | Are biomes spatially mixed within a run? | **No.** Each run is one biome, full map. No transitions, no chunk-based blending. |
 | How is the biome chosen? | **Random uniform** at run start. |
@@ -91,7 +91,7 @@ Dark navy, dim cool light, sparse but dramatic props. Visibility is *not* reduce
 - `GameSnapshot` (in `src/game/types.ts`) gains `runBiome: BiomeType`.
 - `useGameState` initializes `runBiome` via `pickRunBiome()` at run start; re-rolls on restart.
 - Chunk-based `biomeAt(x, y)` is removed. Dead helper `isIslandAt(x, y)` (defined in `biome.ts:30` but never imported) is removed at the same time.
-- `enemySpawner.ts` callers of `biomeAt(x, y)` (lines 102, 129) read `snapshot.runBiome` instead. Resolution of *whether* the per-biome enemy filter still runs depends on §10.
+- `enemySpawner.ts` callers of `biomeAt(x, y)` (lines 102, 129) are removed entirely along with the per-biome filter branch in `pickEnemyType` (lines 19–29). `pickEnemyType` becomes a pure function of `elapsedTimeSec`. See §10 for rationale.
 
 ### 4.2 Theme descriptors
 - New file `src/scene/biomeThemes.ts` exports a `BIOME_THEMES: Record<BiomeType, BiomeTheme>` map.
@@ -154,7 +154,7 @@ Density is biome-tuned: Island Chain spawns props in clusters; Deep Waters space
 | `src/scene/arcade/WaterArena.tsx` | Accept `theme` prop. Strip the 4-overlay stack down to 1 themed shimmer overlay. Remove `FogLayer`. Make `ScatteredSeaProps` biome-aware. |
 | `src/scene/arcade/props/*.tsx` | NEW — seven prop components (§4.4). |
 | `src/ui/Hud.tsx` | Add "Region:" label. |
-| `src/game/systems/enemySpawner.ts` | Remove the `fog_bank` branch in `pickEnemyType` (`:26`). Replace the two `biomeAt(x, y)` calls (`:102`, `:129`) with `runBiome` threaded in from the caller. Handle the new `deep_waters` biome explicitly or via fallthrough (see §10). |
+| `src/game/systems/enemySpawner.ts` | Strip the per-biome filter in `pickEnemyType` (`:19–29`) entirely; signature drops the `biome` parameter. Remove the two `biomeAt(x, y)` calls at `:102` and `:129`. The function becomes purely time-based. |
 | `src/game/systems/enemySpawner.test.ts` | Update fixtures to the new `BiomeType` union and the new `pickEnemyType` signature. |
 
 ## 6. Tests
@@ -215,17 +215,18 @@ Phase 2 gets its own spec when Phase 1 is in `main` and you have a felt sense of
 | Distance fog hides too many enemies in Deep Waters | If an issue, raise fog `near` to 80 and `far` to 280 for Deep Waters. Tune by eye. |
 | `runBiome` not threaded through every consumer (enemy spawner especially) | Grep for `biomeAt` before merging; update every callsite. |
 
-## 10. Open question — biome ↔ enemy-spawn coupling
+## 10. Resolved — biome ↔ enemy-spawn coupling
 
-Needs a decision before starting implementation. Options:
+**Decision (2026-04-18): Option C — drop the per-biome enemy filter.**
 
-- **Option A — Decouple visuals from spawn filter.** Keep the current per-chunk `biomeAt(x, y)` alive *only* for `pickEnemyType`, and let the visual `runBiome` be an independent concept. Enemy mix behaves exactly like today; only the water/lighting/props are run-locked. **Pros:** genuinely zero gameplay change. **Cons:** two parallel biome concepts (visual-biome vs spawn-biome) with the same literal names — confusing to reason about.
-- **Option B — Unify on `runBiome` and keep the per-biome enemy filter.** `pickEnemyType` reads `runBiome`; whatever biome you roll, you fight that biome's roster for the whole run. Island Chain runs = shore_battery + bomber + swarmer + corsair, always. Deep Waters needs a new filter branch defined. **Pros:** simple, single concept. **Cons:** **is** a gameplay change — Island Chain runs lose brute/sniper entirely; Open Sea runs lose shore_battery.
-- **Option C — Unify on `runBiome` and drop the per-biome filter.** `pickEnemyType` ignores biome entirely; every run gets the time-progressed default mix. **Pros:** cleanest single-concept model; true "visual only" scope. **Cons:** silently reverts the half-built biome-spawn filter that's already in `enemySpawner.ts:19–29`.
+`pickEnemyType` becomes purely time-based; every run uses the existing time-progressed mix at `enemySpawner.ts:30–49`. The half-built per-biome filter at lines 19–29 is removed along with `fog_bank` from `BiomeType`.
 
-**Recommendation: Option C.** The existing per-chunk filter was built for a spatially-mixed biome model that we've now abandoned. Option A preserves behavior only in letter (players won't notice the mix changing the way it does today, since chunks flip every 9s anyway). Option C is the honest "visual only" scope the user asked for; if per-biome enemy rosters are valuable, that's a gameplay pass with its own spec.
+Rationale: the per-chunk filter was built for a spatially-mixed biome model that this spec abandons. Keeping it would either (a) require a parallel "visual-biome vs spawn-biome" concept (Option A — confusing), or (b) silently lock each run to a fixed enemy roster (Option B — a gameplay change disguised as a visual fix). Option C honours the "visual only" scope. Per-biome enemy rosters can return as a future *gameplay* spec, built on top of the run-fixed `runBiome` model this spec establishes.
 
-**Awaiting user decision.**
+Considered and rejected:
+
+- **Option A — Decouple.** Keep per-chunk `biomeAt(x, y)` alive only for `pickEnemyType`. Rejected: introduces two same-named biome concepts (visual vs spawn), confusing to reason about.
+- **Option B — Unify and keep filter.** Use `runBiome` for both visuals and enemy roster. Rejected: changes gameplay (Island Chain runs lose brute/sniper; Open Sea loses shore_battery) without a gameplay-design pass.
 
 ## 11. Out of scope but worth knowing
 
