@@ -45,6 +45,50 @@ const ENEMY_MODEL_CONFIGS: Record<EnemyType, ShipModelConfig> = {
     rotationOffsetY: Math.PI / 2,
     positionOffset: [0, 0.01, 0],
   },
+  swarmer: {
+    candidatePaths: [
+      "/assets/models/ships/Enemy_ship_fast.glb",
+      "/assets/models/ships/enemy_ship_fast.glb",
+      "/assets/models/ships/enemy-ship-fast.glb",
+    ],
+    targetLength: 1.8,
+    forwardAxis: "positiveZ",
+    rotationOffsetY: Math.PI / 2,
+    positionOffset: [0, 0.01, 0],
+  },
+  sniper: {
+    candidatePaths: [
+      "/assets/models/ships/Enemy_ship_tank.glb",
+      "/assets/models/ships/enemy_ship_tank.glb",
+      "/assets/models/ships/enemy-ship-tank.glb",
+    ],
+    targetLength: 2.9,
+    forwardAxis: "positiveZ",
+    rotationOffsetY: Math.PI / 2,
+    positionOffset: [0, 0.01, 0],
+  },
+  boss: {
+    candidatePaths: [
+      "/assets/models/ships/Enemy_ship_boss.glb",
+      "/assets/models/ships/enemy_ship_boss.glb",
+      "/assets/models/ships/enemy-ship-boss.glb",
+    ],
+    targetLength: 4.5,
+    forwardAxis: "positiveZ",
+    rotationOffsetY: Math.PI / 2,
+    positionOffset: [0, 0.01, 0],
+  },
+  shore_battery: {
+    candidatePaths: [
+      "/assets/models/ships/Enemy_ship_brute.glb",
+      "/assets/models/ships/enemy_ship_brute.glb",
+      "/assets/models/ships/enemy-ship-brute.glb",
+    ],
+    targetLength: 4.8,
+    forwardAxis: "positiveZ",
+    rotationOffsetY: Math.PI / 2,
+    positionOffset: [0, 0.01, 0],
+  },
 };
 
 function CorsairMesh(): ReactElement {
@@ -162,20 +206,20 @@ function BruteMesh(): ReactElement {
 
 export function EnemyShip({ type, ...props }: EnemyShipProps): ReactElement {
   let variant: ReactElement = <CorsairMesh />;
-  if (type === "bomber") {
+  if (type === "bomber" || type === "swarmer") {
     variant = <BomberMesh />;
   }
-  if (type === "brute") {
+  if (type === "brute" || type === "sniper" || type === "boss" || type === "shore_battery") {
     variant = <BruteMesh />;
   }
 
   let smokeStacks: Array<[number, number, number]> = [[0, 1.65, 0]];
   let smokeIntensity = 0.75;
-  if (type === "bomber") {
+  if (type === "bomber" || type === "swarmer") {
     smokeStacks = [[-0.32, 2.0, 0], [0.32, 2.0, 0]];
     smokeIntensity = 0.95;
   }
-  if (type === "brute") {
+  if (type === "brute" || type === "sniper" || type === "boss" || type === "shore_battery") {
     smokeStacks = [[0, 2.2, 0]];
     smokeIntensity = 1.35;
   }

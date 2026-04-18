@@ -8,30 +8,51 @@ import {
   MIN_ENEMY_SEPARATION,
   MIN_SPAWN_INTERVAL,
   SPAWN_OUTSIDE_VIEW_MIN_DIST,
-  WORLD_HALF_HEIGHT,
-  WORLD_HALF_WIDTH,
 } from "../constants";
 import { angleFromDirection, distance } from "../utils";
 import type { EnemyState, EnemyType } from "../types";
+import { biomeAt, type BiomeType } from "./biome";
 
-function pickEnemyType(): EnemyType {
+function pickEnemyType(elapsedTimeSec: number, biome: BiomeType): EnemyType {
   const roll = Math.random();
-  if (roll < 0.5) {
+
+  if (biome === "island_chain") {
+     if (roll < 0.25) return "shore_battery";
+     if (roll < 0.5) return "corsair";
+     if (roll < 0.8) return "bomber";
+     return "swarmer";
+  }
+
+  if (biome === "fog_bank") {
+     if (roll < 0.65) return "swarmer";
+     return "sniper";
+  }
+  if (elapsedTimeSec < 30) {
+    if (roll < 0.6) return "swarmer";
     return "corsair";
   }
-  if (roll < 0.8) {
-    return "bomber";
+  if (elapsedTimeSec < 60) {
+    if (roll < 0.3) return "swarmer";
+    if (roll < 0.7) return "corsair";
+    return "brute";
   }
+  if (elapsedTimeSec < 150) {
+    if (roll < 0.25) return "swarmer";
+    if (roll < 0.5) return "corsair";
+    if (roll < 0.8) return "bomber";
+    return "brute";
+  }
+  if (roll < 0.2) return "swarmer";
+  if (roll < 0.45) return "corsair";
+  if (roll < 0.7) return "bomber";
+  if (roll < 0.85) return "sniper";
   return "brute";
 }
 
-function getEnemyCap(elapsedTimeSec: number): number {
-  // Active enemy cap ramp for a fuller opening minute without
-  // forcing an immediate swarm.
-  // 0:00–0:30 -> 3
-  // 0:30–1:00 -> 4
-  // 1:00–1:30 -> 5
-  // 1:30+      -> +1 every 15 seconds, max 12
+function getEnemyCap(elapsedTimeSec: number, phase: "wave" | "elite" | "lull" | "boss"): number {
+  if (phase === "boss") return 0;
+  if (phase === "lull") return 2;
+
   if (elapsedTimeSec < 30) return 3;
   if (elapsedTimeSec < 60) return 4;
   if (elapsedTimeSec < 90) return 5;
@@ -57,10 +78,6 @@ function spawnEnemyOutsideCamera(
     const x = playerPosition.x + Math.cos(angle) * radius;
     const y = playerPosition.y + Math.sin(angle) * radius;
 
-    if (x < -WORLD_HALF_WIDTH || x > WORLD_HALF_WIDTH || y < -WORLD_HALF_HEIGHT || y > WORLD_HALF_HEIGHT) {
-      continue;
-    }
-
     if (distance({ x, y }, playerPosition) < minDistFromPlayer) {
       continue;
     }
@@ -82,12 +99,14 @@ function spawnEnemyOutsideCamera(
       y: playerPosition.y - y,
     };
 
+    const biome = biomeAt(x, y);
     enemies.push({
       id: enemyIdRef.value++,
-      type: pickEnemyType(),
+      type: pickEnemyType(elapsedTime, biome),
       position: { x, y },
       facing: angleFromDirection(toPlayer),
       hp: BASE_ENEMY_HP * hpScale,
+      maxHp: BASE_ENEMY_HP * hpScale,
       speed: BASE_ENEMY_SPEED + speedScale,
       touchDamage,
       touchTimer: ENEMY_TOUCH_COOLDOWN,
@@ -96,21 +115,25 @@ function spawnEnemyOutsideCamera(
     return true;
   }
 
-  // Fallback: try a random in-bounds point that's at least somewhat separated.
-  for (let a = 0; a < 16; a += 1) {
-    const x = -WORLD_HALF_WIDTH + Math.random() * (WORLD_HALF_WIDTH * 2);
-    const y = -WORLD_HALF_HEIGHT + Math.random() * (WORLD_HALF_HEIGHT * 2);
+  // Fallback: another annulus sample (no map box in endless mode).
+  for (let a = 0; a < 24; a += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const radius = spawnRadiusMin + Math.random() * (spawnRadiusMax - spawnRadiusMin);
+    const x = playerPosition.x + Math.cos(angle) * radius;
+    const y = playerPosition.y + Math.sin(angle) * radius;
     if (distance({ x, y }, playerPosition) < minDistFromPlayer) continue;
     const toPlayer = {
       x: playerPosition.x - x,
       y: playerPosition.y - y,
     };
+    const biome = biomeAt(x, y);
     enemies.push({
       id: enemyIdRef.value++,
-      type: pickEnemyType(),
+      type: pickEnemyType(elapsedTime, biome),
       position: { x, y },
       facing: angleFromDirection(toPlayer),
       hp: BASE_ENEMY_HP,
+      maxHp: BASE_ENEMY_HP,
       speed: BASE_ENEMY_SPEED,
       touchDamage: BASE_ENEMY_DAMAGE,
       touchTimer: ENEMY_TOUCH_COOLDOWN,
@@ -142,8 +165,9 @@ export function updateEnemySpawning(
   elapsedTime: number,
   delta: number,
   playerPosition: { x: number; y: number },
+  phase: "wave" | "elite" | "lull" | "boss",
 ): number {
-  const cap = getEnemyCap(elapsedTime);
+  const cap = getEnemyCap(elapsedTime, phase);
   if (enemies.length >= cap) {
     return 0;
   }

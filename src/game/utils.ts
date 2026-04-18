@@ -52,3 +52,13 @@ export function randomPointOnRing(radius: number): Vec2 {
     y: Math.sin(angle) * radius,
   };
 }
+
+export function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+// Pseudo-random hash for integers
+export function hash2(x: number, y: number): number {
+  const h = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+  return h - Math.floor(h);
+}

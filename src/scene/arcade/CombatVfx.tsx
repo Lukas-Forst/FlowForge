@@ -1,3 +1,4 @@
+import { Text } from "@react-three/drei";
 import type { ReactElement } from "react";
 import type { ProjectileKind, ProjectileState, VisualEffect, VisualEffectKind } from "../../game/types";
 
@@ -6,6 +7,10 @@ const EFFECT_DURATION: Record<VisualEffectKind, number> = {
   hitBurst: 0.26,
   muzzleFlash: 0.1,
   waterRippleSmall: 0.28,
+  telegraphRing: 1.2,
+  damageNumber: 0.8,
+  enemyDeath: 1.0,
+  screenShake: 0.45,
 };
 
 function projectileCore(kind: ProjectileKind): {
@@ -19,21 +24,21 @@ function projectileCore(kind: ProjectileKind): {
   switch (kind) {
     case "playerAuto":
       return {
-        radius: 0.26,
-        color: "#ffe8a8",
-        emissive: "#ff9a1a",
-        emissiveIntensity: 1.35,
+        radius: 0.2,
+        color: "#fff2cf",
+        emissive: "#ffb84a",
+        emissiveIntensity: 1.5,
         metalness: 0.22,
-        roughness: 0.32,
+        roughness: 0.28,
       };
     case "playerCannon":
       return {
-        radius: 0.34,
+        radius: 0.38,
         color: "#fff2cc",
-        emissive: "#ff7a14",
-        emissiveIntensity: 1.55,
-        metalness: 0.35,
-        roughness: 0.28,
+        emissive: "#ff6a10",
+        emissiveIntensity: 1.7,
+        metalness: 0.4,
+        roughness: 0.24,
       };
     case "enemyCorsair":
       return {
@@ -46,19 +51,19 @@ function projectileCore(kind: ProjectileKind): {
       };
     case "enemyBomber":
       return {
-        radius: 0.13,
-        color: "#d4a8ff",
-        emissive: "#3a1a5c",
-        emissiveIntensity: 0.55,
+        radius: 0.1,
+        color: "#e0b7ff",
+        emissive: "#6f29ab",
+        emissiveIntensity: 2.3,
         metalness: 0.2,
-        roughness: 0.38,
+        roughness: 0.34,
       };
     case "enemyBrute":
       return {
         radius: 0.3,
-        color: "#9aa0a8",
-        emissive: "#1a1e24",
-        emissiveIntensity: 0.35,
+        color: "#b0b7c0",
+        emissive: "#2a313b",
+        emissiveIntensity: 1.6,
         metalness: 0.42,
         roughness: 0.48,
       };
@@ -83,8 +88,8 @@ function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): R
   const trail =
     p.kind === "playerAuto" || p.kind === "playerCannon" || p.kind === "enemyBrute" || p.kind === "enemyBomber";
 
-  const trailLen = p.kind === "enemyBomber" ? 0.48 : p.kind === "enemyBrute" ? 0.62 : p.kind === "playerCannon" ? 0.56 : 0.42;
-  const trailRad = p.kind === "enemyBomber" ? 0.05 : p.kind === "enemyBrute" ? 0.11 : p.kind === "playerCannon" ? 0.1 : 0.08;
+  const trailLen = p.kind === "enemyBomber" ? 0.72 : p.kind === "enemyBrute" ? 0.66 : p.kind === "playerCannon" ? 0.62 : 0.58;
+  const trailRad = p.kind === "enemyBomber" ? 0.035 : p.kind === "enemyBrute" ? 0.12 : p.kind === "playerCannon" ? 0.11 : 0.05;
 
   return (
     <group position={[p.position.x, 0.56, p.position.y]} rotation={[0, yaw, 0]}>
@@ -103,20 +108,20 @@ function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): R
           <mesh position={[0, 0, -trailLen * 0.48]} rotation={[Math.PI / 2, 0, 0]}>
             <coneGeometry args={[trailRad, trailLen, 6]} />
             <meshStandardMaterial
-              color={p.kind.startsWith("enemy") ? "#6a6f78" : "#ffd699"}
-              emissive={p.kind.startsWith("enemy") ? "#22262c" : "#ff8c22"}
-              emissiveIntensity={p.kind.startsWith("enemy") ? 0.25 : 0.65}
+              color={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? "#d5aaff" : "#808892") : "#ffd698"}
+              emissive={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? "#7c2fca" : "#2f3640") : "#ff8c22"}
+              emissiveIntensity={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? 1.8 : 1.2) : 0.68}
               transparent
-              opacity={0.88}
+              opacity={0.9}
               depthWrite={false}
             />
           </mesh>
           <mesh position={[0, 0, -trailLen * 0.52]} rotation={[Math.PI / 2, 0, 0]} scale={[1.25, 1.1, 1.25]}>
             <coneGeometry args={[trailRad, trailLen, 6]} />
             <meshBasicMaterial
-              color={p.kind.startsWith("enemy") ? "#9aa0aa" : "#ffe9be"}
+              color={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? "#d7c3ec" : "#8e949e") : "#fff2d1"}
               transparent
-              opacity={p.kind.startsWith("enemy") ? 0.2 : 0.3}
+              opacity={p.kind.startsWith("enemy") ? 0.16 : 0.26}
               depthWrite={false}
             />
           </mesh>
@@ -132,12 +137,12 @@ function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): R
   );
 }
 
-function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement {
+function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement | null {
   const max = EFFECT_DURATION[effect.kind];
   const t = Math.max(0, Math.min(1, 1 - effect.remaining / max));
 
   if (effect.kind === "waterSplash") {
-    const ring = 0.35 + t * 2.8;
+    const ring = 0.45 + t * 4.4;
     return (
       <group position={[effect.position.x, 0.055, effect.position.y]}>
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
@@ -183,6 +188,54 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
       </group>
     );
   }
+
+  if (effect.kind === "telegraphRing") {
+    const radius = Math.max(0.1, effect.remaining * 2.5);
+    return (
+      <group position={[effect.position.x, 0.08, effect.position.y]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[radius * 0.85, radius, 32]} />
+          <meshBasicMaterial color="#ff5050" transparent opacity={0.6} depthWrite={false} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (effect.kind === "damageNumber") {
+    return (
+      <group position={[effect.position.x, 0.8 + t * 1.5, effect.position.y]}>
+        <Text
+          color={effect.color || "#ffffff"}
+          fontSize={0.4}
+          outlineWidth={0.04}
+          outlineColor="#000000"
+          anchorX="center"
+          anchorY="middle"
+          fillOpacity={1 - Math.pow(t, 2)}
+        >
+          {effect.text || ""}
+        </Text>
+      </group>
+    );
+  }
+
+  if (effect.kind === "enemyDeath") {
+    const scale = 1 + t * 4;
+    return (
+      <group position={[effect.position.x, 0.2, effect.position.y]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[scale * 0.4, scale * 0.6, 24]} />
+          <meshBasicMaterial color="#ffbd87" transparent opacity={0.8 * (1 - t)} depthWrite={false} />
+        </mesh>
+        <mesh scale={[1 + t * 2, 1 + t * 2, 1 + t * 2]}>
+          <sphereGeometry args={[0.3, 12, 12]} />
+          <meshBasicMaterial color="#ffdfb8" transparent opacity={0.7 * (1 - t)} depthWrite={false} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (effect.kind === "screenShake") return null;
 
   return (
     <group position={[effect.position.x, 0.62, effect.position.y]}>

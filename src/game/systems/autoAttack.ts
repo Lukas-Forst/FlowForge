@@ -17,13 +17,14 @@ export function runAutoAttack(
   visualEffects: VisualEffect[],
   effectIdRef: { value: number },
   delta: number,
+  isFrenzy: boolean = false,
 ): void {
   intervalTimerRef.value -= delta;
   if (intervalTimerRef.value > 0 || enemies.length === 0) {
     return;
   }
 
-  const interval = BASE_AUTO_ATTACK_INTERVAL / fireRateMultiplier;
+  const interval = isFrenzy ? (BASE_AUTO_ATTACK_INTERVAL / fireRateMultiplier) * 0.5 : (BASE_AUTO_ATTACK_INTERVAL / fireRateMultiplier);
   intervalTimerRef.value += interval;
 
   // Facing-based base attack (predictable, consistent with cannon/broadside rules).

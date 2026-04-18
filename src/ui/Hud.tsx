@@ -44,6 +44,14 @@ export function Hud({ snapshot }: HudProps): ReactElement {
         <div className="hud-item">Score: {snapshot.stats.score}</div>
       </div>
       <div className="hud-row">
+        <div className="hud-item phase-info" style={{ color: "#ffcf54", fontWeight: "bold" }}>
+          {snapshot.runClock.phase === "wave" ? `Wave ends in: ${Math.max(0, 60 - snapshot.runClock.phaseTime).toFixed(0)}s` :
+           snapshot.runClock.phase === "elite" ? `Elite phase: ${Math.max(0, 10 - snapshot.runClock.phaseTime).toFixed(0)}s` :
+           snapshot.runClock.phase === "lull" ? `Lull ends in: ${Math.max(0, 15 - snapshot.runClock.phaseTime).toFixed(0)}s` :
+           `Boss Phase`}
+        </div>
+      </div>
+      <div className="hud-row">
         <div className="hud-item">Q Cannon: {cannonReady ? "Ready" : `${snapshot.cooldowns.cannonRemaining.toFixed(1)}s`}</div>
         <div className="meter">
           <div className="meter-fill cannon" style={{ width: `${cooldownPercent(snapshot) * 100}%` }} />
@@ -55,6 +63,14 @@ export function Hud({ snapshot }: HudProps): ReactElement {
           <div className="meter-fill boost" style={{ width: `${boostPercent(snapshot) * 100}%` }} />
         </div>
       </div>
+      {snapshot.enemies.find(e => e.type === "boss") && (
+        <div className="boss-hud" style={{ position: "absolute", top: "20px", left: "50%", transform: "translateX(-50%)", width: "400px", textAlign: "center" }}>
+          <div style={{ color: "#ff4d4d", fontSize: "24px", fontWeight: "bold", textShadow: "1px 1px 2px black", marginBottom: "5px" }}>PIRATE LORD</div>
+          <div className="meter" style={{ height: "24px", border: "2px solid #333", backgroundColor: "#111" }}>
+            <div className="meter-fill" style={{ backgroundColor: "#ff2020", height: "100%", width: `${Math.max(0, snapshot.enemies.find(e => e.type === "boss")!.hp / snapshot.enemies.find(e => e.type === "boss")!.maxHp * 100)}%` }} />
+          </div>
+        </div>
+      )}
       {snapshot.message ? <div className="toast">{snapshot.message.text}</div> : null}
     </div>
   );

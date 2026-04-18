@@ -7,6 +7,8 @@ type PlayerShipProps = ThreeElements["group"] & {
   upgradeLevel: number;
 };
 
+const SHOW_DECK_CANNON_ATTACHMENTS = false;
+
 function DeckCannons({ upgradeLevel }: { upgradeLevel: number }): ReactElement {
   const bonusCannons = Math.min(4, Math.floor(upgradeLevel / 2) + 1);
   const cannonOffsets = Array.from({ length: bonusCannons }, (_, index) => {
@@ -84,7 +86,7 @@ export function PlayerShip({ upgradeLevel, ...props }: PlayerShipProps): ReactEl
     <group {...props}>
       <ShipModelVisual config={PLAYER_SHIP_MODEL_CONFIG} fallback={<PlayerShipPrimitive />} />
       <ShipSmoke stackPositions={[[-0.26, 1.95, -0.08], [0.26, 1.95, -0.08]]} intensity={1.1} />
-      <DeckCannons upgradeLevel={upgradeLevel} />
+      {SHOW_DECK_CANNON_ATTACHMENTS ? <DeckCannons upgradeLevel={upgradeLevel} /> : null}
     </group>
   );
 }

@@ -2,6 +2,7 @@ import { useFrame } from "@react-three/fiber";
 import type { ReactElement } from "react";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
+import { biomeAt } from "../../game/systems/biome";
 
 const TILE_SIZE = 280;
 const TILE_OFFSETS = [-TILE_SIZE, 0, TILE_SIZE] as const;
@@ -129,6 +130,38 @@ function hash2(i: number, j: number): number {
   return ((i * 73856093) ^ (j * 19349663) ^ (i * j * 83492791)) >>> 0;
 }
 
+function BobbingSeaProp({
+  wx,
+  wz,
+  scale,
+  seed,
+  variant,
+}: {
+  wx: number;
+  wz: number;
+  scale: number;
+  seed: number;
+  variant: number;
+}): ReactElement {
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame((_state) => {
+    if (!groupRef.current) return;
+    const time = _state.clock.elapsedTime;
+    const bob = Math.sin(time * 1.5 + seed * 10 + wx * 0.1) * 0.08 + Math.cos(time * 0.8 + wz * 0.1) * 0.04;
+    groupRef.current.position.y = 0.04 + bob;
+    
+    groupRef.current.rotation.z = Math.sin(time * 1.2 + seed * 5) * 0.15;
+    groupRef.current.rotation.x = Math.cos(time * 1.1 + seed * 5) * 0.15;
+  });
+
+  return (
+    <group ref={groupRef} position={[wx, 0.04, wz]} scale={scale}>
+      <CalmSeaProp variant={variant} />
+    </group>
+  );
+}
+
 function CalmSeaProp({ variant }: { variant: number }): ReactElement {
   if (variant === 1) {
     return (
@@ -182,8 +215,8 @@ function CalmSeaProp({ variant }: { variant: number }): ReactElement {
 
 /** Sparse world-anchored props in a grid so the sea feels endless without a visible arena rim. */
 function ScatteredSeaProps({ centerX, centerZ }: { centerX: number; centerZ: number }): ReactElement {
-  const CELL = 190;
-  const viewHalf = 320;
+  const CELL = 40;
+  const viewHalf = 180;
   const i0 = Math.floor((centerX - viewHalf) / CELL);
   const i1 = Math.floor((centerX + viewHalf) / CELL);
   const j0 = Math.floor((centerZ - viewHalf) / CELL);
@@ -193,23 +226,43 @@ function ScatteredSeaProps({ centerX, centerZ }: { centerX: number; centerZ: num
   for (let i = i0; i <= i1; i += 1) {
     for (let j = j0; j <= j1; j += 1) {
       const h = hash2(i, j);
-      if (h % 4 !== 0) {
-        continue;
+      const wx = i * CELL + ((h % 100) / 100 - 0.5) * CELL * 0.8;
+      const wz = j * CELL + (((h >> 8) % 100) / 100 - 0.5) * CELL * 0.8;
+      
+      const biome = biomeAt(wx, wz);
+      if (biome === "island_chain") {
+        if (h % 3 === 0) { // Render island prop here
+           const scale = 2.5 + ((h >> 16) % 100) / 50;
+           items.push(<BobbingSeaProp key={`isl-${i}-${j}`} wx={wx} wz={wz} scale={scale} seed={h} variant={0} />);
+        }
+      } else if (biome === "open_sea") {
+        if (h % 6 === 0) {
+           const scale = 0.85 + ((h >> 16) % 100) / 250;
+           const variant = (h >> 17) % 3;
+           items.push(<BobbingSeaProp key={`buoy-${i}-${j}`} wx={wx} wz={wz} scale={scale} seed={h} variant={variant} />);
+        }
       }
-      const ox = ((h % 127) / 127 - 0.5) * (CELL * 0.38);
-      const oz = (((h >> 8) % 127) / 127 - 0.5) * (CELL * 0.38);
-      const wx = i * CELL + ox;
-      const wz = j * CELL + oz;
-      const scale = 0.85 + ((h >> 16) % 100) / 250;
-      const variant = (h >> 17) % 3;
-      items.push(
-        <group key={`${i}-${j}`} position={[wx, 0.04, wz]} scale={scale}>
-          <CalmSeaProp variant={variant} />
-        </group>,
-      );
     }
   }
   return <group>{items}</group>;
+}
+
+function FogLayer({ playerX, playerZ }: { playerX: number; playerZ: number }) {
+  const matRef = useRef<THREE.MeshBasicMaterial>(null);
+  
+  useFrame((_, delta) => {
+    if (!matRef.current) return;
+    const isFog = biomeAt(playerX, playerZ) === "fog_bank";
+    const target = isFog ? 0.35 : 0.0;
+    matRef.current.opacity += (target - matRef.current.opacity) * delta * 0.5;
+  });
+
+  return (
+    <mesh position={[playerX, 8, playerZ]} rotation={[-Math.PI / 2, 0, 0]}>
+      <planeGeometry args={[TILE_SIZE * 2, TILE_SIZE * 2]} />
+      <meshBasicMaterial ref={matRef} color="#112233" transparent opacity={0} depthWrite={false} />
+    </mesh>
+  );
 }
 
 interface WaterArenaProps {
@@ -284,6 +337,7 @@ export function WaterArena({ playerX, playerZ }: WaterArenaProps): ReactElement 
         )}
       </group>
       <ScatteredSeaProps centerX={playerX} centerZ={playerZ} />
+      <FogLayer playerX={playerX} playerZ={playerZ} />
     </group>
   );
 }

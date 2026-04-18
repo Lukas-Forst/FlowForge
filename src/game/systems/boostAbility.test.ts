@@ -10,6 +10,8 @@ function createCooldowns(): Cooldowns {
     boostDuration: BOOST_COOLDOWN,
     boostActiveRemaining: 0,
     boostActiveDuration: BOOST_ACTIVE_TIME,
+    invulnRemaining: 0,
+    frenzyRemaining: 0,
   };
 }
 

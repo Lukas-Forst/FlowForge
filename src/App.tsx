@@ -5,6 +5,7 @@ import type { MovementKey } from "./game/types";
 import { GameScene } from "./scene/GameScene";
 import { GameOverScreen } from "./ui/GameOverScreen";
 import { Hud } from "./ui/Hud";
+import { PauseScreen } from "./ui/PauseScreen";
 import { StartScreen } from "./ui/StartScreen";
 import { UpgradeModal } from "./ui/UpgradeModal";
 
@@ -20,7 +21,7 @@ function isRecognizedAbilityKey(code: string): boolean {
 }
 
 export default function App(): ReactElement {
-  const { snapshot, startRun, restartRun, setMovementKey, triggerCannon, triggerBoost, chooseUpgrade, tick } =
+  const { snapshot, startRun, restartRun, setMovementKey, triggerCannon, triggerBoost, chooseUpgrade, togglePause, quitRun, tick } =
     useGameState();
 
   useEffect(() => {
@@ -39,6 +40,13 @@ export default function App(): ReactElement {
       if (event.code === "Space" && !event.repeat) {
         event.preventDefault();
         triggerBoost();
+        return;
+      }
+
+      if (event.code === "Escape" || event.code === "KeyP") {
+        if (!event.repeat) {
+          togglePause();
+        }
         return;
       }
 
@@ -68,7 +76,7 @@ export default function App(): ReactElement {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [restartRun, setMovementKey, snapshot.phase, startRun, triggerBoost, triggerCannon]);
+  }, [restartRun, setMovementKey, snapshot.phase, startRun, togglePause, triggerBoost, triggerCannon]);
 
   useEffect(() => {
     let raf = 0;
@@ -88,8 +96,9 @@ export default function App(): ReactElement {
   return (
     <div className="app-shell">
       <GameScene snapshot={snapshot} />
-      {(snapshot.phase === "playing" || snapshot.phase === "upgrade") && <Hud snapshot={snapshot} />}
+      {(snapshot.phase === "playing" || snapshot.phase === "upgrade" || snapshot.phase === "paused") && <Hud snapshot={snapshot} />}
       {snapshot.phase === "start" && <StartScreen onStart={startRun} />}
+      {snapshot.phase === "paused" && <PauseScreen snapshot={snapshot} onResume={togglePause} onQuit={quitRun} />}
       {snapshot.phase === "upgrade" && (
         <UpgradeModal options={snapshot.pendingUpgradeOptions} onPick={chooseUpgrade} />
       )}

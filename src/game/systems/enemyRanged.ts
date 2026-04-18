@@ -8,12 +8,8 @@ import { distance, normalize } from "../utils";
 import type { EnemyState, PlayerState, ProjectileKind, ProjectileState, VisualEffect } from "../types";
 
 function projectileKindForEnemy(type: EnemyState["type"]): ProjectileKind {
-  if (type === "corsair") {
-    return "enemyCorsair";
-  }
-  if (type === "bomber") {
-    return "enemyBomber";
-  }
+  if (type === "corsair") return "enemyCorsair";
+  if (type === "sniper") return "enemySniper";
   return "enemyBrute";
 }
 
@@ -27,7 +23,22 @@ export function runEnemyRangedAttacks(
   delta: number,
 ): void {
   for (const enemy of enemies) {
+    if (enemy.type === "swarmer" || enemy.type === "bomber") continue;
+
     enemy.rangedCooldown -= delta;
+
+    if (enemy.type === "brute" || enemy.type === "sniper") {
+      const telegraphThreshold = enemy.type === "brute" ? 0.8 : 1.2;
+      if (enemy.rangedCooldown < telegraphThreshold && enemy.rangedCooldown + delta >= telegraphThreshold) {
+        visualEffects.push({
+          id: effectIdRef.value++,
+          kind: "telegraphRing",
+          position: { ...enemy.position },
+          remaining: telegraphThreshold,
+        });
+      }
+    }
+
     if (enemy.rangedCooldown > 0) {
       continue;
     }
