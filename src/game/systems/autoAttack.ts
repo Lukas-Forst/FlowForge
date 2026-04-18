@@ -4,7 +4,7 @@ import {
   BASE_AUTO_ATTACK_INTERVAL,
 } from "../constants";
 import { normalize } from "../utils";
-import type { EnemyState, PlayerState, ProjectileState } from "../types";
+import type { EnemyState, PlayerState, ProjectileState, VisualEffect } from "../types";
 import { directionFromAngle } from "../utils";
 
 export function runAutoAttack(
@@ -14,6 +14,8 @@ export function runAutoAttack(
   intervalTimerRef: { value: number },
   fireRateMultiplier: number,
   projectiles: ProjectileState[],
+  visualEffects: VisualEffect[],
+  effectIdRef: { value: number },
   delta: number,
 ): void {
   intervalTimerRef.value -= delta;
@@ -39,5 +41,18 @@ export function runAutoAttack(
     ttl: 2.2,
     damage: BASE_AUTO_ATTACK_DAMAGE,
     radius: 0.4,
+  });
+
+  visualEffects.push({
+    id: effectIdRef.value++,
+    kind: "muzzleFlash",
+    position: { x: player.position.x + direction.x * 1.08, y: player.position.y + direction.y * 1.08 },
+    remaining: 0.1,
+  });
+  visualEffects.push({
+    id: effectIdRef.value++,
+    kind: "waterRippleSmall",
+    position: { x: player.position.x + direction.x * 0.86, y: player.position.y + direction.y * 0.86 },
+    remaining: 0.24,
   });
 }

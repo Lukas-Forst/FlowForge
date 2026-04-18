@@ -4,6 +4,8 @@ import type { ProjectileKind, ProjectileState, VisualEffect, VisualEffectKind } 
 const EFFECT_DURATION: Record<VisualEffectKind, number> = {
   waterSplash: 0.32,
   hitBurst: 0.26,
+  muzzleFlash: 0.1,
+  waterRippleSmall: 0.28,
 };
 
 function projectileCore(kind: ProjectileKind): {
@@ -81,8 +83,8 @@ function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): R
   const trail =
     p.kind === "playerAuto" || p.kind === "playerCannon" || p.kind === "enemyBrute" || p.kind === "enemyBomber";
 
-  const trailLen = p.kind === "enemyBomber" ? 0.42 : p.kind === "enemyBrute" ? 0.55 : p.kind === "playerCannon" ? 0.5 : 0.38;
-  const trailRad = p.kind === "enemyBomber" ? 0.06 : 0.09;
+  const trailLen = p.kind === "enemyBomber" ? 0.48 : p.kind === "enemyBrute" ? 0.62 : p.kind === "playerCannon" ? 0.56 : 0.42;
+  const trailRad = p.kind === "enemyBomber" ? 0.05 : p.kind === "enemyBrute" ? 0.11 : p.kind === "playerCannon" ? 0.1 : 0.08;
 
   return (
     <group position={[p.position.x, 0.56, p.position.y]} rotation={[0, yaw, 0]}>
@@ -97,17 +99,28 @@ function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): R
         />
       </mesh>
       {trail ? (
-        <mesh position={[0, 0, -trailLen * 0.5]} rotation={[Math.PI / 2, 0, 0]}>
-          <coneGeometry args={[trailRad, trailLen, 6]} />
-          <meshStandardMaterial
-            color={p.kind.startsWith("enemy") ? "#6a6f78" : "#ffd699"}
-            emissive={p.kind.startsWith("enemy") ? "#22262c" : "#ff8c22"}
-            emissiveIntensity={p.kind.startsWith("enemy") ? 0.25 : 0.55}
-            transparent
-            opacity={0.85}
-            depthWrite={false}
-          />
-        </mesh>
+        <>
+          <mesh position={[0, 0, -trailLen * 0.48]} rotation={[Math.PI / 2, 0, 0]}>
+            <coneGeometry args={[trailRad, trailLen, 6]} />
+            <meshStandardMaterial
+              color={p.kind.startsWith("enemy") ? "#6a6f78" : "#ffd699"}
+              emissive={p.kind.startsWith("enemy") ? "#22262c" : "#ff8c22"}
+              emissiveIntensity={p.kind.startsWith("enemy") ? 0.25 : 0.65}
+              transparent
+              opacity={0.88}
+              depthWrite={false}
+            />
+          </mesh>
+          <mesh position={[0, 0, -trailLen * 0.52]} rotation={[Math.PI / 2, 0, 0]} scale={[1.25, 1.1, 1.25]}>
+            <coneGeometry args={[trailRad, trailLen, 6]} />
+            <meshBasicMaterial
+              color={p.kind.startsWith("enemy") ? "#9aa0aa" : "#ffe9be"}
+              transparent
+              opacity={p.kind.startsWith("enemy") ? 0.2 : 0.3}
+              depthWrite={false}
+            />
+          </mesh>
+        </>
       ) : null}
       {p.kind === "playerAuto" || p.kind === "playerCannon" ? (
         <mesh scale={[1.18, 1.18, 1.18]}>
@@ -134,6 +147,38 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
         <mesh position={[0, 0.04, 0]}>
           <sphereGeometry args={[0.12 + t * 0.2, 8, 8]} />
           <meshBasicMaterial color="#dff6ff" transparent opacity={0.4 * (1 - t)} depthWrite={false} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (effect.kind === "waterRippleSmall") {
+    const ring = 0.26 + t * 1.45;
+    return (
+      <group position={[effect.position.x, 0.05, effect.position.y]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[ring * 0.36, ring * 0.52, 18]} />
+          <meshBasicMaterial color="#dff8ff" transparent opacity={0.34 * (1 - t)} depthWrite={false} />
+        </mesh>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[ring * 0.58, ring * 0.76, 18]} />
+          <meshBasicMaterial color="#f8fdff" transparent opacity={0.18 * (1 - t)} depthWrite={false} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (effect.kind === "muzzleFlash") {
+    const flashScale = 0.34 + t * 0.46;
+    return (
+      <group position={[effect.position.x, 0.62, effect.position.y]}>
+        <mesh scale={[flashScale, flashScale, flashScale]}>
+          <sphereGeometry args={[0.28, 8, 8]} />
+          <meshBasicMaterial color="#ffe7b8" transparent opacity={0.75 * (1 - t)} depthWrite={false} />
+        </mesh>
+        <mesh rotation={[0.2, t * 5, 0]} scale={[flashScale * 1.2, flashScale * 0.8, flashScale * 1.2]}>
+          <octahedronGeometry args={[0.22, 0]} />
+          <meshBasicMaterial color="#ff9c3a" transparent opacity={0.62 * (1 - t)} depthWrite={false} />
         </mesh>
       </group>
     );

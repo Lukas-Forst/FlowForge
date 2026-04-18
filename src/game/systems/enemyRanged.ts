@@ -5,7 +5,7 @@ import {
   ENEMY_RANGED_SPEED,
 } from "../constants";
 import { distance, normalize } from "../utils";
-import type { EnemyState, PlayerState, ProjectileKind, ProjectileState } from "../types";
+import type { EnemyState, PlayerState, ProjectileKind, ProjectileState, VisualEffect } from "../types";
 
 function projectileKindForEnemy(type: EnemyState["type"]): ProjectileKind {
   if (type === "corsair") {
@@ -22,6 +22,8 @@ export function runEnemyRangedAttacks(
   player: PlayerState,
   projectileIdRef: { value: number },
   projectiles: ProjectileState[],
+  visualEffects: VisualEffect[],
+  effectIdRef: { value: number },
   delta: number,
 ): void {
   for (const enemy of enemies) {
@@ -52,6 +54,24 @@ export function runEnemyRangedAttacks(
       ttl: 3.4,
       damage: ENEMY_RANGED_DAMAGE[enemy.type],
       radius: ENEMY_RANGED_RADIUS[enemy.type],
+    });
+    visualEffects.push({
+      id: effectIdRef.value++,
+      kind: "muzzleFlash",
+      position: {
+        x: enemy.position.x + toward.x * spawnLead * 0.95,
+        y: enemy.position.y + toward.y * spawnLead * 0.95,
+      },
+      remaining: 0.08,
+    });
+    visualEffects.push({
+      id: effectIdRef.value++,
+      kind: "waterRippleSmall",
+      position: {
+        x: enemy.position.x + toward.x * 0.5,
+        y: enemy.position.y + toward.y * 0.5,
+      },
+      remaining: 0.2,
     });
 
     enemy.rangedCooldown = ENEMY_RANGED_COOLDOWN[enemy.type];

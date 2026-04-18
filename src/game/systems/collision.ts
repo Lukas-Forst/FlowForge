@@ -5,13 +5,19 @@ import {
   WORLD_HALF_HEIGHT,
   WORLD_HALF_WIDTH,
 } from "../constants";
-import { clampToBounds, distance, normalize } from "../utils";
+import { angleFromDirection, clampToBounds, distance, normalize } from "../utils";
 import { isEnemyProjectileKind, type CoinState, type EnemyState, type PlayerState, type ProjectileState, type VisualEffect } from "../types";
 
 interface CollisionResult {
   killsGained: number;
   playerDamageTaken: number;
   spawnedCoins: CoinState[];
+}
+
+const ENEMY_FACING_SMOOTHING = 8;
+
+function angleDelta(target: number, current: number): number {
+  return Math.atan2(Math.sin(target - current), Math.cos(target - current));
 }
 
 function pushEffect(
@@ -49,6 +55,9 @@ export function updateProjectileMotion(
 
     if (projectile.ttl <= 0 || outOfBounds) {
       pushEffect(visualEffects, effectIdRef, "waterSplash", projectile.position, 0.32);
+      if (projectile.kind === "playerCannon" || projectile.kind === "enemyBrute") {
+        pushEffect(visualEffects, effectIdRef, "waterRippleSmall", projectile.position, 0.38);
+      }
       projectiles.splice(i, 1);
     }
   }
@@ -60,6 +69,10 @@ export function updateEnemyMovement(enemies: EnemyState[], player: PlayerState, 
       x: player.position.x - enemy.position.x,
       y: player.position.y - enemy.position.y,
     });
+    if (direction.x !== 0 || direction.y !== 0) {
+      const targetFacing = angleFromDirection(direction);
+      enemy.facing += angleDelta(targetFacing, enemy.facing) * Math.min(1, delta * ENEMY_FACING_SMOOTHING);
+    }
     enemy.position.x += direction.x * enemy.speed * delta;
     enemy.position.y += direction.y * enemy.speed * delta;
     enemy.position = clampToBounds(enemy.position, WORLD_HALF_WIDTH, WORLD_HALF_HEIGHT);

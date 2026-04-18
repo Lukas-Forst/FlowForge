@@ -11,7 +11,7 @@ import {
   WORLD_HALF_HEIGHT,
   WORLD_HALF_WIDTH,
 } from "../constants";
-import { distance } from "../utils";
+import { angleFromDirection, distance } from "../utils";
 import type { EnemyState, EnemyType } from "../types";
 
 function pickEnemyType(): EnemyType {
@@ -77,11 +77,16 @@ function spawnEnemyOutsideCamera(
     const hpScale = 1 + Math.min(0.55, elapsedTime * 0.004);
     const speedScale = Math.min(1.6, elapsedTime * 0.008);
     const touchDamage = BASE_ENEMY_DAMAGE + Math.floor(elapsedTime / 60);
+    const toPlayer = {
+      x: playerPosition.x - x,
+      y: playerPosition.y - y,
+    };
 
     enemies.push({
       id: enemyIdRef.value++,
       type: pickEnemyType(),
       position: { x, y },
+      facing: angleFromDirection(toPlayer),
       hp: BASE_ENEMY_HP * hpScale,
       speed: BASE_ENEMY_SPEED + speedScale,
       touchDamage,
@@ -96,10 +101,15 @@ function spawnEnemyOutsideCamera(
     const x = -WORLD_HALF_WIDTH + Math.random() * (WORLD_HALF_WIDTH * 2);
     const y = -WORLD_HALF_HEIGHT + Math.random() * (WORLD_HALF_HEIGHT * 2);
     if (distance({ x, y }, playerPosition) < minDistFromPlayer) continue;
+    const toPlayer = {
+      x: playerPosition.x - x,
+      y: playerPosition.y - y,
+    };
     enemies.push({
       id: enemyIdRef.value++,
       type: pickEnemyType(),
       position: { x, y },
+      facing: angleFromDirection(toPlayer),
       hp: BASE_ENEMY_HP,
       speed: BASE_ENEMY_SPEED,
       touchDamage: BASE_ENEMY_DAMAGE,

@@ -117,18 +117,48 @@ function FlowOverlays(): ReactElement {
 function EdgeFoamStrips(): ReactElement {
   const halfW = WORLD_HALF_WIDTH * 0.97;
   const halfH = WORLD_HALF_HEIGHT * 0.97;
+  const foamMeshRefs = useRef<Array<THREE.Mesh | null>>([]);
+  const foamMatRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const strips: Array<{ position: [number, number, number]; scale: [number, number, number]; rotation: [number, number, number] }> = [
     { position: [0, 0.052, halfH], scale: [halfW * 2.1, 10, 1], rotation: [-Math.PI / 2, 0, 0] },
     { position: [0, 0.052, -halfH], scale: [halfW * 2.1, 10, 1], rotation: [-Math.PI / 2, 0, 0] },
     { position: [halfW, 0.052, 0], scale: [halfH * 2.1, 10, 1], rotation: [-Math.PI / 2, 0, Math.PI / 2] },
     { position: [-halfW, 0.052, 0], scale: [halfH * 2.1, 10, 1], rotation: [-Math.PI / 2, 0, Math.PI / 2] },
   ];
+  useFrame((state) => {
+    const time = state.clock.elapsedTime;
+    foamMeshRefs.current.forEach((mesh, index) => {
+      if (mesh) {
+        mesh.position.y = 0.052 + Math.sin(time * 0.72 + index * 0.8) * 0.0016;
+      }
+      const material = foamMatRefs.current[index];
+      if (material) {
+        material.opacity = 0.068 + Math.sin(time * 0.64 + index * 1.1) * 0.016;
+      }
+    });
+  });
   return (
     <group>
       {strips.map((s, i) => (
-        <mesh key={i} position={s.position} rotation={s.rotation} scale={s.scale}>
+        <mesh
+          key={i}
+          ref={(mesh) => {
+            foamMeshRefs.current[i] = mesh;
+          }}
+          position={s.position}
+          rotation={s.rotation}
+          scale={s.scale}
+        >
           <planeGeometry args={[1, 1]} />
-          <meshBasicMaterial color="#f2fcff" transparent opacity={0.07} depthWrite={false} />
+          <meshBasicMaterial
+            ref={(material) => {
+              foamMatRefs.current[i] = material;
+            }}
+            color="#f2fcff"
+            transparent
+            opacity={0.07}
+            depthWrite={false}
+          />
         </mesh>
       ))}
     </group>
@@ -136,6 +166,8 @@ function EdgeFoamStrips(): ReactElement {
 }
 
 function InteriorWavePatches(): ReactElement {
+  const patchMeshRefs = useRef<Array<THREE.Mesh | null>>([]);
+  const patchMatRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
   const patches: Array<{ x: number; z: number; inner: number; outer: number }> = [
     { x: -58, z: -22, inner: 9, outer: 14 },
     { x: 52, z: 36, inner: 10, outer: 15 },
@@ -146,12 +178,114 @@ function InteriorWavePatches(): ReactElement {
     { x: -WORLD_HALF_WIDTH * 0.55, z: -WORLD_HALF_HEIGHT * 0.55, inner: 15, outer: 23 },
     { x: WORLD_HALF_WIDTH * 0.52, z: -WORLD_HALF_HEIGHT * 0.52, inner: 12, outer: 19 },
   ];
+  useFrame((state) => {
+    const time = state.clock.elapsedTime;
+    patchMeshRefs.current.forEach((mesh, index) => {
+      if (mesh) {
+        const scale = 1 + Math.sin(time * 0.56 + index * 0.95) * 0.028;
+        mesh.scale.set(scale, 1, scale);
+      }
+      const material = patchMatRefs.current[index];
+      if (material) {
+        material.opacity = 0.075 + Math.sin(time * 0.6 + index * 1.2) * 0.02;
+      }
+    });
+  });
   return (
     <group>
       {patches.map((p, i) => (
-        <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[p.x, 0.055, p.z]}>
+        <mesh
+          key={i}
+          ref={(mesh) => {
+            patchMeshRefs.current[i] = mesh;
+          }}
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[p.x, 0.055, p.z]}
+        >
           <ringGeometry args={[p.inner, p.outer, 36]} />
-          <meshBasicMaterial color="#dff8ff" transparent opacity={0.075} depthWrite={false} />
+          <meshBasicMaterial
+            ref={(material) => {
+              patchMatRefs.current[i] = material;
+            }}
+            color="#dff8ff"
+            transparent
+            opacity={0.075}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function LargeDepthBands(): ReactElement {
+  const bands: Array<{ x: number; z: number; rot: number; sx: number; sz: number; color: string; opacity: number }> = [
+    { x: -34, z: 12, rot: 0.25, sx: 88, sz: 36, color: "#6ee0f7", opacity: 0.09 },
+    { x: 44, z: -18, rot: -0.32, sx: 96, sz: 34, color: "#2f99cb", opacity: 0.11 },
+    { x: 4, z: 42, rot: 0.1, sx: 72, sz: 26, color: "#7adff4", opacity: 0.08 },
+  ];
+  return (
+    <group>
+      {bands.map((band, index) => (
+        <mesh key={index} rotation={[-Math.PI / 2, 0, band.rot]} position={[band.x, 0.01 + index * 0.0015, band.z]} scale={[band.sx, band.sz, 1]}>
+          <circleGeometry args={[1, 56]} />
+          <meshBasicMaterial color={band.color} transparent opacity={band.opacity} depthWrite={false} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function DriftingFoamClusters(): ReactElement {
+  const clusterRefs = useRef<Array<THREE.Mesh | null>>([]);
+  const clusterMatRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
+  const clusters: Array<{ x: number; z: number; size: number }> = [
+    { x: -18, z: 28, size: 3.6 },
+    { x: 24, z: 18, size: 2.9 },
+    { x: -26, z: -24, size: 3.3 },
+    { x: 14, z: -34, size: 2.5 },
+    { x: 54, z: 8, size: 3.8 },
+    { x: -52, z: 6, size: 3.4 },
+  ];
+  useFrame((state) => {
+    const time = state.clock.elapsedTime;
+    clusterRefs.current.forEach((mesh, index) => {
+      if (!mesh) {
+        return;
+      }
+      const orbit = 1.2 + index * 0.22;
+      mesh.position.x = clusters[index].x + Math.sin(time * (0.08 + index * 0.01)) * orbit;
+      mesh.position.z = clusters[index].z + Math.cos(time * (0.06 + index * 0.012)) * (orbit * 0.8);
+      mesh.rotation.z = Math.sin(time * 0.22 + index) * 0.12;
+      const material = clusterMatRefs.current[index];
+      if (material) {
+        material.opacity = 0.07 + Math.sin(time * 0.5 + index * 0.9) * 0.018;
+      }
+    });
+  });
+
+  return (
+    <group>
+      {clusters.map((cluster, index) => (
+        <mesh
+          key={index}
+          ref={(mesh) => {
+            clusterRefs.current[index] = mesh;
+          }}
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[cluster.x, 0.058, cluster.z]}
+          scale={[cluster.size, cluster.size * 0.82, 1]}
+        >
+          <circleGeometry args={[1, 20]} />
+          <meshBasicMaterial
+            ref={(material) => {
+              clusterMatRefs.current[index] = material;
+            }}
+            color="#f7fdff"
+            transparent
+            opacity={0.074}
+            depthWrite={false}
+          />
         </mesh>
       ))}
     </group>
@@ -162,15 +296,30 @@ export function WaterArena(): ReactElement {
   const gradientMap = useMemo(() => createOceanGradientTexture(), []);
   const flowMap = useMemo(() => createFlowNoiseTexture(), []);
   const flowMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const rimGroupRef = useRef<THREE.Group>(null);
+  const rimMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const islandShoreMatRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
 
   useFrame((_state, delta) => {
+    const time = _state.clock.elapsedTime;
     gradientMap.offset.x += delta * 0.012;
     gradientMap.offset.y += delta * 0.008;
     flowMap.offset.x += delta * 0.018;
     flowMap.offset.y += delta * 0.011;
     if (flowMatRef.current) {
-      flowMatRef.current.opacity = 0.11 + Math.sin(_state.clock.elapsedTime * 0.35) * 0.02;
+      flowMatRef.current.opacity = 0.11 + Math.sin(time * 0.35) * 0.02;
     }
+    if (rimGroupRef.current) {
+      rimGroupRef.current.rotation.z = Math.sin(time * 0.08) * 0.03;
+    }
+    if (rimMatRef.current) {
+      rimMatRef.current.opacity = 0.27 + Math.sin(time * 0.45) * 0.03;
+    }
+    islandShoreMatRefs.current.forEach((material, index) => {
+      if (material) {
+        material.opacity = 0.138 + Math.sin(time * 0.38 + index * 1.15) * 0.02;
+      }
+    });
   });
 
   return (
@@ -193,14 +342,16 @@ export function WaterArena(): ReactElement {
       </mesh>
 
       <FlowOverlays />
+      <LargeDepthBands />
       <InteriorWavePatches />
+      <DriftingFoamClusters />
       <EdgeFoamStrips />
 
       {/* Soft arena rim */}
-      <group position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <group ref={rimGroupRef} position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <mesh scale={[WORLD_HALF_WIDTH * 0.995, WORLD_HALF_HEIGHT * 0.995, 1]}>
           <ringGeometry args={[0.94, 1, 72]} />
-          <meshBasicMaterial color="#5fd4ef" transparent opacity={0.28} depthWrite={false} />
+          <meshBasicMaterial ref={rimMatRef} color="#5fd4ef" transparent opacity={0.28} depthWrite={false} />
         </mesh>
       </group>
 
@@ -227,7 +378,15 @@ export function WaterArena(): ReactElement {
             </mesh>
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.045, 0]}>
               <ringGeometry args={[2.7, 3.4, 28]} />
-              <meshBasicMaterial color="#f5fdff" transparent opacity={0.14} depthWrite={false} />
+              <meshBasicMaterial
+                ref={(material) => {
+                  islandShoreMatRefs.current[index] = material;
+                }}
+                color="#f5fdff"
+                transparent
+                opacity={0.14}
+                depthWrite={false}
+              />
             </mesh>
           </group>
         );

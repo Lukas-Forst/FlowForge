@@ -7,7 +7,7 @@ import {
   CANNON_SIDE_ORIGIN_OFFSET,
 } from "../constants";
 import { angleFromDirection, directionFromAngle, perpRight } from "../utils";
-import type { Cooldowns, PlayerState, ProjectileState } from "../types";
+import type { Cooldowns, PlayerState, ProjectileState, VisualEffect } from "../types";
 
 export function tryFireCannon(
   player: PlayerState,
@@ -15,6 +15,8 @@ export function tryFireCannon(
   projectileIdRef: { value: number },
   cooldownMultiplier: number,
   projectiles: ProjectileState[],
+  visualEffects: VisualEffect[],
+  effectIdRef: { value: number },
 ): boolean {
   if (cooldowns.cannonRemaining > 0) {
     return false;
@@ -60,6 +62,25 @@ export function tryFireCannon(
         ttl: 1.75,
         damage: CANNON_PROJECTILE_DAMAGE,
         radius: 0.48,
+      });
+
+      visualEffects.push({
+        id: effectIdRef.value++,
+        kind: "muzzleFlash",
+        position: {
+          x: player.position.x + originOffset.x * CANNON_SIDE_ORIGIN_OFFSET,
+          y: player.position.y + originOffset.y * CANNON_SIDE_ORIGIN_OFFSET,
+        },
+        remaining: 0.1,
+      });
+      visualEffects.push({
+        id: effectIdRef.value++,
+        kind: "waterRippleSmall",
+        position: {
+          x: player.position.x + originOffset.x * CANNON_SIDE_ORIGIN_OFFSET * 0.92,
+          y: player.position.y + originOffset.y * CANNON_SIDE_ORIGIN_OFFSET * 0.92,
+        },
+        remaining: 0.26,
       });
     }
   };

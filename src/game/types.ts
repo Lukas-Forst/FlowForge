@@ -22,6 +22,7 @@ export interface EnemyState {
   id: number;
   type: EnemyType;
   position: Vec2;
+  facing: number;
   hp: number;
   speed: number;
   touchDamage: number;
@@ -45,7 +46,7 @@ export interface ProjectileState {
   radius: number;
 }
 
-export type VisualEffectKind = "waterSplash" | "hitBurst";
+export type VisualEffectKind = "waterSplash" | "hitBurst" | "muzzleFlash" | "waterRippleSmall";
 
 export interface VisualEffect {
   id: number;

@@ -117,11 +117,11 @@ export function GameScene({ snapshot }: GameSceneProps): ReactElement {
 
       {snapshot.enemies.map((enemy) => (
         <group key={enemy.id}>
-          <EnemyShip type={enemy.type} position={[enemy.position.x, 0, enemy.position.y]} />
+          <EnemyShip type={enemy.type} position={[enemy.position.x, 0, enemy.position.y]} rotation={[0, enemy.facing, 0]} />
           <ShipWake
             x={enemy.position.x}
             z={enemy.position.y}
-            facing={Math.atan2(snapshot.player.position.x - enemy.position.x, snapshot.player.position.y - enemy.position.y)}
+            facing={enemy.facing}
             size={enemy.type === "brute" ? 1.05 : enemy.type === "bomber" ? 0.86 : 0.78}
             intensity={enemy.type === "brute" ? 0.92 : 0.72}
           />

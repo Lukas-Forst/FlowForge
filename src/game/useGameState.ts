@@ -156,6 +156,8 @@ export function useGameState(): UseGameStateApi {
       projectileIdRef.current,
       state.upgrades.cooldownMult,
       state.projectiles,
+      state.visualEffects,
+      effectIdRef.current,
     );
     if (!fired) {
       setMessage({
@@ -231,6 +233,8 @@ export function useGameState(): UseGameStateApi {
       autoAttackTimerRef.current,
       state.upgrades.fireRateMult,
       state.projectiles,
+      state.visualEffects,
+      effectIdRef.current,
       delta,
     );
     state.spawnIntensity = updateEnemySpawning(
@@ -242,7 +246,7 @@ export function useGameState(): UseGameStateApi {
       state.player.position,
     );
     updateEnemyMovement(state.enemies, state.player, delta);
-    runEnemyRangedAttacks(state.enemies, state.player, projectileIdRef.current, state.projectiles, delta);
+    runEnemyRangedAttacks(state.enemies, state.player, projectileIdRef.current, state.projectiles, state.visualEffects, effectIdRef.current, delta);
     updateProjectileMotion(state.projectiles, delta, state.visualEffects, effectIdRef.current);
 
     const collisionResult = resolveCollisions(
