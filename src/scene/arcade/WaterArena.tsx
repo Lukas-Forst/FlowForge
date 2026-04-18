@@ -2,34 +2,14 @@ import { useFrame } from "@react-three/fiber";
 import type { ReactElement } from "react";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import { WORLD_HALF_HEIGHT, WORLD_HALF_WIDTH } from "../../game/constants";
 
-const W = WORLD_HALF_WIDTH * 2 + 48;
-const H = WORLD_HALF_HEIGHT * 2 + 48;
+const TILE_SIZE = 280;
+const TILE_OFFSETS = [-TILE_SIZE, 0, TILE_SIZE] as const;
 
-function createOceanGradientTexture(): THREE.CanvasTexture {
-  const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 512;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    return new THREE.CanvasTexture(canvas);
-  }
-  const g = ctx.createLinearGradient(0, 0, 512, 512);
-  g.addColorStop(0, "#6ed8f5");
-  g.addColorStop(0.35, "#4ec4ea");
-  g.addColorStop(0.65, "#3eb6e0");
-  g.addColorStop(1, "#2a9fd4");
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, 512, 512);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = THREE.ClampToEdgeWrapping;
-  tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
+/** Base water tint; overlays and fog are tuned to this family. */
+const WATER_BASE = "#5cb0cf";
 
-function createFlowNoiseTexture(): THREE.CanvasTexture {
+function createMicroNoiseTexture(): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = 256;
   canvas.height = 256;
@@ -37,394 +17,273 @@ function createFlowNoiseTexture(): THREE.CanvasTexture {
   if (!ctx) {
     return new THREE.CanvasTexture(canvas);
   }
-  ctx.fillStyle = "rgba(255,255,255,0.12)";
-  ctx.fillRect(0, 0, 256, 256);
-  for (let i = 0; i < 18; i += 1) {
-    const x = Math.random() * 256;
-    const y = Math.random() * 256;
-    const r = 40 + Math.random() * 90;
-    const grd = ctx.createRadialGradient(x, y, 0, x, y, r);
-    grd.addColorStop(0, "rgba(255,255,255,0.22)");
-    grd.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = grd;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.1)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < 520; i += 1) {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    const alpha = 0.018 + Math.random() * 0.042;
+    ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
+    ctx.fillRect(x, y, 1, 1);
   }
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(2.2, 2.2);
+  tex.repeat.set(8, 8);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
-const ISLANDS: Array<{ nx: number; nz: number; scale: number; rotationY: number }> = [
-  { nx: -0.9, nz: -0.28, scale: 0.74, rotationY: 0.38 },
-  { nx: -0.88, nz: 0.32, scale: 0.8, rotationY: -0.32 },
-  { nx: 0.22, nz: 0.9, scale: 0.86, rotationY: 0.18 },
-  { nx: -0.18, nz: -0.92, scale: 0.68, rotationY: -0.08 },
-  { nx: 0.26, nz: 0.22, scale: 0.52, rotationY: 0.12 },
-];
-const ROCK_CLUSTERS: Array<{ nx: number; nz: number; rotationY: number }> = [
-  { nx: 0.9, nz: 0.78, rotationY: 0.62 },
-  { nx: -0.78, nz: 0.72, rotationY: -0.45 },
-];
-const SANDBARS: Array<{ nx: number; nz: number; rotationY: number; width: number; depth: number }> = [
-  { nx: 0.86, nz: -0.88, rotationY: 0.32, width: 5.4, depth: 2.5 },
-];
+function createAxisFlowTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    return new THREE.CanvasTexture(canvas);
+  }
+  ctx.fillStyle = "rgba(255,255,255,0.0)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < 16; i += 1) {
+    const y = Math.round((i + 1) * (canvas.height / 18));
+    const alpha = 0.055 + Math.random() * 0.06;
+    const width = 100 + Math.random() * 300;
+    const x = Math.random() * (canvas.width - width);
+    ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
+    ctx.fillRect(x, y, width, 2);
+  }
+  for (let i = 0; i < 9; i += 1) {
+    const x = Math.round((i + 1) * (canvas.width / 10));
+    const alpha = 0.035 + Math.random() * 0.05;
+    const height = 45 + Math.random() * 150;
+    const y = Math.random() * (canvas.height - height);
+    ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
+    ctx.fillRect(x, y, 2, height);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(3.5, 3.5);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
 
-function FlowOverlays(): ReactElement {
-  const planeRefs = useRef<Array<THREE.Mesh | null>>([]);
-  useFrame((state) => {
-    const time = state.clock.elapsedTime;
-    planeRefs.current.forEach((plane, index) => {
-      if (!plane) {
-        return;
-      }
-      const drift = index % 2 === 0 ? 1 : -1;
-      plane.position.x = Math.sin(time * (0.022 + index * 0.006)) * (12 + index * 4) * drift;
-      plane.position.z = Math.cos(time * (0.019 + index * 0.007)) * (9 + index * 3);
-      plane.rotation.z = Math.sin(time * 0.06 + index * 0.4) * 0.1;
-    });
-  });
+/** Soft radial shade (light center → white edge) for multiply blend on water tiles. */
+function createWaterRadialShadeTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    return new THREE.CanvasTexture(canvas);
+  }
+  const cx = 256;
+  const cy = 256;
+  const grd = ctx.createRadialGradient(cx, cy, 24, cx, cy, 380);
+  grd.addColorStop(0, "rgb(198,218,228)");
+  grd.addColorStop(0.42, "rgb(228,238,244)");
+  grd.addColorStop(1, "rgb(255,255,255)");
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, 512, 512);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(0.28, 0.28);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
 
+/** Low-frequency bump for gentle light catch on the water surface. */
+function createCalmBumpTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    return new THREE.CanvasTexture(canvas);
+  }
+  ctx.fillStyle = "rgb(128,128,128)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  for (let n = 0; n < 14; n += 1) {
+    const bx = Math.random() * canvas.width;
+    const by = Math.random() * canvas.height;
+    const r = 40 + Math.random() * 90;
+    const grd = ctx.createRadialGradient(bx, by, 0, bx, by, r);
+    const lift = Math.random() > 0.5;
+    const inner = lift ? "rgb(168,176,182)" : "rgb(96,102,108)";
+    const outer = "rgb(128,128,128)";
+    grd.addColorStop(0, inner);
+    grd.addColorStop(1, outer);
+    ctx.globalAlpha = 0.35 + Math.random() * 0.25;
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(bx, by, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(1.35, 1.35);
+  tex.colorSpace = THREE.NoColorSpace;
+  return tex;
+}
+
+function hash2(i: number, j: number): number {
+  return ((i * 73856093) ^ (j * 19349663) ^ (i * j * 83492791)) >>> 0;
+}
+
+function CalmSeaProp({ variant }: { variant: number }): ReactElement {
+  if (variant === 1) {
+    return (
+      <group>
+        <mesh castShadow position={[0, 0.22, 0]}>
+          <cylinderGeometry args={[0.2, 0.24, 0.44, 8]} />
+          <meshStandardMaterial color="#aec6d4" roughness={0.66} metalness={0.06} />
+        </mesh>
+        <mesh position={[0, 0.5, 0]}>
+          <sphereGeometry args={[0.09, 8, 8]} />
+          <meshBasicMaterial color="#f2efe6" transparent opacity={0.88} />
+        </mesh>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+          <ringGeometry args={[0.38, 0.52, 16]} />
+          <meshBasicMaterial color="#dce8f0" transparent opacity={0.065} depthWrite={false} />
+        </mesh>
+      </group>
+    );
+  }
+  if (variant === 2) {
+    return (
+      <group>
+        <mesh castShadow position={[0, 0.2, 0]}>
+          <dodecahedronGeometry args={[0.26, 0]} />
+          <meshStandardMaterial color="#7a8d98" roughness={0.9} metalness={0.03} />
+        </mesh>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+          <ringGeometry args={[0.32, 0.5, 14]} />
+          <meshBasicMaterial color="#c5d8e6" transparent opacity={0.055} depthWrite={false} />
+        </mesh>
+      </group>
+    );
+  }
   return (
     <group>
-      <mesh
-        ref={(m) => {
-          planeRefs.current[0] = m;
-        }}
-        rotation={[-Math.PI / 2, 0, 0.04]}
-        position={[0, 0.04, 0]}
-      >
-        <planeGeometry args={[W * 1.05, H * 1.05]} />
-        <meshBasicMaterial color="#c2f0ff" transparent opacity={0.055} depthWrite={false} />
+      <mesh castShadow position={[0, 0.35, 0]}>
+        <cylinderGeometry args={[0.14, 0.2, 0.75, 8]} />
+        <meshStandardMaterial color="#b8d4e4" roughness={0.58} metalness={0.08} />
       </mesh>
-      <mesh
-        ref={(m) => {
-          planeRefs.current[1] = m;
-        }}
-        rotation={[-Math.PI / 2, 0, -0.06]}
-        position={[0, 0.045, 0]}
-      >
-        <planeGeometry args={[W * 0.92, H * 0.92]} />
-        <meshBasicMaterial color="#e8fbff" transparent opacity={0.04} depthWrite={false} />
+      <mesh position={[0, 0.82, 0]}>
+        <sphereGeometry args={[0.12, 8, 8]} />
+        <meshBasicMaterial color="#f4f0e4" transparent opacity={0.9} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+        <ringGeometry args={[0.35, 0.55, 16]} />
+        <meshBasicMaterial color="#dceaf2" transparent opacity={0.07} depthWrite={false} />
       </mesh>
     </group>
   );
 }
 
-function EdgeFoamStrips(): ReactElement {
-  const halfW = WORLD_HALF_WIDTH * 0.97;
-  const halfH = WORLD_HALF_HEIGHT * 0.97;
-  const foamMeshRefs = useRef<Array<THREE.Mesh | null>>([]);
-  const foamMatRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
-  const strips: Array<{ position: [number, number, number]; scale: [number, number, number]; rotation: [number, number, number] }> = [
-    { position: [0, 0.052, halfH], scale: [halfW * 2.1, 10, 1], rotation: [-Math.PI / 2, 0, 0] },
-    { position: [0, 0.052, -halfH], scale: [halfW * 2.1, 10, 1], rotation: [-Math.PI / 2, 0, 0] },
-    { position: [halfW, 0.052, 0], scale: [halfH * 2.1, 10, 1], rotation: [-Math.PI / 2, 0, Math.PI / 2] },
-    { position: [-halfW, 0.052, 0], scale: [halfH * 2.1, 10, 1], rotation: [-Math.PI / 2, 0, Math.PI / 2] },
-  ];
-  useFrame((state) => {
-    const time = state.clock.elapsedTime;
-    foamMeshRefs.current.forEach((mesh, index) => {
-      if (mesh) {
-        mesh.position.y = 0.052 + Math.sin(time * 0.72 + index * 0.8) * 0.0016;
+/** Sparse world-anchored props in a grid so the sea feels endless without a visible arena rim. */
+function ScatteredSeaProps({ centerX, centerZ }: { centerX: number; centerZ: number }): ReactElement {
+  const CELL = 190;
+  const viewHalf = 320;
+  const i0 = Math.floor((centerX - viewHalf) / CELL);
+  const i1 = Math.floor((centerX + viewHalf) / CELL);
+  const j0 = Math.floor((centerZ - viewHalf) / CELL);
+  const j1 = Math.floor((centerZ + viewHalf) / CELL);
+
+  const items: ReactElement[] = [];
+  for (let i = i0; i <= i1; i += 1) {
+    for (let j = j0; j <= j1; j += 1) {
+      const h = hash2(i, j);
+      if (h % 4 !== 0) {
+        continue;
       }
-      const material = foamMatRefs.current[index];
-      if (material) {
-        material.opacity = 0.068 + Math.sin(time * 0.64 + index * 1.1) * 0.016;
-      }
-    });
-  });
-  return (
-    <group>
-      {strips.map((s, i) => (
-        <mesh
-          key={i}
-          ref={(mesh) => {
-            foamMeshRefs.current[i] = mesh;
-          }}
-          position={s.position}
-          rotation={s.rotation}
-          scale={s.scale}
-        >
-          <planeGeometry args={[1, 1]} />
-          <meshBasicMaterial
-            ref={(material) => {
-              foamMatRefs.current[i] = material;
-            }}
-            color="#f2fcff"
-            transparent
-            opacity={0.07}
-            depthWrite={false}
-          />
-        </mesh>
-      ))}
-    </group>
-  );
+      const ox = ((h % 127) / 127 - 0.5) * (CELL * 0.38);
+      const oz = (((h >> 8) % 127) / 127 - 0.5) * (CELL * 0.38);
+      const wx = i * CELL + ox;
+      const wz = j * CELL + oz;
+      const scale = 0.85 + ((h >> 16) % 100) / 250;
+      const variant = (h >> 17) % 3;
+      items.push(
+        <group key={`${i}-${j}`} position={[wx, 0.04, wz]} scale={scale}>
+          <CalmSeaProp variant={variant} />
+        </group>,
+      );
+    }
+  }
+  return <group>{items}</group>;
 }
 
-function InteriorWavePatches(): ReactElement {
-  const patchMeshRefs = useRef<Array<THREE.Mesh | null>>([]);
-  const patchMatRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
-  const patches: Array<{ x: number; z: number; inner: number; outer: number }> = [
-    { x: -58, z: -22, inner: 9, outer: 14 },
-    { x: 52, z: 36, inner: 10, outer: 15 },
-    { x: 12, z: -78, inner: 8, outer: 12.5 },
-    { x: -18, z: 88, inner: 9.5, outer: 14 },
-    { x: -WORLD_HALF_WIDTH * 0.55, z: WORLD_HALF_HEIGHT * 0.55, inner: 14, outer: 22 },
-    { x: WORLD_HALF_WIDTH * 0.55, z: WORLD_HALF_HEIGHT * 0.55, inner: 13, outer: 21 },
-    { x: -WORLD_HALF_WIDTH * 0.55, z: -WORLD_HALF_HEIGHT * 0.55, inner: 15, outer: 23 },
-    { x: WORLD_HALF_WIDTH * 0.52, z: -WORLD_HALF_HEIGHT * 0.52, inner: 12, outer: 19 },
-  ];
-  useFrame((state) => {
-    const time = state.clock.elapsedTime;
-    patchMeshRefs.current.forEach((mesh, index) => {
-      if (mesh) {
-        const scale = 1 + Math.sin(time * 0.56 + index * 0.95) * 0.028;
-        mesh.scale.set(scale, 1, scale);
-      }
-      const material = patchMatRefs.current[index];
-      if (material) {
-        material.opacity = 0.075 + Math.sin(time * 0.6 + index * 1.2) * 0.02;
-      }
-    });
-  });
-  return (
-    <group>
-      {patches.map((p, i) => (
-        <mesh
-          key={i}
-          ref={(mesh) => {
-            patchMeshRefs.current[i] = mesh;
-          }}
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[p.x, 0.055, p.z]}
-        >
-          <ringGeometry args={[p.inner, p.outer, 36]} />
-          <meshBasicMaterial
-            ref={(material) => {
-              patchMatRefs.current[i] = material;
-            }}
-            color="#dff8ff"
-            transparent
-            opacity={0.075}
-            depthWrite={false}
-          />
-        </mesh>
-      ))}
-    </group>
-  );
+interface WaterArenaProps {
+  playerX: number;
+  playerZ: number;
 }
 
-function LargeDepthBands(): ReactElement {
-  const bands: Array<{ x: number; z: number; rot: number; sx: number; sz: number; color: string; opacity: number }> = [
-    { x: -34, z: 12, rot: 0.25, sx: 88, sz: 36, color: "#6ee0f7", opacity: 0.09 },
-    { x: 44, z: -18, rot: -0.32, sx: 96, sz: 34, color: "#2f99cb", opacity: 0.11 },
-    { x: 4, z: 42, rot: 0.1, sx: 72, sz: 26, color: "#7adff4", opacity: 0.08 },
-  ];
-  return (
-    <group>
-      {bands.map((band, index) => (
-        <mesh key={index} rotation={[-Math.PI / 2, 0, band.rot]} position={[band.x, 0.01 + index * 0.0015, band.z]} scale={[band.sx, band.sz, 1]}>
-          <circleGeometry args={[1, 56]} />
-          <meshBasicMaterial color={band.color} transparent opacity={band.opacity} depthWrite={false} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
+export function WaterArena({ playerX, playerZ }: WaterArenaProps): ReactElement {
+  const microNoiseMap = useMemo(() => createMicroNoiseTexture(), []);
+  const axisFlowMap = useMemo(() => createAxisFlowTexture(), []);
+  const radialShadeMap = useMemo(() => createWaterRadialShadeTexture(), []);
+  const bumpMap = useMemo(() => createCalmBumpTexture(), []);
+  const playerRef = useRef({ x: 0, z: 0 });
 
-function DriftingFoamClusters(): ReactElement {
-  const clusterRefs = useRef<Array<THREE.Mesh | null>>([]);
-  const clusterMatRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
-  const clusters: Array<{ x: number; z: number; size: number }> = [
-    { x: -18, z: 28, size: 3.6 },
-    { x: 24, z: 18, size: 2.9 },
-    { x: -26, z: -24, size: 3.3 },
-    { x: 14, z: -34, size: 2.5 },
-    { x: 54, z: 8, size: 3.8 },
-    { x: -52, z: 6, size: 3.4 },
-  ];
-  useFrame((state) => {
-    const time = state.clock.elapsedTime;
-    clusterRefs.current.forEach((mesh, index) => {
-      if (!mesh) {
-        return;
-      }
-      const orbit = 1.2 + index * 0.22;
-      mesh.position.x = clusters[index].x + Math.sin(time * (0.08 + index * 0.01)) * orbit;
-      mesh.position.z = clusters[index].z + Math.cos(time * (0.06 + index * 0.012)) * (orbit * 0.8);
-      mesh.rotation.z = Math.sin(time * 0.22 + index) * 0.12;
-      const material = clusterMatRefs.current[index];
-      if (material) {
-        material.opacity = 0.07 + Math.sin(time * 0.5 + index * 0.9) * 0.018;
-      }
-    });
-  });
-
-  return (
-    <group>
-      {clusters.map((cluster, index) => (
-        <mesh
-          key={index}
-          ref={(mesh) => {
-            clusterRefs.current[index] = mesh;
-          }}
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[cluster.x, 0.058, cluster.z]}
-          scale={[cluster.size, cluster.size * 0.82, 1]}
-        >
-          <circleGeometry args={[1, 20]} />
-          <meshBasicMaterial
-            ref={(material) => {
-              clusterMatRefs.current[index] = material;
-            }}
-            color="#f7fdff"
-            transparent
-            opacity={0.074}
-            depthWrite={false}
-          />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-export function WaterArena(): ReactElement {
-  const gradientMap = useMemo(() => createOceanGradientTexture(), []);
-  const flowMap = useMemo(() => createFlowNoiseTexture(), []);
-  const flowMatRef = useRef<THREE.MeshBasicMaterial>(null);
-  const rimGroupRef = useRef<THREE.Group>(null);
-  const rimMatRef = useRef<THREE.MeshBasicMaterial>(null);
-  const islandShoreMatRefs = useRef<Array<THREE.MeshBasicMaterial | null>>([]);
+  playerRef.current = { x: playerX, z: playerZ };
 
   useFrame((_state, delta) => {
     const time = _state.clock.elapsedTime;
-    gradientMap.offset.x += delta * 0.012;
-    gradientMap.offset.y += delta * 0.008;
-    flowMap.offset.x += delta * 0.018;
-    flowMap.offset.y += delta * 0.011;
-    if (flowMatRef.current) {
-      flowMatRef.current.opacity = 0.11 + Math.sin(time * 0.35) * 0.02;
-    }
-    if (rimGroupRef.current) {
-      rimGroupRef.current.rotation.z = Math.sin(time * 0.08) * 0.03;
-    }
-    if (rimMatRef.current) {
-      rimMatRef.current.opacity = 0.27 + Math.sin(time * 0.45) * 0.03;
-    }
-    islandShoreMatRefs.current.forEach((material, index) => {
-      if (material) {
-        material.opacity = 0.138 + Math.sin(time * 0.38 + index * 1.15) * 0.02;
-      }
-    });
+    const { x: px, z: pz } = playerRef.current;
+
+    microNoiseMap.offset.x = px * 0.01 + time * 0.0034;
+    microNoiseMap.offset.y = pz * 0.01 + time * 0.0017;
+    axisFlowMap.offset.x += delta * 0.011;
+    axisFlowMap.offset.y += delta * 0.001;
+    axisFlowMap.offset.x += px * 0.000032 * delta;
+    axisFlowMap.offset.y += pz * 0.000032 * delta;
+
+    bumpMap.offset.x = px * 0.003 + time * 0.0006;
+    bumpMap.offset.y = pz * 0.003 - time * 0.00045;
+
+    radialShadeMap.offset.set(px * 0.0032, pz * 0.0032);
   });
 
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
-        <planeGeometry args={[W, H, 48, 48]} />
-        <meshStandardMaterial map={gradientMap} roughness={0.58} metalness={0.03} color="#7adcf4" />
-      </mesh>
-
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.018, 0]}>
-        <planeGeometry args={[W * 0.99, H * 0.99, 1, 1]} />
-        <meshBasicMaterial
-          ref={flowMatRef}
-          map={flowMap}
-          transparent
-          opacity={0.12}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-        />
-      </mesh>
-
-      <FlowOverlays />
-      <LargeDepthBands />
-      <InteriorWavePatches />
-      <DriftingFoamClusters />
-      <EdgeFoamStrips />
-
-      {/* Soft arena rim */}
-      <group ref={rimGroupRef} position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <mesh scale={[WORLD_HALF_WIDTH * 0.995, WORLD_HALF_HEIGHT * 0.995, 1]}>
-          <ringGeometry args={[0.94, 1, 72]} />
-          <meshBasicMaterial ref={rimMatRef} color="#5fd4ef" transparent opacity={0.28} depthWrite={false} />
-        </mesh>
+      <group position={[playerX, 0, playerZ]}>
+        {TILE_OFFSETS.flatMap((ox) =>
+          TILE_OFFSETS.map((oz) => (
+            <group key={`${ox}-${oz}`}>
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[ox, -0.02, oz]} receiveShadow>
+                <planeGeometry args={[TILE_SIZE, TILE_SIZE, 1, 1]} />
+                <meshPhysicalMaterial
+                  color={WATER_BASE}
+                  roughness={0.52}
+                  metalness={0.02}
+                  bumpMap={bumpMap}
+                  bumpScale={0.042}
+                  clearcoat={0.18}
+                  clearcoatRoughness={0.58}
+                />
+              </mesh>
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[ox, 0.004, oz]}>
+                <planeGeometry args={[TILE_SIZE, TILE_SIZE, 1, 1]} />
+                <meshBasicMaterial
+                  map={radialShadeMap}
+                  transparent
+                  opacity={0.58}
+                  depthWrite={false}
+                  blending={THREE.MultiplyBlending}
+                />
+              </mesh>
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[ox, 0.012, oz]}>
+                <planeGeometry args={[TILE_SIZE, TILE_SIZE, 1, 1]} />
+                <meshBasicMaterial map={microNoiseMap} transparent opacity={0.14} depthWrite={false} />
+              </mesh>
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[ox, 0.018, oz]}>
+                <planeGeometry args={[TILE_SIZE * 0.998, TILE_SIZE * 0.998, 1, 1]} />
+                <meshBasicMaterial map={axisFlowMap} transparent opacity={0.11} depthWrite={false} blending={THREE.AdditiveBlending} />
+              </mesh>
+            </group>
+          ))
+        )}
       </group>
-
-      {ISLANDS.map((island, index) => {
-        const x = island.nx * WORLD_HALF_WIDTH;
-        const z = island.nz * WORLD_HALF_HEIGHT;
-        return (
-          <group key={`island-${index}`} position={[x, 0.2, z]} rotation={[0, island.rotationY, 0]} scale={island.scale}>
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
-              <ringGeometry args={[2.2, 4.2, 28]} />
-              <meshBasicMaterial color="#9ee8f8" transparent opacity={0.16} depthWrite={false} />
-            </mesh>
-            <mesh castShadow receiveShadow position={[0, 0.18, 0]}>
-              <cylinderGeometry args={[2.9, 3.6, 0.55, 7]} />
-              <meshStandardMaterial color="#d4bc86" roughness={0.82} metalness={0.04} />
-            </mesh>
-            <mesh castShadow position={[0.22, 0.52, -0.08]}>
-              <dodecahedronGeometry args={[1.15, 0]} />
-              <meshStandardMaterial color="#7cb56e" roughness={0.85} metalness={0.02} />
-            </mesh>
-            <mesh castShadow position={[-0.85, 0.47, 0.66]} rotation={[0.1, 0.2, 0]}>
-              <dodecahedronGeometry args={[0.55, 0]} />
-              <meshStandardMaterial color="#8f8a7c" roughness={0.88} metalness={0.01} />
-            </mesh>
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.045, 0]}>
-              <ringGeometry args={[2.7, 3.4, 28]} />
-              <meshBasicMaterial
-                ref={(material) => {
-                  islandShoreMatRefs.current[index] = material;
-                }}
-                color="#f5fdff"
-                transparent
-                opacity={0.14}
-                depthWrite={false}
-              />
-            </mesh>
-          </group>
-        );
-      })}
-
-      {ROCK_CLUSTERS.map((cluster, index) => (
-        <group
-          key={`rocks-${index}`}
-          position={[cluster.nx * WORLD_HALF_WIDTH, 0.12, cluster.nz * WORLD_HALF_HEIGHT]}
-          rotation={[0, cluster.rotationY, 0]}
-        >
-          <mesh castShadow position={[0, 0.42, 0]} rotation={[0.15, 0.4, 0.08]}>
-            <dodecahedronGeometry args={[1.05, 0]} />
-            <meshStandardMaterial color="#6b6f76" roughness={0.92} metalness={0.02} />
-          </mesh>
-          <mesh castShadow position={[1.15, 0.28, 0.55]} rotation={[-0.1, -0.35, 0.12]}>
-            <dodecahedronGeometry args={[0.72, 0]} />
-            <meshStandardMaterial color="#5c6068" roughness={0.9} metalness={0.02} />
-          </mesh>
-          <mesh castShadow position={[-0.85, 0.22, 0.35]} rotation={[0.2, 0.55, -0.05]}>
-            <dodecahedronGeometry args={[0.58, 0]} />
-            <meshStandardMaterial color="#767a82" roughness={0.91} metalness={0.02} />
-          </mesh>
-        </group>
-      ))}
-
-      {SANDBARS.map((bar, index) => (
-        <mesh
-          key={`sand-${index}`}
-          castShadow
-          receiveShadow
-          rotation={[0, bar.rotationY, 0]}
-          position={[bar.nx * WORLD_HALF_WIDTH, 0.04, bar.nz * WORLD_HALF_HEIGHT]}
-        >
-          <boxGeometry args={[bar.width, 0.07, bar.depth]} />
-          <meshStandardMaterial color="#e2d2b0" roughness={0.86} metalness={0.02} />
-        </mesh>
-      ))}
+      <ScatteredSeaProps centerX={playerX} centerZ={playerZ} />
     </group>
   );
 }

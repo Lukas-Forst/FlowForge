@@ -1,20 +1,23 @@
 import type { EnemyType, UpgradeOption } from "./types";
 
-// Rectangular arcade arena (world units, x × y play plane → scene x × z).
+// Endless ocean: gameplay uses unbounded world coordinates (x × y play plane → scene x × z).
+// Legacy arena half-sizes kept only for tuning spawn/view heuristics where a nominal “combat radius” helps.
 export const WORLD_HALF_WIDTH = 135;
 export const WORLD_HALF_HEIGHT = 80;
 /** @deprecated Use WORLD_HALF_WIDTH / WORLD_HALF_HEIGHT; kept for quick greps during migration. */
 export const WORLD_HALF_SIZE = WORLD_HALF_WIDTH;
 
-// Camera and spawning heuristics (world units)
-export const CAMERA_VIEW_HALF = 48;
+// Camera and spawning heuristics (world units; relative to player, not map edges)
+export const CAMERA_VIEW_HALF = 62;
+/** @deprecated Endless mode: camera no longer clamps to arena edges. */
 export const CAMERA_EDGE_MARGIN_X = 48;
+/** @deprecated Endless mode: camera no longer clamps to arena edges. */
 export const CAMERA_EDGE_MARGIN_Z = 32;
 export const SPAWN_OUTSIDE_VIEW_MIN_DIST = CAMERA_VIEW_HALF + 25;
 export const MIN_ENEMY_SEPARATION = 2.8;
 
-// Projectile despawn: remove once outside expanded map bounds.
-export const PROJECTILE_DESPAWN_PADDING = 15;
+/** Drop projectiles when farther than this from the player (endless world has no map box). */
+export const PROJECTILE_DESPAWN_DISTANCE_FROM_PLAYER = 140;
 
 export const BASE_PLAYER_HP = 100;
 export const BASE_PLAYER_SPEED = 9;

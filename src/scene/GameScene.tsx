@@ -7,11 +7,9 @@ import { WaterArena } from "./arcade/WaterArena";
 import { EnemyShip } from "./entities/Enemy";
 import { PlayerShip } from "./entities/PlayerShip";
 import type { GameSnapshot } from "../game/types";
-import { CAMERA_EDGE_MARGIN_X, CAMERA_EDGE_MARGIN_Z, WORLD_HALF_HEIGHT, WORLD_HALF_WIDTH } from "../game/constants";
-import { clampToBounds } from "../game/utils";
 
-const CAMERA_HEIGHT = 19;
-const CAMERA_DISTANCE = 26;
+const CAMERA_HEIGHT = 24;
+const CAMERA_DISTANCE = 23;
 
 interface ShipWakeProps {
   x: number;
@@ -23,7 +21,7 @@ interface ShipWakeProps {
 
 function ShipWake({ x, z, facing, size = 1, intensity = 1 }: ShipWakeProps): ReactElement {
   const segments = [0, 1, 2, 3, 4];
-  const clampedIntensity = Math.max(0.55, Math.min(1.6, intensity));
+  const clampedIntensity = Math.max(0.45, Math.min(1.45, intensity));
   const backwardX = -Math.sin(facing);
   const backwardZ = -Math.cos(facing);
   const sideX = Math.cos(facing);
@@ -34,23 +32,27 @@ function ShipWake({ x, z, facing, size = 1, intensity = 1 }: ShipWakeProps): Rea
       {segments.map((segment) => {
         const distance = (0.7 + segment * 0.58) * size;
         const spread = (0.1 + segment * 0.07) * size;
-        const baseOpacity = Math.max(0.03, (0.2 - segment * 0.03) * clampedIntensity);
+        const baseOpacity = Math.max(0.02, (0.16 - segment * 0.024) * clampedIntensity);
         const scaleX = (0.45 + segment * 0.13) * size;
         const scaleZ = (0.32 + segment * 0.1) * size;
         return (
-          <mesh
-            key={segment}
-            rotation={[-Math.PI / 2, 0, 0]}
-            position={[
-              x + backwardX * distance + sideX * spread,
-              0.045,
-              z + backwardZ * distance + sideZ * spread,
-            ]}
-            scale={[scaleX, 1, scaleZ]}
-          >
-            <circleGeometry args={[0.75, 14]} />
-            <meshBasicMaterial color="#f0fbff" transparent opacity={baseOpacity} depthWrite={false} />
-          </mesh>
+          <group key={segment}>
+            {[-1, 1].map((side) => (
+              <mesh
+                key={side}
+                rotation={[-Math.PI / 2, 0, 0]}
+                position={[
+                  x + backwardX * distance + sideX * spread * side,
+                  0.045,
+                  z + backwardZ * distance + sideZ * spread * side,
+                ]}
+                scale={[scaleX, 1, scaleZ]}
+              >
+                <circleGeometry args={[0.72, 14]} />
+                <meshBasicMaterial color="#f0fbff" transparent opacity={baseOpacity} depthWrite={false} />
+              </mesh>
+            ))}
+          </group>
         );
       })}
     </group>
@@ -65,18 +67,7 @@ function CameraFollow({ snapshot }: { snapshot: GameSnapshot }): null {
 
   useFrame((_state, delta) => {
     target.set(snapshot.player.position.x, 0, snapshot.player.position.y);
-
-    const clampedTarget2 = clampToBounds({ x: target.x, y: target.z }, WORLD_HALF_WIDTH, WORLD_HALF_HEIGHT);
-    target.set(clampedTarget2.x, 0, clampedTarget2.y);
-
     desired.set(target.x, CAMERA_HEIGHT, target.z + CAMERA_DISTANCE);
-
-    const camMinX = -WORLD_HALF_WIDTH + CAMERA_EDGE_MARGIN_X;
-    const camMaxX = WORLD_HALF_WIDTH - CAMERA_EDGE_MARGIN_X;
-    const camMinZ = -WORLD_HALF_HEIGHT + CAMERA_EDGE_MARGIN_Z;
-    const camMaxZ = WORLD_HALF_HEIGHT - CAMERA_EDGE_MARGIN_Z;
-    desired.x = Math.max(camMinX, Math.min(camMaxX, desired.x));
-    desired.z = Math.max(camMinZ, Math.min(camMaxZ, desired.z));
 
     lerpAlphaRef.current = 1 - Math.pow(0.001, delta);
     camera.position.lerp(desired, lerpAlphaRef.current);
@@ -92,9 +83,10 @@ interface GameSceneProps {
 
 export function GameScene({ snapshot }: GameSceneProps): ReactElement {
   return (
-    <Canvas shadows dpr={[1, 1.8]} camera={{ position: [0, CAMERA_HEIGHT, CAMERA_DISTANCE], fov: 42 }}>
-      <color attach="background" args={["#b8e9fb"]} />
-      <ambientLight intensity={0.82} color="#dff6ff" />
+    <Canvas shadows dpr={[1, 1.8]} camera={{ position: [0, CAMERA_HEIGHT, CAMERA_DISTANCE], fov: 52 }}>
+      <color attach="background" args={["#d4dfe9"]} />
+      <fogExp2 attach="fog" args={["#b9cedd", 0.0095]} />
+      <ambientLight intensity={0.78} color="#e6eef5" />
       <directionalLight
         castShadow
         intensity={1.65}
@@ -106,7 +98,7 @@ export function GameScene({ snapshot }: GameSceneProps): ReactElement {
       <directionalLight intensity={0.38} color="#c8e9ff" position={[-16, 14, -12]} />
 
       <CameraFollow snapshot={snapshot} />
-      <WaterArena />
+      <WaterArena playerX={snapshot.player.position.x} playerZ={snapshot.player.position.y} />
 
       <PlayerShip
         upgradeLevel={snapshot.upgrades.level}
