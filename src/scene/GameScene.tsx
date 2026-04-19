@@ -12,50 +12,94 @@ import { BIOME_THEMES } from "./biomeThemes";
 
 const ISO_OFFSET = 24;
 
-interface ShipWakeProps {
+const MAX_FOAM = 12;
+
+type FoamParticle = { x: number; z: number; age: number; maxAge: number; size: number };
+
+function ShipWakeFoam({
+  x,
+  z,
+  facing,
+  sizeScale = 1,
+}: {
   x: number;
   z: number;
   facing: number;
-  size?: number;
-  intensity?: number;
-}
+  sizeScale?: number;
+}): ReactElement {
+  const meshRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const particles = useRef<FoamParticle[]>([]);
+  const emitTimer = useRef(0);
+  const xRef = useRef(x);
+  const zRef = useRef(z);
+  const facingRef = useRef(facing);
+  xRef.current = x;
+  zRef.current = z;
+  facingRef.current = facing;
 
-function ShipWake({ x, z, facing, size = 1, intensity = 1 }: ShipWakeProps): ReactElement {
-  const segments = [0, 1, 2, 3, 4];
-  const clampedIntensity = Math.max(0.45, Math.min(1.45, intensity));
-  const backwardX = -Math.sin(facing);
-  const backwardZ = -Math.cos(facing);
-  const sideX = Math.cos(facing);
-  const sideZ = -Math.sin(facing);
+  useFrame((_state, delta) => {
+    emitTimer.current += delta;
+
+    if (emitTimer.current > 0.055) {
+      emitTimer.current = 0;
+      const f = facingRef.current;
+      const bx = -Math.sin(f);
+      const bz = -Math.cos(f);
+      const sx = Math.cos(f);
+      const sz = -Math.sin(f);
+      for (const side of [-1, 1] as const) {
+        if (particles.current.length < MAX_FOAM) {
+          particles.current.push({
+            x: xRef.current + bx * 0.75 * sizeScale + sx * side * 0.45 * sizeScale,
+            z: zRef.current + bz * 0.75 * sizeScale + sz * side * 0.45 * sizeScale,
+            age: 0,
+            maxAge: 0.42 + Math.random() * 0.18,
+            size: (0.22 + Math.random() * 0.16) * sizeScale,
+          });
+        }
+      }
+    }
+
+    for (let i = particles.current.length - 1; i >= 0; i -= 1) {
+      const p = particles.current[i];
+      if (!p) continue;
+      p.age += delta;
+      if (p.age > p.maxAge) {
+        particles.current.splice(i, 1);
+      }
+    }
+
+    for (let i = 0; i < MAX_FOAM; i += 1) {
+      const mesh = meshRefs.current[i];
+      if (!mesh) continue;
+      const p = particles.current[i];
+      if (!p) {
+        mesh.scale.setScalar(0);
+        continue;
+      }
+      const t = p.age / p.maxAge;
+      const s = p.size * (0.5 + t * 1.2);
+      mesh.position.set(p.x, 0.045, p.z);
+      mesh.scale.set(s, s, 1);
+      const mat = mesh.material as THREE.MeshBasicMaterial;
+      mat.opacity = Math.max(0, (1 - t) * 0.20);
+    }
+  });
 
   return (
     <group>
-      {segments.map((segment) => {
-        const distance = (0.7 + segment * 0.58) * size;
-        const spread = (0.1 + segment * 0.07) * size;
-        const baseOpacity = Math.max(0.02, (0.16 - segment * 0.024) * clampedIntensity);
-        const scaleX = (0.45 + segment * 0.13) * size;
-        const scaleZ = (0.32 + segment * 0.1) * size;
-        return (
-          <group key={segment}>
-            {[-1, 1].map((side) => (
-              <mesh
-                key={side}
-                rotation={[-Math.PI / 2, 0, 0]}
-                position={[
-                  x + backwardX * distance + sideX * spread * side,
-                  0.045,
-                  z + backwardZ * distance + sideZ * spread * side,
-                ]}
-                scale={[scaleX, 1, scaleZ]}
-              >
-                <circleGeometry args={[0.72, 14]} />
-                <meshBasicMaterial color="#f0fbff" transparent opacity={baseOpacity} depthWrite={false} />
-              </mesh>
-            ))}
-          </group>
-        );
-      })}
+      {Array.from({ length: MAX_FOAM }, (_, i) => (
+        <mesh
+          key={i}
+          ref={(m) => { meshRefs.current[i] = m; }}
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[0, 0.045, 0]}
+          scale={[0, 0, 1]}
+        >
+          <circleGeometry args={[1, 10]} />
+          <meshBasicMaterial color="#f0fbff" transparent opacity={0} depthWrite={false} />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -189,17 +233,16 @@ export function GameScene({ snapshot }: GameSceneProps): ReactElement {
         position={[snapshot.player.position.x, 0, snapshot.player.position.y]}
         rotation={[0, snapshot.player.facing, 0]}
       />
-      <ShipWake x={snapshot.player.position.x} z={snapshot.player.position.y} facing={snapshot.player.facing} size={1.05} intensity={1.15} />
+      <ShipWakeFoam x={snapshot.player.position.x} z={snapshot.player.position.y} facing={snapshot.player.facing} sizeScale={1.05} />
 
       {snapshot.enemies.map((enemy) => (
         <group key={enemy.id}>
           <EnemyShip type={enemy.type} position={[enemy.position.x, 0, enemy.position.y]} rotation={[0, enemy.facing, 0]} />
-          <ShipWake
+          <ShipWakeFoam
             x={enemy.position.x}
             z={enemy.position.y}
             facing={enemy.facing}
-            size={enemy.type === "brute" ? 1.05 : enemy.type === "bomber" ? 0.86 : 0.78}
-            intensity={enemy.type === "brute" ? 0.92 : 0.72}
+            sizeScale={enemy.type === "brute" ? 1.05 : enemy.type === "bomber" ? 0.86 : 0.78}
           />
         </group>
       ))}
