@@ -208,6 +208,8 @@ export function WaterArena({ playerX, playerZ, theme, biome }: WaterArenaProps):
                   bumpScale={theme.bumpScale}
                   clearcoat={theme.waterClearcoat}
                   clearcoatRoughness={0.58}
+                  emissive={theme.waterEmissive}
+                  emissiveIntensity={theme.waterEmissiveIntensity}
                 />
               </mesh>
               <mesh rotation={[-Math.PI / 2, 0, 0]} position={[ox, 0.012, oz]}>

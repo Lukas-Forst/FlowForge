@@ -16,6 +16,7 @@ describe("BIOME_THEMES", () => {
     for (const biome of ALL_BIOMES) {
       const t = BIOME_THEMES[biome];
       expect(t.waterColor).toMatch(HEX);
+      expect(t.waterEmissive).toMatch(HEX);
       expect(t.shimmerColor).toMatch(HEX);
       expect(t.backgroundColor).toMatch(HEX);
       expect(t.ambient.color).toMatch(HEX);
@@ -35,6 +36,10 @@ describe("BIOME_THEMES", () => {
       expect(t.bumpScale).toBeGreaterThanOrEqual(0);
       expect(t.shimmerOpacity).toBeGreaterThanOrEqual(0);
       expect(t.shimmerOpacity).toBeLessThanOrEqual(1);
+      expect(t.waterEmissiveIntensity).toBeGreaterThanOrEqual(0);
+      expect(t.waterEmissiveIntensity).toBeLessThanOrEqual(1);
+      expect(t.waveHeight).toBeGreaterThan(0);
+      expect(t.waveSpeed).toBeGreaterThan(0);
       expect(t.ambient.intensity).toBeGreaterThanOrEqual(0);
       expect(t.directional.intensity).toBeGreaterThanOrEqual(0);
       expect(t.rim.intensity).toBeGreaterThanOrEqual(0);

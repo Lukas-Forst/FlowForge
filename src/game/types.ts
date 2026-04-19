@@ -171,6 +171,10 @@ export interface BiomeTheme {
   waterRoughness: number;
   waterClearcoat: number;
   bumpScale: number;
+  waterEmissive: string;
+  waterEmissiveIntensity: number;
+  waveHeight: number;
+  waveSpeed: number;
   shimmerColor: string;
   shimmerOpacity: number;
   backgroundColor: string;
