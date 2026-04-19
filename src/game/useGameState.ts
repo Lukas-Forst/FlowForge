@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { pickRunBiome } from "./systems/biome";
 import {
   BASE_AUTO_ATTACK_INTERVAL,
   BASE_CANNON_COOLDOWN,
@@ -68,7 +69,7 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "start"): GameSnap
       phaseTime: 0,
       elapsedTotal: 0,
     },
-    runBiome: "open_sea",
+    runBiome: pickRunBiome(),
   };
 }
 
