@@ -44,6 +44,18 @@ export interface EnemyState {
   rangedCooldown: number;
 }
 
+export type HarvestableType = "scrap_raft" | "abandoned_boat";
+
+export interface HarvestableState {
+  id: number;
+  type: HarvestableType;
+  position: Vec2;
+  hp: number;
+  maxHp: number;
+  radius: number;
+  rotation: number;
+}
+
 export type ProjectileKind = "playerAuto" | "playerCannon" | "enemyCorsair" | "enemyBomber" | "enemyBrute" | "enemySniper" | "enemyBoss" | "enemyBattery";
 
 export function isEnemyProjectileKind(kind: ProjectileKind): boolean {
@@ -134,6 +146,7 @@ export interface GameSnapshot {
   phase: RunPhase;
   player: PlayerState;
   enemies: EnemyState[];
+  harvestables: HarvestableState[];
   projectiles: ProjectileState[];
   visualEffects: VisualEffect[];
   pickups: PickupState[];

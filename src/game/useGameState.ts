@@ -16,6 +16,7 @@ import { processPickups } from "./systems/pickups";
 import { runEnemyRangedAttacks } from "./systems/enemyRanged";
 import { getEnemyCap, spawnEnemiesToCap, updateEnemySpawning } from "./systems/enemySpawner";
 import { runBossAttacks, updateBossEncounter } from "./systems/bossSpawner";
+import { updateHarvestableSpawning } from "./systems/harvestableSpawner";
 import { updatePlayerMovement } from "./systems/playerController";
 import { applyUpgrade, buildUpgradeChoices } from "./systems/upgrades";
 import type { FlashMessage, GameSnapshot, MovementKey, UpgradeType } from "./types";
@@ -31,6 +32,7 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "start"): GameSnap
       baseSpeed: BASE_PLAYER_SPEED,
     },
     enemies: [],
+    harvestables: [],
     projectiles: [],
     visualEffects: [],
     pickups: [],
@@ -78,6 +80,7 @@ function copySnapshot(snapshot: GameSnapshot): GameSnapshot {
     ...snapshot,
     player: { ...snapshot.player, position: { ...snapshot.player.position } },
     enemies: snapshot.enemies.map((enemy) => ({ ...enemy, position: { ...enemy.position } })),
+    harvestables: snapshot.harvestables.map((h) => ({ ...h, position: { ...h.position } })),
     projectiles: snapshot.projectiles.map((projectile) => ({
       ...projectile,
       position: { ...projectile.position },
@@ -115,6 +118,7 @@ export function useGameState(): UseGameStateApi {
   const stateRef = useRef<GameSnapshot>(snapshot);
   const inputRef = useRef({ w: false, a: false, s: false, d: false });
   const enemyIdRef = useRef({ value: 1 });
+  const harvestableIdRef = useRef({ value: 1 });
   const projectileIdRef = useRef({ value: 1 });
   const pickupIdRef = useRef({ value: 1 });
   const effectIdRef = useRef({ value: 1 });
@@ -134,6 +138,7 @@ export function useGameState(): UseGameStateApi {
     stateRef.current = createInitialSnapshot(phase);
     inputRef.current = { w: false, a: false, s: false, d: false };
     enemyIdRef.current.value = 1;
+    harvestableIdRef.current.value = 1;
     projectileIdRef.current.value = 1;
     pickupIdRef.current.value = 1;
     effectIdRef.current.value = 1;
@@ -343,6 +348,7 @@ export function useGameState(): UseGameStateApi {
       rc.phase,
     );
     updateBossEncounter(state.enemies, enemyIdRef.current, rc.phase, rc.phaseTime, state.player.position, rc.elapsedTotal);
+    updateHarvestableSpawning(state.harvestables, harvestableIdRef.current, state.player.position, state.stats.timeSurvived, delta);
     updateEnemyMovement(state.enemies, state.player, delta);
     runEnemyRangedAttacks(state.enemies, state.player, projectileIdRef.current, state.projectiles, state.visualEffects, effectIdRef.current, delta);
     runBossAttacks(state.enemies, state.player, projectileIdRef.current, state.projectiles, state.visualEffects, effectIdRef.current, delta);
@@ -351,6 +357,7 @@ export function useGameState(): UseGameStateApi {
     const collisionResult = resolveCollisions(
       state.player,
       state.enemies,
+      state.harvestables,
       state.projectiles,
       pickupIdRef.current,
       state.visualEffects,

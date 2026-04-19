@@ -1,6 +1,6 @@
 import { ENEMY_TOUCH_COOLDOWN, PLAYER_HIT_RADIUS, PROJECTILE_DESPAWN_DISTANCE_FROM_PLAYER } from "../constants";
 import { angleFromDirection, distance, normalize } from "../utils";
-import { isEnemyProjectileKind, type EnemyState, type PickupState, type PlayerState, type ProjectileState, type VisualEffect } from "../types";
+import { isEnemyProjectileKind, type EnemyState, type PickupState, type PlayerState, type ProjectileState, type VisualEffect, type HarvestableState } from "../types";
 
 export interface CollisionResult {
   killsGained: number;
@@ -8,6 +8,24 @@ export interface CollisionResult {
   spawnedPickups: PickupState[];
   cannonHits: number;
   maxHitDealt: number;
+}
+
+export function spawnHarvestableDrops(
+  h: HarvestableState,
+  spawnedPickups: PickupState[],
+  pickupIdRef: { value: number }
+): void {
+  const count = h.type === "abandoned_boat" ? 10 + Math.floor(Math.random() * 6) : 3 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const offset = Math.random() * h.radius;
+    spawnedPickups.push({
+      id: pickupIdRef.value++,
+      kind: "coin",
+      position: { x: h.position.x + Math.cos(angle) * offset, y: h.position.y + Math.sin(angle) * offset },
+      value: 1,
+    });
+  }
 }
 
 const ENEMY_FACING_SMOOTHING = 8;
@@ -105,6 +123,7 @@ export function updateEnemyMovement(enemies: EnemyState[], player: PlayerState, 
 export function resolveCollisions(
   player: PlayerState,
   enemies: EnemyState[],
+  harvestables: HarvestableState[],
   projectiles: ProjectileState[],
   pickupIdRef: { value: number },
   visualEffects: VisualEffect[],
@@ -179,6 +198,36 @@ export function resolveCollisions(
         break;
       }
     }
+
+    if (!projectileConsumed) {
+      for (let hIdx = harvestables.length - 1; hIdx >= 0; hIdx -= 1) {
+        const h = harvestables[hIdx];
+        if (distance(h.position, projectile.position) <= projectile.radius + h.radius) {
+          h.hp -= projectile.damage;
+          maxHitDealt = Math.max(maxHitDealt, projectile.damage);
+          if (projectile.kind === "playerCannon") cannonHits += 1;
+          projectileConsumed = true;
+          pushEffect(visualEffects, effectIdRef, "hitBurst", h.position, 0.20);
+          
+          visualEffects.push({
+            id: effectIdRef.value++,
+            kind: "damageNumber",
+            position: { ...h.position },
+            remaining: 0.8,
+            text: projectile.damage.toString(),
+            color: "#aaaaaa",
+          });
+
+          if (h.hp <= 0) {
+            spawnHarvestableDrops(h, spawnedPickups, pickupIdRef);
+            harvestables.splice(hIdx, 1);
+            pushEffect(visualEffects, effectIdRef, "waterSplash", h.position, 0.8);
+          }
+          break;
+        }
+      }
+    }
+
     if (projectileConsumed) {
       projectiles.splice(projectileIdx, 1);
     }
@@ -198,6 +247,32 @@ export function resolveCollisions(
         playerDamageTaken += enemy.touchDamage;
         pushEffect(visualEffects, effectIdRef, "screenShake", player.position, 0.3);
         enemy.touchTimer = ENEMY_TOUCH_COOLDOWN;
+      }
+    }
+  }
+
+  for (let hIdx = harvestables.length - 1; hIdx >= 0; hIdx -= 1) {
+    const h = harvestables[hIdx];
+    const touching = distance(h.position, player.position) <= PLAYER_HIT_RADIUS + h.radius;
+    
+    if (touching) {
+      h.hp -= 50; 
+      pushEffect(visualEffects, effectIdRef, "screenShake", player.position, 0.25);
+      pushEffect(visualEffects, effectIdRef, "hitBurst", h.position, 0.4);
+      visualEffects.push({
+        id: effectIdRef.value++,
+        kind: "damageNumber",
+        position: { ...h.position },
+        remaining: 0.8,
+        text: "RAM!",
+        color: "#fffaaa",
+      });
+
+      if (h.hp <= 0) {
+        spawnHarvestableDrops(h, spawnedPickups, pickupIdRef);
+        harvestables.splice(hIdx, 1);
+        pushEffect(visualEffects, effectIdRef, "waterSplash", h.position, 0.8);
+        pushEffect(visualEffects, effectIdRef, "screenShake", player.position, 0.4);
       }
     }
   }

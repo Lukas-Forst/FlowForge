@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { ArenaVisualEffects, CombatProjectiles } from "./arcade/CombatVfx";
 import { WaterArena } from "./arcade/WaterArena";
 import { EnemyShip } from "./entities/Enemy";
+import { HarvestableEntity } from "./entities/HarvestableEntity";
 import { PlayerShip } from "./entities/PlayerShip";
 import type { PickupState, GameSnapshot } from "../game/types";
 import { BIOME_THEMES } from "./biomeThemes";
@@ -177,6 +178,7 @@ export function GameScene({ snapshot }: GameSceneProps): ReactElement {
         playerX={snapshot.player.position.x}
         playerZ={snapshot.player.position.y}
         theme={theme}
+        biome={snapshot.runBiome}
       />
 
       <PlayerShip
@@ -204,6 +206,9 @@ export function GameScene({ snapshot }: GameSceneProps): ReactElement {
 
       {snapshot.pickups.map((pickup) => (
         <PickupProp key={pickup.id} pickup={pickup} />
+      ))}
+      {snapshot.harvestables.map((h) => (
+        <HarvestableEntity key={`harv-${h.id}`} state={h} />
       ))}
     </Canvas>
   );
