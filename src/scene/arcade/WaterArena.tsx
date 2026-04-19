@@ -2,93 +2,12 @@ import { useFrame } from "@react-three/fiber";
 import type { ReactElement } from "react";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
+import type { BiomeTheme } from "../../game/types";
 
 const TILE_SIZE = 280;
 const TILE_OFFSETS = [-TILE_SIZE, 0, TILE_SIZE] as const;
 
-/** Base water tint; overlays and fog are tuned to this family. */
-const WATER_BASE = "#5cb0cf";
 
-function createMicroNoiseTexture(): THREE.CanvasTexture {
-  const canvas = document.createElement("canvas");
-  canvas.width = 256;
-  canvas.height = 256;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    return new THREE.CanvasTexture(canvas);
-  }
-  ctx.fillStyle = "rgba(255,255,255,0.1)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  for (let i = 0; i < 520; i += 1) {
-    const x = Math.random() * canvas.width;
-    const y = Math.random() * canvas.height;
-    const alpha = 0.018 + Math.random() * 0.042;
-    ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
-    ctx.fillRect(x, y, 1, 1);
-  }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(8, 8);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
-function createAxisFlowTexture(): THREE.CanvasTexture {
-  const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 256;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    return new THREE.CanvasTexture(canvas);
-  }
-  ctx.fillStyle = "rgba(255,255,255,0.0)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  for (let i = 0; i < 16; i += 1) {
-    const y = Math.round((i + 1) * (canvas.height / 18));
-    const alpha = 0.055 + Math.random() * 0.06;
-    const width = 100 + Math.random() * 300;
-    const x = Math.random() * (canvas.width - width);
-    ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
-    ctx.fillRect(x, y, width, 2);
-  }
-  for (let i = 0; i < 9; i += 1) {
-    const x = Math.round((i + 1) * (canvas.width / 10));
-    const alpha = 0.035 + Math.random() * 0.05;
-    const height = 45 + Math.random() * 150;
-    const y = Math.random() * (canvas.height - height);
-    ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
-    ctx.fillRect(x, y, 2, height);
-  }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(3.5, 3.5);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
-/** Soft radial shade (light center → white edge) for multiply blend on water tiles. */
-function createWaterRadialShadeTexture(): THREE.CanvasTexture {
-  const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 512;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    return new THREE.CanvasTexture(canvas);
-  }
-  const cx = 256;
-  const cy = 256;
-  const grd = ctx.createRadialGradient(cx, cy, 24, cx, cy, 380);
-  grd.addColorStop(0, "rgb(198,218,228)");
-  grd.addColorStop(0.42, "rgb(228,238,244)");
-  grd.addColorStop(1, "rgb(255,255,255)");
-  ctx.fillStyle = grd;
-  ctx.fillRect(0, 0, 512, 512);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(0.28, 0.28);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
 
 /** Low-frequency bump for gentle light catch on the water surface. */
 function createCalmBumpTexture(): THREE.CanvasTexture {
@@ -122,6 +41,32 @@ function createCalmBumpTexture(): THREE.CanvasTexture {
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(1.35, 1.35);
   tex.colorSpace = THREE.NoColorSpace;
+  return tex;
+}
+
+/** Tinted noise overlay scrolled by player movement; replaces the multi-layer white wash. */
+function createShimmerNoiseTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    return new THREE.CanvasTexture(canvas);
+  }
+  ctx.fillStyle = "rgba(255,255,255,0)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < 720; i += 1) {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    const alpha = 0.10 + Math.random() * 0.25;
+    // White grayscale; the material's `color` tints it to the biome shimmer hue.
+    ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
+    ctx.fillRect(x, y, 1, 1);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(6, 6);
+  tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
@@ -244,13 +189,12 @@ function ScatteredSeaProps({ centerX, centerZ }: { centerX: number; centerZ: num
 interface WaterArenaProps {
   playerX: number;
   playerZ: number;
+  theme: BiomeTheme;
 }
 
-export function WaterArena({ playerX, playerZ }: WaterArenaProps): ReactElement {
-  const microNoiseMap = useMemo(() => createMicroNoiseTexture(), []);
-  const axisFlowMap = useMemo(() => createAxisFlowTexture(), []);
-  const radialShadeMap = useMemo(() => createWaterRadialShadeTexture(), []);
+export function WaterArena({ playerX, playerZ, theme }: WaterArenaProps): ReactElement {
   const bumpMap = useMemo(() => createCalmBumpTexture(), []);
+  const shimmerMap = useMemo(() => createShimmerNoiseTexture(), []);
   const playerRef = useRef({ x: 0, z: 0 });
 
   playerRef.current = { x: playerX, z: playerZ };
@@ -259,17 +203,12 @@ export function WaterArena({ playerX, playerZ }: WaterArenaProps): ReactElement 
     const time = _state.clock.elapsedTime;
     const { x: px, z: pz } = playerRef.current;
 
-    microNoiseMap.offset.x = px * 0.01 + time * 0.0034;
-    microNoiseMap.offset.y = pz * 0.01 + time * 0.0017;
-    axisFlowMap.offset.x += delta * 0.011;
-    axisFlowMap.offset.y += delta * 0.001;
-    axisFlowMap.offset.x += px * 0.000032 * delta;
-    axisFlowMap.offset.y += pz * 0.000032 * delta;
-
     bumpMap.offset.x = px * 0.003 + time * 0.0006;
     bumpMap.offset.y = pz * 0.003 - time * 0.00045;
 
-    radialShadeMap.offset.set(px * 0.0032, pz * 0.0032);
+    shimmerMap.offset.x = px * 0.012 + time * 0.0042;
+    shimmerMap.offset.y = pz * 0.012 + time * 0.0021;
+    void delta;
   });
 
   return (
@@ -281,32 +220,24 @@ export function WaterArena({ playerX, playerZ }: WaterArenaProps): ReactElement 
               <mesh rotation={[-Math.PI / 2, 0, 0]} position={[ox, -0.02, oz]} receiveShadow>
                 <planeGeometry args={[TILE_SIZE, TILE_SIZE, 1, 1]} />
                 <meshPhysicalMaterial
-                  color={WATER_BASE}
-                  roughness={0.52}
+                  color={theme.waterColor}
+                  roughness={theme.waterRoughness}
                   metalness={0.02}
                   bumpMap={bumpMap}
-                  bumpScale={0.042}
-                  clearcoat={0.18}
+                  bumpScale={theme.bumpScale}
+                  clearcoat={theme.waterClearcoat}
                   clearcoatRoughness={0.58}
-                />
-              </mesh>
-              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[ox, 0.004, oz]}>
-                <planeGeometry args={[TILE_SIZE, TILE_SIZE, 1, 1]} />
-                <meshBasicMaterial
-                  map={radialShadeMap}
-                  transparent
-                  opacity={0.58}
-                  depthWrite={false}
-                  blending={THREE.MultiplyBlending}
                 />
               </mesh>
               <mesh rotation={[-Math.PI / 2, 0, 0]} position={[ox, 0.012, oz]}>
                 <planeGeometry args={[TILE_SIZE, TILE_SIZE, 1, 1]} />
-                <meshBasicMaterial map={microNoiseMap} transparent opacity={0.14} depthWrite={false} />
-              </mesh>
-              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[ox, 0.018, oz]}>
-                <planeGeometry args={[TILE_SIZE * 0.998, TILE_SIZE * 0.998, 1, 1]} />
-                <meshBasicMaterial map={axisFlowMap} transparent opacity={0.11} depthWrite={false} blending={THREE.AdditiveBlending} />
+                <meshBasicMaterial
+                  map={shimmerMap}
+                  color={theme.shimmerColor}
+                  transparent
+                  opacity={theme.shimmerOpacity}
+                  depthWrite={false}
+                />
               </mesh>
             </group>
           ))

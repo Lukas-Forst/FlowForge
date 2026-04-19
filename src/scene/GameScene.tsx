@@ -7,6 +7,7 @@ import { WaterArena } from "./arcade/WaterArena";
 import { EnemyShip } from "./entities/Enemy";
 import { PlayerShip } from "./entities/PlayerShip";
 import type { PickupState, GameSnapshot } from "../game/types";
+import { BIOME_THEMES } from "./biomeThemes";
 
 const CAMERA_HEIGHT = 24;
 const CAMERA_DISTANCE = 23;
@@ -151,22 +152,32 @@ function PickupProp({ pickup }: { pickup: PickupState }): ReactElement {
 }
 
 export function GameScene({ snapshot }: GameSceneProps): ReactElement {
+  const theme = BIOME_THEMES[snapshot.runBiome];
   return (
     <Canvas shadows dpr={[1, 1.8]} camera={{ position: [0, CAMERA_HEIGHT, CAMERA_DISTANCE], fov: 52 }}>
-      <color attach="background" args={["#6ecae8"]} />
-      <ambientLight intensity={0.82} color="#dff6ff" />
+      <color attach="background" args={[theme.backgroundColor]} />
+      <fog attach="fog" args={[theme.fog.color, theme.fog.near, theme.fog.far]} />
+      <ambientLight intensity={theme.ambient.intensity} color={theme.ambient.color} />
       <directionalLight
         castShadow
-        intensity={1.65}
-        color="#fffefb"
-        position={[18, 26, 14]}
+        intensity={theme.directional.intensity}
+        color={theme.directional.color}
+        position={theme.directional.position}
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
       />
-      <directionalLight intensity={0.38} color="#c8e9ff" position={[-16, 14, -12]} />
+      <directionalLight
+        intensity={theme.rim.intensity}
+        color={theme.rim.color}
+        position={[-16, 14, -12]}
+      />
 
       <CameraFollow snapshot={snapshot} />
-      <WaterArena playerX={snapshot.player.position.x} playerZ={snapshot.player.position.y} />
+      <WaterArena
+        playerX={snapshot.player.position.x}
+        playerZ={snapshot.player.position.y}
+        theme={theme}
+      />
 
       <PlayerShip
         upgradeLevel={snapshot.upgrades.level}

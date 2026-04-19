@@ -1,0 +1,43 @@
+import type { BiomeTheme, BiomeType } from "../game/types";
+
+export const BIOME_THEMES: Record<BiomeType, BiomeTheme> = {
+  open_sea: {
+    waterColor: "#1f5f7a",
+    waterRoughness: 0.55,
+    waterClearcoat: 0.10,
+    bumpScale: 0.04,
+    shimmerColor: "#2d7a92",
+    shimmerOpacity: 0.06,
+    backgroundColor: "#6fa8c8",
+    ambient: { color: "#a8c8d8", intensity: 0.45 },
+    directional: { color: "#fff4d8", intensity: 1.0, position: [18, 26, 14] },
+    rim: { color: "#b8d8e8", intensity: 0.25 },
+    fog: { color: "#7aa8c0", near: 80, far: 280 },
+  },
+  island_chain: {
+    waterColor: "#2aa3b8",
+    waterRoughness: 0.42,
+    waterClearcoat: 0.18,
+    bumpScale: 0.025,
+    shimmerColor: "#7fd0db",
+    shimmerOpacity: 0.05,
+    backgroundColor: "#9fd8e8",
+    ambient: { color: "#d8e8d4", intensity: 0.55 },
+    directional: { color: "#fff0c4", intensity: 1.15, position: [18, 26, 14] },
+    rim: { color: "#c8e0b8", intensity: 0.35 },
+    fog: { color: "#a8d8e0", near: 90, far: 300 },
+  },
+  deep_waters: {
+    waterColor: "#0e2c44",
+    waterRoughness: 0.65,
+    waterClearcoat: 0.22,
+    bumpScale: 0.06,
+    shimmerColor: "#3a6a90",
+    shimmerOpacity: 0.07,
+    backgroundColor: "#3a4a5e",
+    ambient: { color: "#6080a0", intensity: 0.35 },
+    directional: { color: "#c8d8e8", intensity: 0.85, position: [12, 22, 18] },
+    rim: { color: "#a0b8d0", intensity: 0.40 },
+    fog: { color: "#1a3048", near: 60, far: 240 },
+  },
+};
