@@ -35,9 +35,9 @@ export const BIOME_THEMES: Record<BiomeType, BiomeTheme> = {
     shimmerColor: "#3a6a90",
     shimmerOpacity: 0.07,
     backgroundColor: "#3a4a5e",
-    ambient: { color: "#6080a0", intensity: 0.35 },
-    directional: { color: "#c8d8e8", intensity: 0.85, position: [12, 22, 18] },
-    rim: { color: "#a0b8d0", intensity: 0.40 },
-    fog: { color: "#1a3048", near: 60, far: 240 },
+    ambient: { color: "#6080a0", intensity: 0.85 },
+    directional: { color: "#c8d8e8", intensity: 1.4, position: [12, 22, 18] },
+    rim: { color: "#a0b8d0", intensity: 0.80 },
+    fog: { color: "#1a3048", near: 100, far: 300 },
   },
 };

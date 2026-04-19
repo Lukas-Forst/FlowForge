@@ -41,12 +41,12 @@ function getEnemyCap(elapsedTimeSec: number, phase: "wave" | "elite" | "lull" | 
   if (phase === "boss") return 0;
   if (phase === "lull") return 2;
 
-  if (elapsedTimeSec < 30) return 3;
-  if (elapsedTimeSec < 60) return 4;
-  if (elapsedTimeSec < 90) return 5;
+  if (elapsedTimeSec < 30) return 6;
+  if (elapsedTimeSec < 60) return 8;
+  if (elapsedTimeSec < 90) return 10;
   const after = elapsedTimeSec - 90;
   const ramp = Math.floor(after / 15);
-  return Math.min(12, 6 + ramp);
+  return Math.min(16, 10 + ramp);
 }
 
 function spawnEnemyOutsideCamera(
