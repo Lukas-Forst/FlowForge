@@ -2,7 +2,10 @@ import { useFrame } from "@react-three/fiber";
 import type { ReactElement } from "react";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import type { BiomeTheme } from "../../game/types";
+import { NavBuoyProp } from "./props/NavBuoyProp";
+import { BarrelDebrisProp } from "./props/BarrelDebrisProp";
+import { IslandProp } from "./props/IslandProp";
+import type { BiomeTheme, BiomeType } from "../../game/types";
 
 const TILE_SIZE = 280;
 const TILE_OFFSETS = [-TILE_SIZE, 0, TILE_SIZE] as const;
@@ -74,18 +77,18 @@ function hash2(i: number, j: number): number {
   return ((i * 73856093) ^ (j * 19349663) ^ (i * j * 83492791)) >>> 0;
 }
 
-function BobbingSeaProp({
+function BobbingProp({
   wx,
   wz,
   scale,
   seed,
-  variant,
+  child,
 }: {
   wx: number;
   wz: number;
   scale: number;
   seed: number;
-  variant: number;
+  child: ReactElement;
 }): ReactElement {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -94,71 +97,27 @@ function BobbingSeaProp({
     const time = _state.clock.elapsedTime;
     const bob = Math.sin(time * 1.5 + seed * 10 + wx * 0.1) * 0.08 + Math.cos(time * 0.8 + wz * 0.1) * 0.04;
     groupRef.current.position.y = 0.04 + bob;
-    
-    groupRef.current.rotation.z = Math.sin(time * 1.2 + seed * 5) * 0.15;
-    groupRef.current.rotation.x = Math.cos(time * 1.1 + seed * 5) * 0.15;
+    groupRef.current.rotation.z = Math.sin(time * 1.2 + seed * 5) * 0.10;
+    groupRef.current.rotation.x = Math.cos(time * 1.1 + seed * 5) * 0.10;
   });
 
   return (
     <group ref={groupRef} position={[wx, 0.04, wz]} scale={scale}>
-      <CalmSeaProp variant={variant} />
-    </group>
-  );
-}
-
-function CalmSeaProp({ variant }: { variant: number }): ReactElement {
-  if (variant === 1) {
-    return (
-      <group>
-        <mesh castShadow position={[0, 0.22, 0]}>
-          <cylinderGeometry args={[0.2, 0.24, 0.44, 8]} />
-          <meshStandardMaterial color="#aec6d4" roughness={0.66} metalness={0.06} />
-        </mesh>
-        <mesh position={[0, 0.5, 0]}>
-          <sphereGeometry args={[0.09, 8, 8]} />
-          <meshBasicMaterial color="#f2efe6" transparent opacity={0.88} />
-        </mesh>
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
-          <ringGeometry args={[0.38, 0.52, 16]} />
-          <meshBasicMaterial color="#dce8f0" transparent opacity={0.065} depthWrite={false} />
-        </mesh>
-      </group>
-    );
-  }
-  if (variant === 2) {
-    return (
-      <group>
-        <mesh castShadow position={[0, 0.2, 0]}>
-          <dodecahedronGeometry args={[0.26, 0]} />
-          <meshStandardMaterial color="#7a8d98" roughness={0.9} metalness={0.03} />
-        </mesh>
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
-          <ringGeometry args={[0.32, 0.5, 14]} />
-          <meshBasicMaterial color="#c5d8e6" transparent opacity={0.055} depthWrite={false} />
-        </mesh>
-      </group>
-    );
-  }
-  return (
-    <group>
-      <mesh castShadow position={[0, 0.35, 0]}>
-        <cylinderGeometry args={[0.14, 0.2, 0.75, 8]} />
-        <meshStandardMaterial color="#b8d4e4" roughness={0.58} metalness={0.08} />
-      </mesh>
-      <mesh position={[0, 0.82, 0]}>
-        <sphereGeometry args={[0.12, 8, 8]} />
-        <meshBasicMaterial color="#f4f0e4" transparent opacity={0.9} />
-      </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
-        <ringGeometry args={[0.35, 0.55, 16]} />
-        <meshBasicMaterial color="#dceaf2" transparent opacity={0.07} depthWrite={false} />
-      </mesh>
+      {child}
     </group>
   );
 }
 
 /** Sparse world-anchored props in a grid so the sea feels endless without a visible arena rim. */
-function ScatteredSeaProps({ centerX, centerZ }: { centerX: number; centerZ: number }): ReactElement {
+function ScatteredSeaProps({
+  centerX,
+  centerZ,
+  biome,
+}: {
+  centerX: number;
+  centerZ: number;
+  biome: BiomeType;
+}): ReactElement {
   const CELL = 40;
   const viewHalf = 180;
   const i0 = Math.floor((centerX - viewHalf) / CELL);
@@ -172,13 +131,26 @@ function ScatteredSeaProps({ centerX, centerZ }: { centerX: number; centerZ: num
       const h = hash2(i, j);
       const wx = i * CELL + ((h % 100) / 100 - 0.5) * CELL * 0.8;
       const wz = j * CELL + (((h >> 8) % 100) / 100 - 0.5) * CELL * 0.8;
-      
-      // Temporary uniform scatter — Task 7 reintroduces per-biome dispatch.
-      if (h % 6 === 0) {
-        const scale = 0.85 + ((h >> 16) % 100) / 250;
-        const variant = (h >> 17) % 3;
-        items.push(<BobbingSeaProp key={`buoy-${i}-${j}`} wx={wx} wz={wz} scale={scale} seed={h} variant={variant} />);
+
+      if (biome === "open_sea") {
+        if (h % 5 === 0) {
+          const variant = (h >> 17) % 3;
+          const child = h % 2 === 0
+            ? <NavBuoyProp variant={variant} />
+            : <BarrelDebrisProp variant={variant} />;
+          items.push(<BobbingProp key={`os-${i}-${j}`} wx={wx} wz={wz} scale={0.9} seed={h} child={child} />);
+        }
+      } else if (biome === "island_chain") {
+        if (h % 3 === 0) {
+          const size = 1.0 + ((h >> 16) % 100) / 75;
+          items.push(
+            <group key={`isl-${i}-${j}`} position={[wx, 0, wz]}>
+              <IslandProp seed={h} size={size} />
+            </group>
+          );
+        }
       }
+      // deep_waters branch added in Task 9
     }
   }
   return <group>{items}</group>;
@@ -190,9 +162,10 @@ interface WaterArenaProps {
   playerX: number;
   playerZ: number;
   theme: BiomeTheme;
+  biome: BiomeType;
 }
 
-export function WaterArena({ playerX, playerZ, theme }: WaterArenaProps): ReactElement {
+export function WaterArena({ playerX, playerZ, theme, biome }: WaterArenaProps): ReactElement {
   const bumpMap = useMemo(() => createCalmBumpTexture(), []);
   const shimmerMap = useMemo(() => createShimmerNoiseTexture(), []);
   const playerRef = useRef({ x: 0, z: 0 });
@@ -243,7 +216,7 @@ export function WaterArena({ playerX, playerZ, theme }: WaterArenaProps): ReactE
           ))
         )}
       </group>
-      <ScatteredSeaProps centerX={playerX} centerZ={playerZ} />
+      <ScatteredSeaProps centerX={playerX} centerZ={playerZ} biome={biome} />
     </group>
   );
 }
