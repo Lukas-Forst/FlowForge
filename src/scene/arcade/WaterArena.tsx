@@ -147,6 +147,7 @@ export function WaterArena({ playerX, playerZ, theme, biome }: WaterArenaProps):
   const bumpMap = useMemo(() => createCalmBumpTexture(), []);
   const meshRef = useRef<THREE.Mesh>(null);
   const basePositions = useRef<Float32Array | null>(null);
+  const geoUUID = useRef<string>("");
   const normalTimer = useRef(0);
   const playerRef = useRef({ x: playerX, z: playerZ });
   playerRef.current = { x: playerX, z: playerZ };
@@ -155,15 +156,17 @@ export function WaterArena({ playerX, playerZ, theme, biome }: WaterArenaProps):
     const mesh = meshRef.current;
     if (!mesh) return;
 
-    const geo = mesh.geometry as THREE.BufferGeometry;
+    const geo = mesh.geometry;
     const pos = geo.attributes.position as THREE.BufferAttribute;
 
-    // Copy base positions on first frame.
-    if (!basePositions.current) {
-      basePositions.current = new Float32Array(pos.array as unknown as Float32Array);
+    // Copy base positions when the geometry is new or has been recreated.
+    const uuid = geo.uuid;
+    if (!basePositions.current || geoUUID.current !== uuid) {
+      geoUUID.current = uuid;
+      basePositions.current = new Float32Array(pos.array as Float32Array);
     }
 
-    const verts = pos.array as unknown as Float32Array;
+    const verts = pos.array as Float32Array;
     const base = basePositions.current as Float32Array;
     const t = _state.clock.elapsedTime;
     const ws = theme.waveSpeed;
@@ -172,10 +175,10 @@ export function WaterArena({ playerX, playerZ, theme, biome }: WaterArenaProps):
     const pz = playerRef.current.z;
 
     for (let i = 0; i < verts.length; i += 3) {
-      // base[i]   = local X → approx world X
-      // base[i+1] = local Y → approx world Z (plane is rotated -PI/2 around X)
-      const bx = (base[i] ?? 0) + px;
-      const bz = (base[i + 1] ?? 0) + pz;
+      // base[i]   = local X → world X
+      // base[i+1] = local Y → world -Z (plane rotated -PI/2 around X), so negate for world Z
+      const bx = base[i] + px;
+      const bz = -base[i + 1] + pz;
 
       const waveA = Math.sin(bx * 0.11 + t * 1.65 * ws + bz * 0.07) * (0.13 * wh);
       const waveB = Math.cos(bz * 0.09 - t * 1.25 * ws + bx * 0.04) * (0.10 * wh);
@@ -185,7 +188,7 @@ export function WaterArena({ playerX, playerZ, theme, biome }: WaterArenaProps):
         (0.03 * wh);
 
       // local Z = world Y (up/down) after rotation={[-Math.PI/2, 0, 0]}
-      verts[i + 2] = (base[i + 2] ?? 0) + waveA + waveB + chop;
+      verts[i + 2] = base[i + 2] + waveA + waveB + chop;
     }
 
     pos.needsUpdate = true;
