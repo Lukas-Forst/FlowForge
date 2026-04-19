@@ -8,11 +8,6 @@ import { IslandProp } from "./props/IslandProp";
 import { CrystalSpireProp } from "./props/CrystalSpireProp";
 import type { BiomeTheme, BiomeType } from "../../game/types";
 
-const TILE_SIZE = 280;
-const TILE_OFFSETS = [-TILE_SIZE, 0, TILE_SIZE] as const;
-
-
-
 /** Low-frequency bump for gentle light catch on the water surface. */
 function createCalmBumpTexture(): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
@@ -48,31 +43,6 @@ function createCalmBumpTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-/** Tinted noise overlay scrolled by player movement; replaces the multi-layer white wash. */
-function createShimmerNoiseTexture(): THREE.CanvasTexture {
-  const canvas = document.createElement("canvas");
-  canvas.width = 256;
-  canvas.height = 256;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    return new THREE.CanvasTexture(canvas);
-  }
-  ctx.fillStyle = "rgba(255,255,255,0)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  for (let i = 0; i < 720; i += 1) {
-    const x = Math.random() * canvas.width;
-    const y = Math.random() * canvas.height;
-    const alpha = 0.10 + Math.random() * 0.25;
-    // White grayscale; the material's `color` tints it to the biome shimmer hue.
-    ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
-    ctx.fillRect(x, y, 1, 1);
-  }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(6, 6);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
 
 function hash2(i: number, j: number): number {
   return ((i * 73856093) ^ (j * 19349663) ^ (i * j * 83492791)) >>> 0;
@@ -175,57 +145,80 @@ interface WaterArenaProps {
 
 export function WaterArena({ playerX, playerZ, theme, biome }: WaterArenaProps): ReactElement {
   const bumpMap = useMemo(() => createCalmBumpTexture(), []);
-  const shimmerMap = useMemo(() => createShimmerNoiseTexture(), []);
-  const playerRef = useRef({ x: 0, z: 0 });
-
+  const meshRef = useRef<THREE.Mesh>(null);
+  const basePositions = useRef<Float32Array | null>(null);
+  const normalTimer = useRef(0);
+  const playerRef = useRef({ x: playerX, z: playerZ });
   playerRef.current = { x: playerX, z: playerZ };
 
   useFrame((_state, delta) => {
-    const time = _state.clock.elapsedTime;
-    const { x: px, z: pz } = playerRef.current;
+    const mesh = meshRef.current;
+    if (!mesh) return;
 
-    bumpMap.offset.x = px * 0.003 + time * 0.0006;
-    bumpMap.offset.y = pz * 0.003 - time * 0.00045;
+    const geo = mesh.geometry as THREE.BufferGeometry;
+    const pos = geo.attributes.position as THREE.BufferAttribute;
 
-    shimmerMap.offset.x = px * 0.012 + time * 0.0042;
-    shimmerMap.offset.y = pz * 0.012 + time * 0.0021;
-    void delta;
+    // Copy base positions on first frame.
+    if (!basePositions.current) {
+      basePositions.current = new Float32Array(pos.array as unknown as Float32Array);
+    }
+
+    const verts = pos.array as unknown as Float32Array;
+    const base = basePositions.current as Float32Array;
+    const t = _state.clock.elapsedTime;
+    const ws = theme.waveSpeed;
+    const wh = theme.waveHeight;
+    const px = playerRef.current.x;
+    const pz = playerRef.current.z;
+
+    for (let i = 0; i < verts.length; i += 3) {
+      // base[i]   = local X → approx world X
+      // base[i+1] = local Y → approx world Z (plane is rotated -PI/2 around X)
+      const bx = (base[i] ?? 0) + px;
+      const bz = (base[i + 1] ?? 0) + pz;
+
+      const waveA = Math.sin(bx * 0.11 + t * 1.65 * ws + bz * 0.07) * (0.13 * wh);
+      const waveB = Math.cos(bz * 0.09 - t * 1.25 * ws + bx * 0.04) * (0.10 * wh);
+      const chop =
+        Math.sin(bx * 0.32 + t * 2.9 * ws) *
+        Math.cos(bz * 0.28 - t * 2.5 * ws) *
+        (0.03 * wh);
+
+      // local Z = world Y (up/down) after rotation={[-Math.PI/2, 0, 0]}
+      verts[i + 2] = (base[i + 2] ?? 0) + waveA + waveB + chop;
+    }
+
+    pos.needsUpdate = true;
+
+    // Throttle normal recompute to avoid per-frame CPU cost.
+    normalTimer.current += delta;
+    if (normalTimer.current >= 0.12) {
+      normalTimer.current = 0;
+      geo.computeVertexNormals();
+    }
   });
 
   return (
     <group>
-      <group position={[playerX, 0, playerZ]}>
-        {TILE_OFFSETS.flatMap((ox) =>
-          TILE_OFFSETS.map((oz) => (
-            <group key={`${ox}-${oz}`}>
-              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[ox, -0.02, oz]} receiveShadow>
-                <planeGeometry args={[TILE_SIZE, TILE_SIZE, 1, 1]} />
-                <meshPhysicalMaterial
-                  color={theme.waterColor}
-                  roughness={theme.waterRoughness}
-                  metalness={0.02}
-                  bumpMap={bumpMap}
-                  bumpScale={theme.bumpScale}
-                  clearcoat={theme.waterClearcoat}
-                  clearcoatRoughness={0.58}
-                  emissive={theme.waterEmissive}
-                  emissiveIntensity={theme.waterEmissiveIntensity}
-                />
-              </mesh>
-              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[ox, 0.012, oz]}>
-                <planeGeometry args={[TILE_SIZE, TILE_SIZE, 1, 1]} />
-                <meshBasicMaterial
-                  map={shimmerMap}
-                  color={theme.shimmerColor}
-                  transparent
-                  opacity={theme.shimmerOpacity}
-                  depthWrite={false}
-                />
-              </mesh>
-            </group>
-          ))
-        )}
-      </group>
+      <mesh
+        ref={meshRef}
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[playerX, -0.02, playerZ]}
+        receiveShadow
+      >
+        <planeGeometry args={[900, 900, 64, 64]} />
+        <meshPhysicalMaterial
+          color={theme.waterColor}
+          roughness={theme.waterRoughness}
+          metalness={0.02}
+          bumpMap={bumpMap}
+          bumpScale={theme.bumpScale}
+          clearcoat={theme.waterClearcoat}
+          clearcoatRoughness={0.58}
+          emissive={theme.waterEmissive}
+          emissiveIntensity={theme.waterEmissiveIntensity}
+        />
+      </mesh>
       <ScatteredSeaProps centerX={playerX} centerZ={playerZ} biome={biome} />
     </group>
   );
