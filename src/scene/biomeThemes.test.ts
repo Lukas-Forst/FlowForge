@@ -36,8 +36,8 @@ describe("BIOME_THEMES", () => {
       expect(t.bumpScale).toBeGreaterThanOrEqual(0);
       expect(t.shimmerOpacity).toBeGreaterThanOrEqual(0);
       expect(t.shimmerOpacity).toBeLessThanOrEqual(1);
-      expect(t.waterEmissiveIntensity).toBeGreaterThanOrEqual(0);
-      expect(t.waterEmissiveIntensity).toBeLessThanOrEqual(1);
+      expect(t.waterEmissiveIntensity).toBeGreaterThanOrEqual(0.05);
+      expect(t.waterEmissiveIntensity).toBeLessThanOrEqual(0.3);
       expect(t.waveHeight).toBeGreaterThan(0);
       expect(t.waveSpeed).toBeGreaterThan(0);
       expect(t.ambient.intensity).toBeGreaterThanOrEqual(0);

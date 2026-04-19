@@ -173,7 +173,9 @@ export interface BiomeTheme {
   bumpScale: number;
   waterEmissive: string;
   waterEmissiveIntensity: number;
+  /** Vertex displacement amplitude in world units. Reasonable range: 0.5–2.0. Consumed by vertex wave geometry in WaterArena. */
   waveHeight: number;
+  /** Animation speed multiplier — 1.0 is the open-sea baseline. Consumed by vertex wave geometry in WaterArena. */
   waveSpeed: number;
   shimmerColor: string;
   shimmerOpacity: number;
