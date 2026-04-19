@@ -28,7 +28,7 @@ function ShipWakeFoam({
   sizeScale?: number;
 }): ReactElement {
   const meshRefs = useRef<(THREE.Mesh | null)[]>([]);
-  const particles = useRef<FoamParticle[]>([]);
+  const particles = useRef<(FoamParticle | null)[]>(Array.from({ length: MAX_FOAM }, () => null));
   const emitTimer = useRef(0);
   const xRef = useRef(x);
   const zRef = useRef(z);
@@ -41,31 +41,33 @@ function ShipWakeFoam({
     emitTimer.current += delta;
 
     if (emitTimer.current > 0.055) {
-      emitTimer.current = 0;
+      emitTimer.current -= 0.055;
       const f = facingRef.current;
       const bx = -Math.sin(f);
       const bz = -Math.cos(f);
       const sx = Math.cos(f);
       const sz = -Math.sin(f);
       for (const side of [-1, 1] as const) {
-        if (particles.current.length < MAX_FOAM) {
-          particles.current.push({
+        const slot = particles.current.indexOf(null);
+        if (slot !== -1) {
+          particles.current[slot] = {
             x: xRef.current + bx * 0.75 * sizeScale + sx * side * 0.45 * sizeScale,
             z: zRef.current + bz * 0.75 * sizeScale + sz * side * 0.45 * sizeScale,
             age: 0,
             maxAge: 0.42 + Math.random() * 0.18,
             size: (0.22 + Math.random() * 0.16) * sizeScale,
-          });
+          };
         }
       }
     }
 
-    for (let i = particles.current.length - 1; i >= 0; i -= 1) {
+    // Age particles and clear dead slots.
+    for (let i = 0; i < MAX_FOAM; i += 1) {
       const p = particles.current[i];
       if (!p) continue;
       p.age += delta;
       if (p.age > p.maxAge) {
-        particles.current.splice(i, 1);
+        particles.current[i] = null;
       }
     }
 
