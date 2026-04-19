@@ -10,8 +10,7 @@ import { PlayerShip } from "./entities/PlayerShip";
 import type { PickupState, GameSnapshot } from "../game/types";
 import { BIOME_THEMES } from "./biomeThemes";
 
-const CAMERA_HEIGHT = 24;
-const CAMERA_DISTANCE = 23;
+const ISO_OFFSET = 24;
 
 interface ShipWakeProps {
   x: number;
@@ -65,7 +64,6 @@ function CameraFollow({ snapshot }: { snapshot: GameSnapshot }): null {
   const { camera } = useThree();
   const desired = useMemo(() => new THREE.Vector3(), []);
   const target = useMemo(() => new THREE.Vector3(), []);
-  const lerpAlphaRef = useRef(0.12);
 
   useFrame((_state, delta) => {
     let shakeOffset = 0;
@@ -76,10 +74,14 @@ function CameraFollow({ snapshot }: { snapshot: GameSnapshot }): null {
     }
 
     target.set(snapshot.player.position.x, 0, snapshot.player.position.y);
-    desired.set(target.x, CAMERA_HEIGHT, target.z + CAMERA_DISTANCE);
+    desired.set(
+      target.x + ISO_OFFSET,
+      ISO_OFFSET,
+      target.z + ISO_OFFSET,
+    );
 
-    lerpAlphaRef.current = 1 - Math.pow(0.001, delta);
-    camera.position.lerp(desired, lerpAlphaRef.current);
+    const alpha = 1 - Math.pow(0.001, delta);
+    camera.position.lerp(desired, alpha);
 
     if (shakeOffset > 0) {
       camera.position.x += (Math.random() - 0.5) * shakeOffset;
@@ -155,7 +157,7 @@ function PickupProp({ pickup }: { pickup: PickupState }): ReactElement {
 export function GameScene({ snapshot }: GameSceneProps): ReactElement {
   const theme = BIOME_THEMES[snapshot.runBiome];
   return (
-    <Canvas shadows dpr={[1, 1.8]} camera={{ position: [0, CAMERA_HEIGHT, CAMERA_DISTANCE], fov: 52 }}>
+    <Canvas shadows dpr={[1, 1.8]} orthographic camera={{ position: [ISO_OFFSET, ISO_OFFSET, ISO_OFFSET], zoom: 22, near: 0.1, far: 600 }}>
       <color attach="background" args={[theme.backgroundColor]} />
       <fog attach="fog" args={[theme.fog.color, theme.fog.near, theme.fog.far]} />
       <ambientLight intensity={theme.ambient.intensity} color={theme.ambient.color} />
