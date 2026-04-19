@@ -11,22 +11,10 @@ import {
 } from "../constants";
 import { angleFromDirection, distance } from "../utils";
 import type { EnemyState, EnemyType } from "../types";
-import { biomeAt, type BiomeType } from "./biome";
 
-function pickEnemyType(elapsedTimeSec: number, biome: BiomeType): EnemyType {
+function pickEnemyType(elapsedTimeSec: number): EnemyType {
   const roll = Math.random();
 
-  if (biome === "island_chain") {
-     if (roll < 0.25) return "shore_battery";
-     if (roll < 0.5) return "corsair";
-     if (roll < 0.8) return "bomber";
-     return "swarmer";
-  }
-
-  if (biome === "fog_bank") {
-     if (roll < 0.65) return "swarmer";
-     return "sniper";
-  }
   if (elapsedTimeSec < 30) {
     if (roll < 0.6) return "swarmer";
     return "corsair";
@@ -99,10 +87,9 @@ function spawnEnemyOutsideCamera(
       y: playerPosition.y - y,
     };
 
-    const biome = biomeAt(x, y);
     enemies.push({
       id: enemyIdRef.value++,
-      type: pickEnemyType(elapsedTime, biome),
+      type: pickEnemyType(elapsedTime),
       position: { x, y },
       facing: angleFromDirection(toPlayer),
       hp: BASE_ENEMY_HP * hpScale,
@@ -126,10 +113,9 @@ function spawnEnemyOutsideCamera(
       x: playerPosition.x - x,
       y: playerPosition.y - y,
     };
-    const biome = biomeAt(x, y);
     enemies.push({
       id: enemyIdRef.value++,
-      type: pickEnemyType(elapsedTime, biome),
+      type: pickEnemyType(elapsedTime),
       position: { x, y },
       facing: angleFromDirection(toPlayer),
       hp: BASE_ENEMY_HP,

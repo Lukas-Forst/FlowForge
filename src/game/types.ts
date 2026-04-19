@@ -151,7 +151,7 @@ export interface GameSnapshot {
   runBiome: BiomeType;
 }
 
-export type BiomeType = "open_sea" | "island_chain" | "fog_bank" | "deep_waters";
+export type BiomeType = "open_sea" | "island_chain" | "deep_waters";
 
 export interface BiomeTheme {
   waterColor: string;

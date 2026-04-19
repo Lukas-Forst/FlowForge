@@ -2,7 +2,6 @@ import { useFrame } from "@react-three/fiber";
 import type { ReactElement } from "react";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import { biomeAt } from "../../game/systems/biome";
 
 const TILE_SIZE = 280;
 const TILE_OFFSETS = [-TILE_SIZE, 0, TILE_SIZE] as const;
@@ -229,41 +228,18 @@ function ScatteredSeaProps({ centerX, centerZ }: { centerX: number; centerZ: num
       const wx = i * CELL + ((h % 100) / 100 - 0.5) * CELL * 0.8;
       const wz = j * CELL + (((h >> 8) % 100) / 100 - 0.5) * CELL * 0.8;
       
-      const biome = biomeAt(wx, wz);
-      if (biome === "island_chain") {
-        if (h % 3 === 0) { // Render island prop here
-           const scale = 2.5 + ((h >> 16) % 100) / 50;
-           items.push(<BobbingSeaProp key={`isl-${i}-${j}`} wx={wx} wz={wz} scale={scale} seed={h} variant={0} />);
-        }
-      } else if (biome === "open_sea") {
-        if (h % 6 === 0) {
-           const scale = 0.85 + ((h >> 16) % 100) / 250;
-           const variant = (h >> 17) % 3;
-           items.push(<BobbingSeaProp key={`buoy-${i}-${j}`} wx={wx} wz={wz} scale={scale} seed={h} variant={variant} />);
-        }
+      // Temporary uniform scatter — Task 7 reintroduces per-biome dispatch.
+      if (h % 6 === 0) {
+        const scale = 0.85 + ((h >> 16) % 100) / 250;
+        const variant = (h >> 17) % 3;
+        items.push(<BobbingSeaProp key={`buoy-${i}-${j}`} wx={wx} wz={wz} scale={scale} seed={h} variant={variant} />);
       }
     }
   }
   return <group>{items}</group>;
 }
 
-function FogLayer({ playerX, playerZ }: { playerX: number; playerZ: number }) {
-  const matRef = useRef<THREE.MeshBasicMaterial>(null);
-  
-  useFrame((_, delta) => {
-    if (!matRef.current) return;
-    const isFog = biomeAt(playerX, playerZ) === "fog_bank";
-    const target = isFog ? 0.35 : 0.0;
-    matRef.current.opacity += (target - matRef.current.opacity) * delta * 0.5;
-  });
 
-  return (
-    <mesh position={[playerX, 8, playerZ]} rotation={[-Math.PI / 2, 0, 0]}>
-      <planeGeometry args={[TILE_SIZE * 2, TILE_SIZE * 2]} />
-      <meshBasicMaterial ref={matRef} color="#112233" transparent opacity={0} depthWrite={false} />
-    </mesh>
-  );
-}
 
 interface WaterArenaProps {
   playerX: number;
@@ -337,7 +313,6 @@ export function WaterArena({ playerX, playerZ }: WaterArenaProps): ReactElement 
         )}
       </group>
       <ScatteredSeaProps centerX={playerX} centerZ={playerZ} />
-      <FogLayer playerX={playerX} playerZ={playerZ} />
     </group>
   );
 }

@@ -15,7 +15,6 @@ describe("pickRunBiome", () => {
       open_sea: 0,
       island_chain: 0,
       deep_waters: 0,
-      fog_bank: 0,
     };
     const N = 30_000;
     for (let i = 0; i < N; i += 1) {
