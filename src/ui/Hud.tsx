@@ -5,6 +5,10 @@ interface HudProps {
   snapshot: GameSnapshot;
 }
 
+function formatBiomeName(biome: string): string {
+  return biome.split("_").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+}
+
 function cooldownPercent(snapshot: GameSnapshot): number {
   if (snapshot.cooldowns.cannonDuration <= 0) {
     return 1;
@@ -28,6 +32,9 @@ export function Hud({ snapshot }: HudProps): ReactElement {
 
   return (
     <div className="hud">
+      <div className="hud-row">
+        <div className="hud-item" style={{ color: "#a8d8e0", fontWeight: "bold" }}>Region: {formatBiomeName(snapshot.runBiome)}</div>
+      </div>
       <div className="hud-row">
         <div className="hud-item">HP: {Math.ceil(snapshot.player.hp)}</div>
         <div className="meter">

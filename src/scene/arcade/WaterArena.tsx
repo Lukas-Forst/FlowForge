@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { NavBuoyProp } from "./props/NavBuoyProp";
 import { BarrelDebrisProp } from "./props/BarrelDebrisProp";
 import { IslandProp } from "./props/IslandProp";
+import { CrystalSpireProp } from "./props/CrystalSpireProp";
 import type { BiomeTheme, BiomeType } from "../../game/types";
 
 const TILE_SIZE = 280;
@@ -149,8 +150,15 @@ function ScatteredSeaProps({
             </group>
           );
         }
+      } else if (biome === "deep_waters") {
+        if (h % 6 === 0) {
+          items.push(
+            <group key={`crys-${i}-${j}`} position={[wx, -0.6, wz]}>
+              <CrystalSpireProp seed={h} />
+            </group>
+          );
+        }
       }
-      // deep_waters branch added in Task 9
     }
   }
   return <group>{items}</group>;
