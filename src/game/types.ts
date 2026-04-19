@@ -148,4 +148,21 @@ export interface GameSnapshot {
     phaseTime: number;
     elapsedTotal: number;
   };
+  runBiome: BiomeType;
+}
+
+export type BiomeType = "open_sea" | "island_chain" | "fog_bank" | "deep_waters";
+
+export interface BiomeTheme {
+  waterColor: string;
+  waterRoughness: number;
+  waterClearcoat: number;
+  bumpScale: number;
+  shimmerColor: string;
+  shimmerOpacity: number;
+  backgroundColor: string;
+  ambient: { color: string; intensity: number };
+  directional: { color: string; intensity: number; position: [number, number, number] };
+  rim: { color: string; intensity: number };
+  fog: { color: string; near: number; far: number };
 }

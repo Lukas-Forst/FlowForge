@@ -68,6 +68,7 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "start"): GameSnap
       phaseTime: 0,
       elapsedTotal: 0,
     },
+    runBiome: "open_sea",
   };
 }
 

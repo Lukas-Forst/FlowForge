@@ -1,7 +1,8 @@
 // biome.ts
 import { hash2 } from "../utils";
+import type { BiomeType } from "../types";
 
-export type BiomeType = "open_sea" | "island_chain" | "fog_bank";
+export type { BiomeType };
 
 /**
  * Returns a stable biome for a given world coordinate.
