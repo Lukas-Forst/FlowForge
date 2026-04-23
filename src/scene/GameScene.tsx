@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import type { ReactElement } from "react";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { ArenaVisualEffects, CombatProjectiles } from "./arcade/CombatVfx";
 import { WaterArena } from "./arcade/WaterArena";
@@ -8,7 +8,9 @@ import { EnemyShip } from "./entities/Enemy";
 import { HarvestableEntity } from "./entities/HarvestableEntity";
 import { PlayerShip } from "./entities/PlayerShip";
 import type { PickupState, GameSnapshot } from "../game/types";
-import { BIOME_THEMES } from "./biomeThemes";
+import { getBlendedRunArcTheme } from "./biomeLerp";
+import { PostFX } from "./postfx/PostFX";
+import { pickFxQuality, type FxQuality } from "./postfx/qualityController";
 
 const ISO_OFFSET = 24;
 
@@ -28,7 +30,7 @@ function ShipWakeFoam({
   sizeScale?: number;
 }): ReactElement {
   const meshRefs = useRef<(THREE.Mesh | null)[]>([]);
-  const particles = useRef<(FoamParticle | null)[]>(Array.from({ length: MAX_FOAM }, () => null));
+  const particles = useRef<FoamParticle[]>([]);
   const emitTimer = useRef(0);
   const xRef = useRef(x);
   const zRef = useRef(z);
@@ -41,36 +43,36 @@ function ShipWakeFoam({
     emitTimer.current += delta;
 
     if (emitTimer.current > 0.055) {
-      emitTimer.current -= 0.055;
+      emitTimer.current = 0;
       const f = facingRef.current;
       const bx = -Math.sin(f);
       const bz = -Math.cos(f);
       const sx = Math.cos(f);
       const sz = -Math.sin(f);
       for (const side of [-1, 1] as const) {
-        const slot = particles.current.indexOf(null);
-        if (slot !== -1) {
-          particles.current[slot] = {
+        if (particles.current.length < MAX_FOAM) {
+          particles.current.push({
             x: xRef.current + bx * 0.75 * sizeScale + sx * side * 0.45 * sizeScale,
             z: zRef.current + bz * 0.75 * sizeScale + sz * side * 0.45 * sizeScale,
             age: 0,
             maxAge: 0.42 + Math.random() * 0.18,
             size: (0.22 + Math.random() * 0.16) * sizeScale,
-          };
+          });
         }
       }
     }
 
-    // Age particles and clear dead slots.
-    for (let i = 0; i < MAX_FOAM; i += 1) {
+    // Age and cull dead particles.
+    for (let i = particles.current.length - 1; i >= 0; i -= 1) {
       const p = particles.current[i];
       if (!p) continue;
       p.age += delta;
       if (p.age > p.maxAge) {
-        particles.current[i] = null;
+        particles.current.splice(i, 1);
       }
     }
 
+    // Update pre-allocated meshes.
     for (let i = 0; i < MAX_FOAM; i += 1) {
       const mesh = meshRefs.current[i];
       if (!mesh) continue;
@@ -145,6 +147,35 @@ interface GameSceneProps {
   snapshot: GameSnapshot;
 }
 
+function FxQualityTracker({ onQuality }: { onQuality: (q: FxQuality) => void }): null {
+  const avgFpsRef = useRef(60);
+  const qualityRef = useRef<FxQuality>("full");
+  const override = useMemo(() => {
+    const qs = new URLSearchParams(window.location.search);
+    const forced = qs.get("fx");
+    if (forced === "lite" || forced === "full") return forced;
+    return null;
+  }, []);
+
+  useFrame((_state, delta) => {
+    if (override) {
+      if (qualityRef.current !== override) {
+        qualityRef.current = override;
+        onQuality(override);
+      }
+      return;
+    }
+    const fps = delta > 0 ? 1 / delta : 60;
+    avgFpsRef.current = avgFpsRef.current * 0.9 + fps * 0.1;
+    const next = pickFxQuality(qualityRef.current, avgFpsRef.current);
+    if (next !== qualityRef.current) {
+      qualityRef.current = next;
+      onQuality(next);
+    }
+  });
+  return null;
+}
+
 function PickupProp({ pickup }: { pickup: PickupState }): ReactElement {
   const meshRef = useRef<THREE.Mesh>(null);
   
@@ -202,7 +233,9 @@ function PickupProp({ pickup }: { pickup: PickupState }): ReactElement {
 }
 
 export function GameScene({ snapshot }: GameSceneProps): ReactElement {
-  const theme = BIOME_THEMES[snapshot.runBiome];
+  const elapsed = snapshot.runClock.elapsedTotal;
+  const theme = getBlendedRunArcTheme(elapsed);
+  const [fxQuality, setFxQuality] = useState<FxQuality>("full");
   return (
     <Canvas shadows dpr={[1, 1.8]} orthographic camera={{ position: [ISO_OFFSET, ISO_OFFSET, ISO_OFFSET], zoom: 22, near: 0.1, far: 600 }}>
       <color attach="background" args={[theme.backgroundColor]} />
@@ -222,12 +255,14 @@ export function GameScene({ snapshot }: GameSceneProps): ReactElement {
         position={[-16, 14, -12]}
       />
 
+      <FxQualityTracker onQuality={setFxQuality} />
       <CameraFollow snapshot={snapshot} />
       <WaterArena
         playerX={snapshot.player.position.x}
         playerZ={snapshot.player.position.y}
         theme={theme}
         biome={snapshot.runBiome}
+        elapsedTotal={elapsed}
       />
 
       <PlayerShip
@@ -239,7 +274,12 @@ export function GameScene({ snapshot }: GameSceneProps): ReactElement {
 
       {snapshot.enemies.map((enemy) => (
         <group key={enemy.id}>
-          <EnemyShip type={enemy.type} position={[enemy.position.x, 0, enemy.position.y]} rotation={[0, enemy.facing, 0]} />
+          <EnemyShip
+            type={enemy.type}
+            isElite={enemy.isElite}
+            position={[enemy.position.x, 0, enemy.position.y]}
+            rotation={[0, enemy.facing, 0]}
+          />
           <ShipWakeFoam
             x={enemy.position.x}
             z={enemy.position.y}
@@ -258,6 +298,7 @@ export function GameScene({ snapshot }: GameSceneProps): ReactElement {
       {snapshot.harvestables.map((h) => (
         <HarvestableEntity key={`harv-${h.id}`} state={h} />
       ))}
+      <PostFX pulse={snapshot.postFxPulse} quality={fxQuality} />
     </Canvas>
   );
 }

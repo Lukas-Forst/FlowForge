@@ -1,16 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import type { ReactElement, ReactNode } from "react";
 import * as THREE from "three";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { useAsset } from "../../assets/registry";
 
 type ForwardAxis = "positiveZ" | "negativeZ" | "positiveX" | "negativeX";
 type ShipMaterialPreset = "playerSteamboat";
 type SteamboatMaterialRole = "hull" | "cabin" | "stack" | "cannon" | "accent" | "window" | "metal";
 
 export interface ShipModelConfig {
-  path?: string;
-  candidatePaths?: string[];
+  assetId: string;
   targetLength: number;
   forwardAxis?: ForwardAxis;
   rotationOffsetY?: number;
@@ -21,16 +20,8 @@ export interface ShipModelConfig {
 interface ShipModelVisualProps {
   config: ShipModelConfig;
   fallback: ReactNode;
+  eliteTint?: boolean;
 }
-
-type ShipAssetState = {
-  status: "loading" | "ready" | "error";
-  scene: THREE.Group | null;
-  resolvedPath: string | null;
-};
-
-const loadedScenes = new Map<string, THREE.Group>();
-const failedPaths = new Set<string>();
 
 const FORWARD_AXIS_ROTATION_Y: Record<ForwardAxis, number> = {
   positiveZ: 0,
@@ -40,15 +31,9 @@ const FORWARD_AXIS_ROTATION_Y: Record<ForwardAxis, number> = {
 };
 
 export const PLAYER_SHIP_MODEL_CONFIG: ShipModelConfig = {
-  candidatePaths: [
-    "/assets/models/ships/main-ship.glb",
-    "/assets/models/ships/Main_ship.glb",
-    "/assets/models/ships/player-steamboat.glb",
-    "/assets/models/ships/Meshy_AI_Steamboat_0417102926_generate.glb",
-  ],
+  assetId: "playerShip",
   targetLength: 3.2,
   forwardAxis: "positiveZ",
-  // Align mesh forward with gameplay facing (90-degree correction).
   rotationOffsetY: Math.PI / 2,
   positionOffset: [0, 0.02, 0],
   materialPreset: "playerSteamboat",
@@ -77,44 +62,23 @@ function createSteamboatMaterialPalette(): Record<SteamboatMaterialRole, THREE.M
 }
 
 function chooseSteamboatMaterialRole(meshName: string, relativeHeight: number): SteamboatMaterialRole {
-  if (/window|porthole|glass/.test(meshName)) {
-    return "window";
-  }
-  if (/stack|smoke|chimney|funnel/.test(meshName)) {
-    return "stack";
-  }
-  if (/cannon|gun|barrel/.test(meshName)) {
-    return "cannon";
-  }
-  if (/trim|rail|ring|anchor|gold|brass|ornament/.test(meshName)) {
-    return "accent";
-  }
-  if (/metal|pipe|chain|prop|wheel/.test(meshName)) {
-    return "metal";
-  }
-  if (/hull|keel|base|bottom/.test(meshName)) {
-    return "hull";
-  }
-  if (/cabin|deck|house|roof|bridge|top/.test(meshName)) {
-    return "cabin";
-  }
-
-  // Fallback heuristic if mesh names are ambiguous. Blender-side mesh naming would improve this.
+  if (/window|porthole|glass/.test(meshName)) return "window";
+  if (/stack|smoke|chimney|funnel/.test(meshName)) return "stack";
+  if (/cannon|gun|barrel/.test(meshName)) return "cannon";
+  if (/trim|rail|ring|anchor|gold|brass|ornament/.test(meshName)) return "accent";
+  if (/metal|pipe|chain|prop|wheel/.test(meshName)) return "metal";
+  if (/hull|keel|base|bottom/.test(meshName)) return "hull";
+  if (/cabin|deck|house|roof|bridge|top/.test(meshName)) return "cabin";
   return relativeHeight < 0.38 ? "hull" : "cabin";
 }
 
 function hasUsableTexture(material: THREE.Material): boolean {
-  if (!(material instanceof THREE.MeshStandardMaterial)) {
-    return false;
-  }
-  return material.map !== null;
+  return material instanceof THREE.MeshStandardMaterial && material.map !== null;
 }
 
 function keepImportedMaterial(material: THREE.Material): void {
   if (material instanceof THREE.MeshStandardMaterial) {
-    // Preserve imported textures while slightly tuning for gameplay readability.
-    const r = material.roughness;
-    material.roughness = Math.max(0.18, Math.min(0.92, r * 0.94));
+    material.roughness = Math.max(0.18, Math.min(0.92, material.roughness * 0.94));
     material.metalness = Math.max(0, Math.min(0.72, material.metalness));
   }
   material.needsUpdate = true;
@@ -124,69 +88,44 @@ function applySteamboatMaterials(root: THREE.Group): void {
   const sceneBox = new THREE.Box3().setFromObject(root);
   const sceneHeight = Math.max(0.001, sceneBox.max.y - sceneBox.min.y);
   const palette = createSteamboatMaterialPalette();
-  let matchedByName = 0;
-
   root.traverse((object) => {
     const mesh = object as THREE.Mesh;
-    if (!mesh.isMesh) {
-      return;
-    }
-
+    if (!mesh.isMesh) return;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-
     const meshBox = new THREE.Box3().setFromObject(mesh);
     const meshCenter = meshBox.getCenter(new THREE.Vector3());
     const relativeHeight = (meshCenter.y - sceneBox.min.y) / sceneHeight;
     const meshName = `${mesh.name} ${(mesh.parent as THREE.Object3D | null)?.name ?? ""}`.toLowerCase();
-    if (/window|porthole|glass|stack|smoke|chimney|funnel|cannon|gun|barrel|trim|rail|ring|anchor|gold|brass|ornament|metal|pipe|chain|prop|wheel|hull|keel|base|bottom|cabin|deck|house|roof|bridge|top/.test(meshName)) {
-      matchedByName += 1;
-    }
     const role = chooseSteamboatMaterialRole(meshName, relativeHeight);
     const styledMaterial = palette[role];
     if (Array.isArray(mesh.material)) {
-      const updatedMaterials = mesh.material.map((material) => {
+      mesh.material = mesh.material.map((material) => {
         if (hasUsableTexture(material)) {
           keepImportedMaterial(material);
           return material;
         }
         return styledMaterial;
       });
-      mesh.material = updatedMaterials;
       return;
     }
-
     if (hasUsableTexture(mesh.material)) {
       keepImportedMaterial(mesh.material);
       return;
     }
-
     mesh.material = styledMaterial;
   });
-
-  if (import.meta.env.DEV && matchedByName === 0) {
-    console.warn(
-      "[ShipModelVisual] Applied fallback steamboat material styling without useful mesh names. Rename mesh parts in Blender for cleaner per-part material control.",
-    );
-  }
 }
 
-function normalizeShipScene(
-  inputScene: THREE.Group,
-  targetLength: number,
-  materialPreset?: ShipMaterialPreset,
-): THREE.Group {
+function normalizeShipScene(inputScene: THREE.Group, targetLength: number, materialPreset?: ShipMaterialPreset): THREE.Group {
   const root = clone(inputScene) as THREE.Group;
   const box = new THREE.Box3().setFromObject(root);
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
-
   const safeLength = Math.max(0.0001, Math.max(size.x, size.z));
   const scalar = targetLength / safeLength;
-
   root.position.set(-center.x, -center.y, -center.z);
   root.scale.setScalar(scalar);
-
   const floorBox = new THREE.Box3().setFromObject(root);
   const floorCenter = floorBox.getCenter(new THREE.Vector3());
   root.position.x -= floorCenter.x;
@@ -198,142 +137,55 @@ function normalizeShipScene(
   } else {
     root.traverse((object) => {
       const mesh = object as THREE.Mesh;
-      if (!mesh.isMesh) {
-        return;
-      }
+      if (!mesh.isMesh) return;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       if (Array.isArray(mesh.material)) {
-        mesh.material.forEach((material) => {
-          material.needsUpdate = true;
-        });
-        return;
+        mesh.material.forEach((m) => (m.needsUpdate = true));
+      } else {
+        mesh.material.needsUpdate = true;
       }
-      mesh.material.needsUpdate = true;
     });
   }
-
   return root;
 }
 
-function resolveCandidatePaths(config: ShipModelConfig): string[] {
-  const paths = [...(config.candidatePaths ?? []), ...(config.path ? [config.path] : [])];
-  return Array.from(new Set(paths.filter((path) => path.length > 0)));
-}
-
-function useShipAsset(paths: string[]): ShipAssetState {
-  const [state, setState] = useState<ShipAssetState>(() => {
-    const loadedPath = paths.find((path) => loadedScenes.has(path));
-    if (loadedPath) {
-      return { status: "ready", scene: loadedScenes.get(loadedPath) ?? null, resolvedPath: loadedPath };
+function applyEliteShipTint(root: THREE.Group): void {
+  const emissive = new THREE.Color(0.82, 0.65, 0.12);
+  root.traverse((object) => {
+    const mesh = object as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    if (Array.isArray(mesh.material)) {
+      for (const mat of mesh.material) {
+        if (mat instanceof THREE.MeshStandardMaterial) {
+          mat.emissive = emissive;
+          mat.emissiveIntensity = 0.42;
+        }
+      }
+    } else if (mesh.material instanceof THREE.MeshStandardMaterial) {
+      mesh.material.emissive = emissive;
+      mesh.material.emissiveIntensity = 0.42;
     }
-    if (paths.length === 0 || paths.every((path) => failedPaths.has(path))) {
-      return { status: "error", scene: null, resolvedPath: null };
-    }
-    return { status: "loading", scene: null, resolvedPath: null };
   });
-
-  useEffect(() => {
-    const loadedPath = paths.find((path) => loadedScenes.has(path));
-    if (loadedPath) {
-      setState({ status: "ready", scene: loadedScenes.get(loadedPath) ?? null, resolvedPath: loadedPath });
-      return;
-    }
-
-    if (paths.length === 0 || paths.every((path) => failedPaths.has(path))) {
-      setState({ status: "error", scene: null, resolvedPath: null });
-      return;
-    }
-
-    let disposed = false;
-    const loader = new GLTFLoader();
-    const attemptLoad = (index: number): void => {
-      if (disposed) {
-        return;
-      }
-
-      if (index >= paths.length) {
-        setState({ status: "error", scene: null, resolvedPath: null });
-        return;
-      }
-
-      const path = paths[index];
-      if (failedPaths.has(path)) {
-        attemptLoad(index + 1);
-        return;
-      }
-
-      if (loadedScenes.has(path)) {
-        setState({ status: "ready", scene: loadedScenes.get(path) ?? null, resolvedPath: path });
-        return;
-      }
-
-      loader.load(
-        path,
-        (gltf) => {
-          if (disposed) {
-            return;
-          }
-          loadedScenes.set(path, gltf.scene);
-          setState({ status: "ready", scene: gltf.scene, resolvedPath: path });
-        },
-        undefined,
-        () => {
-          if (disposed) {
-            return;
-          }
-          failedPaths.add(path);
-          attemptLoad(index + 1);
-        },
-      );
-    };
-
-    attemptLoad(0);
-
-    return () => {
-      disposed = true;
-    };
-  }, [paths]);
-
-  return state;
 }
 
-export function ShipModelVisual({ config, fallback }: ShipModelVisualProps): ReactElement {
-  const candidatePaths = useMemo(() => resolveCandidatePaths(config), [config]);
-  const { status, scene, resolvedPath } = useShipAsset(candidatePaths);
-  const hasWarnedRef = useRef(false);
-
-  useEffect(() => {
-    if (status !== "error" || hasWarnedRef.current || !import.meta.env.DEV) {
-      return;
-    }
-    hasWarnedRef.current = true;
-    console.warn(
-      `[ShipModelVisual] Failed to load ship model from candidates [${candidatePaths.join(", ")}]. Falling back to primitive mesh.`,
-    );
-  }, [candidatePaths, status]);
-
-  useEffect(() => {
-    if (!import.meta.env.DEV || !resolvedPath) {
-      return;
-    }
-    if (candidatePaths.length > 1 && resolvedPath !== candidatePaths[0]) {
-      console.warn(
-        `[ShipModelVisual] Primary model "${candidatePaths[0]}" was unavailable; using "${resolvedPath}" instead.`,
-      );
-    }
-  }, [candidatePaths, resolvedPath]);
+export function ShipModelVisual({ config, fallback, eliteTint = false }: ShipModelVisualProps): ReactElement {
+  const scene = useAsset(config.assetId);
 
   const normalized = useMemo(() => {
-    if (!scene) {
-      return null;
-    }
+    if (!scene) return null;
     return normalizeShipScene(scene, config.targetLength, config.materialPreset);
   }, [config.materialPreset, config.targetLength, scene]);
 
-  if (status !== "ready" || !normalized) {
-    return <>{fallback}</>;
-  }
+  const withElite = useMemo(() => {
+    if (!normalized) return null;
+    if (!eliteTint) return normalized;
+    const root = clone(normalized) as THREE.Group;
+    applyEliteShipTint(root);
+    return root;
+  }, [eliteTint, normalized]);
+
+  if (!withElite) return <>{fallback}</>;
 
   const forwardAxis = config.forwardAxis ?? "positiveZ";
   const rotationY = FORWARD_AXIS_ROTATION_Y[forwardAxis] + (config.rotationOffsetY ?? 0);
@@ -341,7 +193,7 @@ export function ShipModelVisual({ config, fallback }: ShipModelVisualProps): Rea
 
   return (
     <group position={offset} rotation={[0, rotationY, 0]}>
-      <primitive object={normalized} />
+      <primitive object={withElite} />
     </group>
   );
 }

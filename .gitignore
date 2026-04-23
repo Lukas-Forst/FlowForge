@@ -11,3 +11,6 @@ tsconfig.node.tsbuildinfo
 .idea/
 .superpowers/
 .worktrees/
+# Raw Meshy / source GLBs — optimize into public/assets/models/ via npm run assets:optimize
+assets-sources/
+*.Zone.Identifier

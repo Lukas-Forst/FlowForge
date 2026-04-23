@@ -7,83 +7,54 @@ import type { ShipModelConfig } from "../models/ShipModelVisual";
 
 type EnemyShipProps = ThreeElements["group"] & {
   type: EnemyType;
+  isElite?: boolean;
 };
 
 const ENEMY_MODEL_CONFIGS: Record<EnemyType, ShipModelConfig> = {
   corsair: {
-    candidatePaths: [
-      "/assets/models/ships/Enemy_ship_basic.glb",
-      "/assets/models/ships/enemy_ship_basic.glb",
-      "/assets/models/ships/enemy-ship-basic.glb",
-    ],
+    assetId: "enemyShipBasic",
     targetLength: 2.25,
     forwardAxis: "positiveZ",
     rotationOffsetY: Math.PI / 2,
     positionOffset: [0, 0.01, 0],
   },
   bomber: {
-    candidatePaths: [
-      "/assets/models/ships/Enemy_ship_fast.glb",
-      "/assets/models/ships/enemy_ship_fast.glb",
-      "/assets/models/ships/enemy-ship-fast.glb",
-    ],
+    assetId: "enemyShipFast",
     targetLength: 2.65,
     forwardAxis: "positiveZ",
     rotationOffsetY: Math.PI / 2,
     positionOffset: [0, 0.01, 0],
   },
   brute: {
-    candidatePaths: [
-      "/assets/models/ships/Enemy_ship_tank.glb",
-      "/assets/models/ships/enemy_ship_tank.glb",
-      "/assets/models/ships/enemy-ship-tank.glb",
-      // Fallback candidate for future boss variant reuse.
-      "/assets/models/ships/Enemy_ship_boss.glb",
-    ],
+    assetId: "enemyShipTank",
     targetLength: 3.1,
     forwardAxis: "positiveZ",
     rotationOffsetY: Math.PI / 2,
     positionOffset: [0, 0.01, 0],
   },
   swarmer: {
-    candidatePaths: [
-      "/assets/models/ships/Enemy_ship_fast.glb",
-      "/assets/models/ships/enemy_ship_fast.glb",
-      "/assets/models/ships/enemy-ship-fast.glb",
-    ],
+    assetId: "enemyShipFast",
     targetLength: 1.8,
     forwardAxis: "positiveZ",
     rotationOffsetY: Math.PI / 2,
     positionOffset: [0, 0.01, 0],
   },
   sniper: {
-    candidatePaths: [
-      "/assets/models/ships/Enemy_ship_tank.glb",
-      "/assets/models/ships/enemy_ship_tank.glb",
-      "/assets/models/ships/enemy-ship-tank.glb",
-    ],
+    assetId: "enemyShipTank",
     targetLength: 2.9,
     forwardAxis: "positiveZ",
     rotationOffsetY: Math.PI / 2,
     positionOffset: [0, 0.01, 0],
   },
   boss: {
-    candidatePaths: [
-      "/assets/models/ships/Enemy_ship_boss.glb",
-      "/assets/models/ships/enemy_ship_boss.glb",
-      "/assets/models/ships/enemy-ship-boss.glb",
-    ],
+    assetId: "enemyShipBoss",
     targetLength: 4.5,
     forwardAxis: "positiveZ",
     rotationOffsetY: Math.PI / 2,
     positionOffset: [0, 0.01, 0],
   },
   shore_battery: {
-    candidatePaths: [
-      "/assets/models/ships/Enemy_ship_brute.glb",
-      "/assets/models/ships/enemy_ship_brute.glb",
-      "/assets/models/ships/enemy-ship-brute.glb",
-    ],
+    assetId: "enemyShipTank",
     targetLength: 4.8,
     forwardAxis: "positiveZ",
     rotationOffsetY: Math.PI / 2,
@@ -204,7 +175,7 @@ function BruteMesh(): ReactElement {
   );
 }
 
-export function EnemyShip({ type, ...props }: EnemyShipProps): ReactElement {
+export function EnemyShip({ type, isElite = false, ...props }: EnemyShipProps): ReactElement {
   let variant: ReactElement = <CorsairMesh />;
   if (type === "bomber" || type === "swarmer") {
     variant = <BomberMesh />;
@@ -225,8 +196,12 @@ export function EnemyShip({ type, ...props }: EnemyShipProps): ReactElement {
   }
 
   return (
-    <group {...props}>
-      <ShipModelVisual config={ENEMY_MODEL_CONFIGS[type]} fallback={variant} />
+    <group scale={isElite ? 1.3 : 1} {...props}>
+      <ShipModelVisual
+        config={ENEMY_MODEL_CONFIGS[type]}
+        fallback={variant}
+        eliteTint={isElite}
+      />
       <ShipSmoke stackPositions={smokeStacks} intensity={smokeIntensity} />
     </group>
   );

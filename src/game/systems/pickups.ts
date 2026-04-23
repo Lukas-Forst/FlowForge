@@ -1,6 +1,6 @@
 import { COIN_PICKUP_RADIUS } from "../constants";
 import { distance } from "../utils";
-import type { PickupState, PlayerState, GameSnapshot } from "../types";
+import type { AudioEvent, Cooldowns, PickupState, PlayerState } from "../types";
 
 export interface PickupCollectionResult {
   coinsGained: number;
@@ -10,7 +10,9 @@ export interface PickupCollectionResult {
 export function processPickups(
   pickups: PickupState[],
   player: PlayerState,
-  cooldowns: GameSnapshot["cooldowns"],
+  cooldowns: Cooldowns,
+  audioEvents?: AudioEvent[],
+  audioIdRef?: { value: number },
 ): PickupCollectionResult {
   let coinsGained = 0;
   let triggerUpgrade = false;
@@ -38,8 +40,13 @@ export function processPickups(
         cooldowns.frenzyRemaining = 10.0;
       } else if (pickup.kind === "supply_invuln") {
         cooldowns.invulnRemaining = 4.0; // 3-4s
+      } else if (pickup.kind === "instant_levelup") {
+        triggerUpgrade = true;
       }
-      
+
+      if (audioEvents && audioIdRef) {
+        audioEvents.push({ id: audioIdRef.value++, sfx: "pickup" });
+      }
       pickups.splice(i, 1);
     }
   }

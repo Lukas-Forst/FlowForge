@@ -15,6 +15,7 @@ describe("pickRunBiome", () => {
       open_sea: 0,
       island_chain: 0,
       deep_waters: 0,
+      boss_storm: 0,
     };
     const N = 30_000;
     for (let i = 0; i < N; i += 1) {
@@ -29,5 +30,6 @@ describe("pickRunBiome", () => {
     expect(counts.island_chain).toBeLessThan(expected + tolerance);
     expect(counts.deep_waters).toBeGreaterThan(expected - tolerance);
     expect(counts.deep_waters).toBeLessThan(expected + tolerance);
+    expect(counts.boss_storm).toBe(0);
   });
 });

@@ -1,18 +1,67 @@
-export type RunPhase = "start" | "playing" | "paused" | "upgrade" | "gameover";
+export type RunPhase = "loading" | "start" | "playing" | "paused" | "upgrade" | "gameover";
 
-export type UpgradeType = 
-  | "fireRate" 
-  | "speed" 
-  | "cooldown" 
-  | "maxHp" 
-  | "projectileCount" 
-  | "sideGuns" 
-  | "pierce" 
-  | "coinMagnet" 
-  | "armor" 
-  | "boostRepeat" 
-  | "cannonSpread" 
-  | "fullSteam";
+export type SfxId =
+  | "cannon_fire"
+  | "hit"
+  | "pickup"
+  | "upgrade_sting"
+  | "boss_cue"
+  | "damage_taken"
+  | "ship_destroyed"
+  | "harvestable_destroyed";
+
+export type AmbientId = "sea_bed" | "boss_bed";
+
+export interface AudioEvent {
+  id: number;
+  sfx: SfxId;
+  volume?: number;
+  pitch?: number;
+}
+
+export type PostFxEffect = "chromaticAb" | "flash";
+
+export interface PostFxPulse {
+  effect: PostFxEffect;
+  remaining: number;
+  duration: number;
+}
+
+export interface LoadingState {
+  progress: number;
+  label: string;
+}
+
+export type UpgradeType =
+  | "fireRate"
+  | "speed"
+  | "cooldown"
+  | "maxHp"
+  | "projectileCount"
+  | "sideGuns"
+  | "pierce"
+  | "coinMagnet"
+  | "armor"
+  | "boostRepeat"
+  | "cannonSpread"
+  | "fullSteam"
+  | "grapeshot"
+  | "sternChaser"
+  | "explosiveRounds"
+  | "ramProw"
+  | "ghostHull"
+  | "afterburner"
+  | "bilgePump"
+  | "scavenger"
+  | "sacrificeRig"
+  | "deepDredge"
+  | "crowsNest"
+  | "pressGang"
+  | "deathBlossom"
+  | "ghostTide"
+  | "ironclad"
+  | "tidalSweep"
+  | "hellfireWake";
 
 export type EnemyType = "corsair" | "bomber" | "brute" | "swarmer" | "sniper" | "boss" | "shore_battery";
 
@@ -34,6 +83,8 @@ export interface PlayerState {
 export interface EnemyState {
   id: number;
   type: EnemyType;
+  /** Elites: stronger, gold-tinted; Phases 2+ only. */
+  isElite: boolean;
   position: Vec2;
   facing: number;
   hp: number;
@@ -44,7 +95,14 @@ export interface EnemyState {
   rangedCooldown: number;
 }
 
-export type HarvestableType = "scrap_raft" | "abandoned_boat";
+export type HarvestableType =
+  | "scrap_raft"
+  | "abandoned_boat"
+  | "floating_cargo"
+  | "derelict_steamer"
+  | "anchor_cache"
+  | "sunken_galleon"
+  | "treasure_chest";
 
 export interface HarvestableState {
   id: number;
@@ -83,7 +141,15 @@ export interface VisualEffect {
   color?: string;
 }
 
-export type PickupKind = "coin" | "gem" | "hp" | "chest" | "supply_heal" | "supply_frenzy" | "supply_invuln";
+export type PickupKind =
+  | "coin"
+  | "gem"
+  | "hp"
+  | "chest"
+  | "supply_heal"
+  | "supply_frenzy"
+  | "supply_invuln"
+  | "instant_levelup";
 
 export interface PickupState {
   id: number;
@@ -120,6 +186,8 @@ export interface GameStats {
   longestUnscathedStreak: number;
   currentUnscathedStreak: number;
   biggestHit: number;
+  /** Count of evolution upgrades taken (stacks ≥ 1). */
+  evolutionsUnlocked: number;
 }
 
 export interface UpgradeOption {
@@ -142,13 +210,26 @@ export interface FlashMessage {
   remaining: number;
 }
 
+export interface RunRecord {
+  score: number;
+  timeSurvived: number;
+  enemiesKilled: number;
+  collectedCoins: number;
+  evolutionsUnlocked: number;
+  topUpgrade: string;
+  date: string;
+}
+
 export interface GameSnapshot {
   phase: RunPhase;
+  loading: LoadingState;
   player: PlayerState;
   enemies: EnemyState[];
   harvestables: HarvestableState[];
   projectiles: ProjectileState[];
   visualEffects: VisualEffect[];
+  audioEvents: AudioEvent[];
+  postFxPulse: PostFxPulse | null;
   pickups: PickupState[];
   upgrades: UpgradeStats;
   cooldowns: Cooldowns;
@@ -164,7 +245,7 @@ export interface GameSnapshot {
   runBiome: BiomeType;
 }
 
-export type BiomeType = "open_sea" | "island_chain" | "deep_waters";
+export type BiomeType = "open_sea" | "island_chain" | "deep_waters" | "boss_storm";
 
 export interface BiomeTheme {
   waterColor: string;
@@ -173,9 +254,7 @@ export interface BiomeTheme {
   bumpScale: number;
   waterEmissive: string;
   waterEmissiveIntensity: number;
-  /** Vertex displacement amplitude in world units. Reasonable range: 0.5–2.0. Consumed by vertex wave geometry in WaterArena. */
   waveHeight: number;
-  /** Animation speed multiplier — 1.0 is the open-sea baseline. Consumed by vertex wave geometry in WaterArena. */
   waveSpeed: number;
   shimmerColor: string;
   shimmerOpacity: number;

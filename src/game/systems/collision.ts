@@ -1,6 +1,6 @@
 import { ENEMY_TOUCH_COOLDOWN, PLAYER_HIT_RADIUS, PROJECTILE_DESPAWN_DISTANCE_FROM_PLAYER } from "../constants";
 import { angleFromDirection, distance, normalize } from "../utils";
-import { isEnemyProjectileKind, type EnemyState, type PickupState, type PlayerState, type ProjectileState, type VisualEffect, type HarvestableState } from "../types";
+import { isEnemyProjectileKind, type AudioEvent, type EnemyState, type PickupState, type PlayerState, type ProjectileState, type VisualEffect, type HarvestableState } from "../types";
 
 export interface CollisionResult {
   killsGained: number;
@@ -15,16 +15,55 @@ export function spawnHarvestableDrops(
   spawnedPickups: PickupState[],
   pickupIdRef: { value: number }
 ): void {
-  const count = h.type === "abandoned_boat" ? 10 + Math.floor(Math.random() * 6) : 3 + Math.floor(Math.random() * 3);
-  for (let i = 0; i < count; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const offset = Math.random() * h.radius;
-    spawnedPickups.push({
-      id: pickupIdRef.value++,
-      kind: "coin",
-      position: { x: h.position.x + Math.cos(angle) * offset, y: h.position.y + Math.sin(angle) * offset },
-      value: 1,
-    });
+  const pushCoins = (count: number) => {
+    for (let i = 0; i < count; i += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      const offset = Math.random() * h.radius;
+      spawnedPickups.push({
+        id: pickupIdRef.value++,
+        kind: "coin",
+        position: { x: h.position.x + Math.cos(angle) * offset, y: h.position.y + Math.sin(angle) * offset },
+        value: 1,
+      });
+    }
+  };
+  const pushGems = (count: number) => {
+    for (let i = 0; i < count; i += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      const offset = Math.random() * h.radius;
+      spawnedPickups.push({
+        id: pickupIdRef.value++,
+        kind: "gem",
+        position: { x: h.position.x + Math.cos(angle) * offset, y: h.position.y + Math.sin(angle) * offset },
+        value: 1,
+      });
+    }
+  };
+
+  switch (h.type) {
+    case "abandoned_boat":
+      pushCoins(10 + Math.floor(Math.random() * 6));
+      break;
+    case "scrap_raft":
+      pushCoins(3 + Math.floor(Math.random() * 3));
+      break;
+    case "floating_cargo":
+      pushCoins(8 + Math.floor(Math.random() * 5));
+      break;
+    case "derelict_steamer":
+      pushCoins(40 + Math.floor(Math.random() * 21));
+      break;
+    case "anchor_cache":
+      pushGems(2 + Math.floor(Math.random() * 3));
+      break;
+    case "sunken_galleon":
+      pushCoins(120 + Math.floor(Math.random() * 61));
+      break;
+    case "treasure_chest":
+      pushGems(8 + Math.floor(Math.random() * 5));
+      break;
+    default:
+      pushCoins(3 + Math.floor(Math.random() * 3));
   }
 }
 
@@ -128,6 +167,7 @@ export function resolveCollisions(
   pickupIdRef: { value: number },
   visualEffects: VisualEffect[],
   effectIdRef: { value: number },
+  audioEvents?: AudioEvent[],
 ): CollisionResult {
   let killsGained = 0;
   let playerDamageTaken = 0;
@@ -143,6 +183,9 @@ export function resolveCollisions(
         playerDamageTaken += projectile.damage;
         pushEffect(visualEffects, effectIdRef, "hitBurst", projectile.position, 0.22);
         pushEffect(visualEffects, effectIdRef, "screenShake", player.position, 0.35);
+        if (audioEvents) {
+          audioEvents.push({ id: effectIdRef.value++, sfx: "hit" });
+        }
         projectiles.splice(projectileIdx, 1);
       }
       continue;
@@ -157,6 +200,9 @@ export function resolveCollisions(
         if (projectile.kind === "playerCannon") cannonHits += 1;
         projectileConsumed = true;
         pushEffect(visualEffects, effectIdRef, "hitBurst", enemy.position, 0.26);
+        if (audioEvents) {
+          audioEvents.push({ id: effectIdRef.value++, sfx: "hit" });
+        }
         
         visualEffects.push({
           id: effectIdRef.value++,
@@ -171,6 +217,9 @@ export function resolveCollisions(
           killsGained += 1;
           enemies.splice(enemyIdx, 1);
           pushEffect(visualEffects, effectIdRef, "enemyDeath", enemy.position, 1.0);
+          if (audioEvents) {
+            audioEvents.push({ id: effectIdRef.value++, sfx: "ship_destroyed" });
+          }
           const roll = Math.random();
           if (roll < 0.03) {
             spawnedPickups.push({
@@ -208,6 +257,9 @@ export function resolveCollisions(
           if (projectile.kind === "playerCannon") cannonHits += 1;
           projectileConsumed = true;
           pushEffect(visualEffects, effectIdRef, "hitBurst", h.position, 0.20);
+          if (audioEvents) {
+            audioEvents.push({ id: effectIdRef.value++, sfx: "hit" });
+          }
           
           visualEffects.push({
             id: effectIdRef.value++,
@@ -222,6 +274,9 @@ export function resolveCollisions(
             spawnHarvestableDrops(h, spawnedPickups, pickupIdRef);
             harvestables.splice(hIdx, 1);
             pushEffect(visualEffects, effectIdRef, "waterSplash", h.position, 0.8);
+            if (audioEvents) {
+              audioEvents.push({ id: effectIdRef.value++, sfx: "harvestable_destroyed" });
+            }
           }
           break;
         }
@@ -273,6 +328,9 @@ export function resolveCollisions(
         harvestables.splice(hIdx, 1);
         pushEffect(visualEffects, effectIdRef, "waterSplash", h.position, 0.8);
         pushEffect(visualEffects, effectIdRef, "screenShake", player.position, 0.4);
+        if (audioEvents) {
+          audioEvents.push({ id: effectIdRef.value++, sfx: "harvestable_destroyed" });
+        }
       }
     }
   }

@@ -90,6 +90,7 @@ function spawnEnemyOutsideCamera(
     enemies.push({
       id: enemyIdRef.value++,
       type: pickEnemyType(elapsedTime),
+      isElite: false,
       position: { x, y },
       facing: angleFromDirection(toPlayer),
       hp: BASE_ENEMY_HP * hpScale,
@@ -116,6 +117,7 @@ function spawnEnemyOutsideCamera(
     enemies.push({
       id: enemyIdRef.value++,
       type: pickEnemyType(elapsedTime),
+      isElite: false,
       position: { x, y },
       facing: angleFromDirection(toPlayer),
       hp: BASE_ENEMY_HP,
