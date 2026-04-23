@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { AudioEvent, VisualEffect } from "../types";
-import { emitLevelUpEvents } from "./upgrades";
+import type { AudioEvent, UpgradeStats, VisualEffect } from "../types";
+import { emitLevelUpEvents, retargetNextUpgradeThreshold } from "./upgrades";
 
 describe("emitLevelUpEvents", () => {
   it("pushes an upgrade_sting audio event", () => {
@@ -24,5 +24,33 @@ describe("emitLevelUpEvents", () => {
     const kinds = vfx.map((e) => e.kind).sort();
     expect(kinds).toContain("screenShake");
     expect(kinds).toContain("hitBurst");
+  });
+});
+
+describe("retargetNextUpgradeThreshold", () => {
+  it("moves threshold above current collected coins", () => {
+    const upgrades: UpgradeStats = {
+      level: 3,
+      fireRateMult: 1,
+      speedMult: 1,
+      cooldownMult: 1,
+      nextThreshold: 12,
+      stacks: {} as UpgradeStats["stacks"],
+    };
+    retargetNextUpgradeThreshold(upgrades, 40);
+    expect(upgrades.nextThreshold).toBe(47);
+  });
+
+  it("does not lower an already-higher threshold", () => {
+    const upgrades: UpgradeStats = {
+      level: 2,
+      fireRateMult: 1,
+      speedMult: 1,
+      cooldownMult: 1,
+      nextThreshold: 90,
+      stacks: {} as UpgradeStats["stacks"],
+    };
+    retargetNextUpgradeThreshold(upgrades, 10);
+    expect(upgrades.nextThreshold).toBe(90);
   });
 });

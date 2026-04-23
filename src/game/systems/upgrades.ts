@@ -107,6 +107,11 @@ export function applyUpgrade(upgrades: UpgradeStats, type: UpgradeType): void {
   if (type === "boostRepeat") upgrades.cooldownMult *= 0.6;
 }
 
+export function retargetNextUpgradeThreshold(upgrades: UpgradeStats, collectedCoins: number): void {
+  const minStep = upgrades.level + 4;
+  upgrades.nextThreshold = Math.max(upgrades.nextThreshold, collectedCoins + minStep);
+}
+
 export function countEvolutionStacks(upgrades: UpgradeStats): number {
   let n = 0;
   for (const t of EVOLUTION_UPGRADE_TYPES) {

@@ -18,9 +18,10 @@ import { spawnEnemiesToCap, updateEnemySpawning } from "./systems/enemySpawner";
 import { runBossAttacks, updateMegaBossEncounter } from "./systems/bossSpawner";
 import { updateHarvestableSpawning } from "./systems/harvestableSpawner";
 import { updatePlayerMovement } from "./systems/playerController";
-import { applyUpgrade, buildUpgradeChoices, countEvolutionStacks, emitLevelUpEvents } from "./systems/upgrades";
-import { UPGRADE_OPTIONS } from "./constants";
+import { applyUpgrade, buildUpgradeChoices, countEvolutionStacks, emitLevelUpEvents, retargetNextUpgradeThreshold } from "./systems/upgrades";
+import { BASE_PASSIVE_BROADSIDE_INTERVAL, UPGRADE_OPTIONS } from "./constants";
 import type { FlashMessage, GameSnapshot, MovementKey, RunRecord, UpgradeType } from "./types";
+import { runPassiveBroadside } from "./systems/passiveBroadside";
 
 export function decayPostFxPulse(
   pulse: GameSnapshot["postFxPulse"],
@@ -149,6 +150,7 @@ export function useGameState(): UseGameStateApi {
   const effectIdRef = useRef({ value: 1 });
   const spawnTimerRef = useRef({ value: 0.2 });
   const autoAttackTimerRef = useRef({ value: BASE_AUTO_ATTACK_INTERVAL });
+  const passiveBroadsideTimerRef = useRef({ value: BASE_PASSIVE_BROADSIDE_INTERVAL });
   const hitPauseTimerRef = useRef({ value: 0 });
   const megaBossSpawnedRef = useRef({ value: false });
 
@@ -170,6 +172,7 @@ export function useGameState(): UseGameStateApi {
     effectIdRef.current.value = 1;
     spawnTimerRef.current.value = 0.2;
     autoAttackTimerRef.current.value = BASE_AUTO_ATTACK_INTERVAL;
+    passiveBroadsideTimerRef.current.value = BASE_PASSIVE_BROADSIDE_INTERVAL;
     hitPauseTimerRef.current.value = 0;
     megaBossSpawnedRef.current.value = false;
     syncState();
@@ -267,6 +270,7 @@ export function useGameState(): UseGameStateApi {
       state.player.maxHp += 25;
       state.player.hp = state.player.maxHp;
     }
+    retargetNextUpgradeThreshold(state.upgrades, state.stats.collectedCoins);
     state.phase = "playing";
     state.pendingUpgradeOptions = [];
     state.postFxPulse = emitLevelUpEvents(
@@ -388,6 +392,16 @@ export function useGameState(): UseGameStateApi {
       effectIdRef.current,
       step,
       state.cooldowns.frenzyRemaining > 0,
+    );
+    runPassiveBroadside(
+      state.player,
+      state.upgrades,
+      passiveBroadsideTimerRef.current,
+      projectileIdRef.current,
+      state.projectiles,
+      state.visualEffects,
+      effectIdRef.current,
+      step,
     );
     const spawnInt = computeRunSpawnIntensity(rc.elapsedTotal);
     state.spawnIntensity = Math.max(
@@ -526,8 +540,14 @@ export function useGameState(): UseGameStateApi {
     }
 
     if (state.phase === "playing" && (state.stats.collectedCoins >= state.upgrades.nextThreshold || triggerUpgrade)) {
+      const choices = buildUpgradeChoices(state.upgrades);
+      if (choices.length === 0) {
+        setMessage({ text: "No upgrades available", remaining: 0.9 });
+        syncState();
+        return;
+      }
       state.phase = "upgrade";
-      state.pendingUpgradeOptions = buildUpgradeChoices(state.upgrades);
+      state.pendingUpgradeOptions = choices;
       setMessage({ text: "Choose your upgrade", remaining: 99 });
       syncState();
       return;

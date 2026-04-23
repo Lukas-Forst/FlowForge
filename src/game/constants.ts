@@ -28,6 +28,7 @@ export const BASE_AUTO_ATTACK_DAMAGE = 24;
 export const AUTO_ATTACK_SPEED = 20;
 
 export const BASE_CANNON_COOLDOWN = 5;
+export const BASE_PASSIVE_BROADSIDE_INTERVAL = 4;
 export const CANNON_PROJECTILE_SPEED = 22;
 export const CANNON_PROJECTILE_DAMAGE = 42;
 export const CANNON_SALVO_COUNT = 5;
@@ -92,7 +93,7 @@ export const UPGRADE_OPTIONS: Record<UpgradeOption["type"], UpgradeOption> = {
   cooldown: { type: "cooldown", label: "Swabbed Cannons", description: "Reduce cannon cooldown by 18%.", rarity: "common", maxStacks: 4 },
   maxHp: { type: "maxHp", label: "Hull Reinforcement", description: "Increase max HP by 25 and heal to full.", rarity: "common", maxStacks: 3 },
   projectileCount: { type: "projectileCount", label: "Twin Cannons", description: "Add an extra forward auto-shot.", rarity: "uncommon", maxStacks: 3 },
-  sideGuns: { type: "sideGuns", label: "Broadside Volley", description: "Passive port and starboard shots.", rarity: "uncommon", maxStacks: 2 },
+  sideGuns: { type: "sideGuns", label: "Broadside Volley", description: "Passive broadside volley adds extra side shots.", rarity: "uncommon", maxStacks: 2 },
   pierce: { type: "pierce", label: "Armor Piercing", description: "Auto-shots pierce 1 extra enemy.", rarity: "uncommon", maxStacks: 2 },
   coinMagnet: { type: "coinMagnet", label: "Salvage Net", description: "Increase coin pickup radius.", rarity: "uncommon", maxStacks: 2 },
   armor: { type: "armor", label: "Iron Plating", description: "Reduce damage taken by 15%.", rarity: "uncommon", maxStacks: 3 },
