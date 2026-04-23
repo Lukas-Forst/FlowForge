@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { BIOME_THEMES } from "./biomeThemes";
 import type { BiomeType } from "../game/types";
 
-const ALL_BIOMES: BiomeType[] = ["open_sea", "island_chain", "deep_waters"];
+const ALL_BIOMES: BiomeType[] = ["open_sea", "island_chain", "deep_waters", "boss_storm"];
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
 describe("BIOME_THEMES", () => {
