@@ -1,11 +1,14 @@
 import type { ReactElement } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import * as THREE from "three";
 import { PlayerShip } from "../scene/entities/PlayerShip";
 
 interface StartScreenProps {
-  onStart: () => void;
+  onPlaySolo: () => void;
+  onCreateLobby: (name: string) => void;
+  onJoinLobby: (roomCode: string, name: string) => void;
+  connectionStatus?: string | null;
 }
 
 function Spinner(): ReactElement {
@@ -20,8 +23,15 @@ function Spinner(): ReactElement {
   );
 }
 
-export function StartScreen({ onStart }: StartScreenProps): ReactElement {
+function randomCaptainName(): string {
+  const names = ["Captain Rust", "Captain Tide", "Captain Ember", "Captain Wave", "Captain Finch", "Captain Bloom"];
+  return names[Math.floor(Math.random() * names.length)] ?? "Captain";
+}
+
+export function StartScreen({ onPlaySolo, onCreateLobby, onJoinLobby, connectionStatus }: StartScreenProps): ReactElement {
   const bestScore = Number(localStorage.getItem("flowforge.best") || 0);
+  const [name, setName] = useState(randomCaptainName());
+  const [roomCode, setRoomCode] = useState("");
 
   return (
     <div className="overlay center">
@@ -42,9 +52,49 @@ export function StartScreen({ onStart }: StartScreenProps): ReactElement {
         </div>
 
         <p className="hint">Move with WASD. Fire cannon salvo with Q. Boost forward with Space.</p>
-        <button type="button" onClick={onStart} style={{ marginTop: 8, padding: "12px 32px", fontSize: "1.2rem" }}>
-          Start Run
-        </button>
+        <div style={{ width: "100%", marginTop: 10, display: "grid", gap: 8 }}>
+          <input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Captain name"
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              borderRadius: 10,
+              border: "1px solid rgba(160, 209, 236, 0.35)",
+              background: "rgba(10, 30, 48, 0.8)",
+              color: "#e9f5ff",
+            }}
+          />
+          <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+            <button type="button" onClick={onPlaySolo} style={{ padding: "11px 20px" }}>
+              Play Solo
+            </button>
+            <button type="button" onClick={() => onCreateLobby(name.trim() || "Captain")} style={{ padding: "11px 20px" }}>
+              Create Lobby
+            </button>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              value={roomCode}
+              onChange={(event) => setRoomCode(event.target.value.toUpperCase())}
+              placeholder="Lobby code"
+              style={{
+                flex: 1,
+                padding: "10px 12px",
+                borderRadius: 10,
+                border: "1px solid rgba(160, 209, 236, 0.35)",
+                background: "rgba(10, 30, 48, 0.8)",
+                color: "#e9f5ff",
+                textTransform: "uppercase",
+              }}
+            />
+            <button type="button" onClick={() => onJoinLobby(roomCode.trim(), name.trim() || "Captain")}>
+              Join Lobby
+            </button>
+          </div>
+          {connectionStatus ? <p className="hint" style={{ margin: 0 }}>{connectionStatus}</p> : null}
+        </div>
       </div>
     </div>
   );

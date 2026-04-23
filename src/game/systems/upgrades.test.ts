@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AudioEvent, UpgradeStats, VisualEffect } from "../types";
-import { emitLevelUpEvents, retargetNextUpgradeThreshold } from "./upgrades";
+import { applyDamageMitigation, buildUpgradeChoices, emitLevelUpEvents, retargetNextUpgradeThreshold } from "./upgrades";
+import { UPGRADE_OPTIONS } from "../constants";
 
 describe("emitLevelUpEvents", () => {
   it("pushes an upgrade_sting audio event", () => {
@@ -52,5 +53,91 @@ describe("retargetNextUpgradeThreshold", () => {
     };
     retargetNextUpgradeThreshold(upgrades, 10);
     expect(upgrades.nextThreshold).toBe(90);
+  });
+});
+
+describe("applyDamageMitigation", () => {
+  it("reduces incoming damage by 15% per armor stack", () => {
+    const upgrades: UpgradeStats = {
+      level: 0,
+      fireRateMult: 1,
+      speedMult: 1,
+      cooldownMult: 1,
+      nextThreshold: 10,
+      stacks: { armor: 2 } as UpgradeStats["stacks"],
+    };
+    expect(applyDamageMitigation(100, upgrades)).toBeCloseTo(70);
+  });
+});
+
+describe("buildUpgradeChoices", () => {
+  it("samples every base rarity tier over repeated rolls", () => {
+    const upgrades: UpgradeStats = {
+      level: 0,
+      fireRateMult: 1,
+      speedMult: 1,
+      cooldownMult: 1,
+      nextThreshold: 10,
+      stacks: {} as UpgradeStats["stacks"],
+    };
+
+    const seen = new Set<"common" | "uncommon" | "rare" | "epic">();
+
+    for (let i = 0; i < 200; i += 1) {
+      const choices = buildUpgradeChoices(upgrades);
+      for (const option of choices) {
+        seen.add(option.rarity);
+      }
+    }
+    expect(seen.has("common")).toBe(true);
+    expect(seen.has("uncommon")).toBe(true);
+    expect(seen.has("rare")).toBe(true);
+    expect(seen.has("epic")).toBe(false);
+  });
+
+  it("offers fullSteam once its prereqs are maxed and others are exhausted", () => {
+    const upgrades: UpgradeStats = {
+      level: 0,
+      fireRateMult: 1,
+      speedMult: 1,
+      cooldownMult: 1,
+      nextThreshold: 10,
+      stacks: {} as UpgradeStats["stacks"],
+    };
+
+    for (const key of Object.keys(UPGRADE_OPTIONS) as (keyof typeof UPGRADE_OPTIONS)[]) {
+      upgrades.stacks[key] = UPGRADE_OPTIONS[key].maxStacks;
+    }
+    upgrades.stacks.fullSteam = 0;
+
+    const choices = buildUpgradeChoices(upgrades);
+    const choiceTypes = choices.map((choice) => choice.type);
+    expect(choiceTypes).toContain("fullSteam");
+  });
+
+  it("offers phantomFleet when max afterburner and ghost tide are active", () => {
+    const upgrades: UpgradeStats = {
+      level: 0,
+      fireRateMult: 1,
+      speedMult: 1,
+      cooldownMult: 1,
+      nextThreshold: 10,
+      stacks: {} as UpgradeStats["stacks"],
+    };
+    upgrades.stacks.afterburner = UPGRADE_OPTIONS.afterburner.maxStacks;
+    upgrades.stacks.ghostTide = 1;
+    upgrades.stacks.fireRate = UPGRADE_OPTIONS.fireRate.maxStacks;
+    upgrades.stacks.pierce = UPGRADE_OPTIONS.pierce.maxStacks;
+    upgrades.stacks.fullSteam = 1;
+    for (const key of Object.keys(UPGRADE_OPTIONS) as (keyof typeof UPGRADE_OPTIONS)[]) {
+      if (key === "phantomFleet" || key === "krakenCall") continue;
+      upgrades.stacks[key] = UPGRADE_OPTIONS[key].maxStacks;
+    }
+    upgrades.stacks.phantomFleet = 0;
+    upgrades.stacks.krakenCall = 0;
+
+    const choices = buildUpgradeChoices(upgrades);
+    const choiceTypes = choices.map((choice) => choice.type);
+    expect(choiceTypes).toContain("phantomFleet");
   });
 });

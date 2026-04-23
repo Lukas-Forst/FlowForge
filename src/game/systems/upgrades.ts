@@ -2,9 +2,21 @@ import { EVOLUTION_UPGRADE_TYPES, UPGRADE_OPTIONS } from "../constants";
 import type { AudioEvent, PostFxPulse, UpgradeOption, UpgradeStats, UpgradeType, Vec2, VisualEffect } from "../types";
 
 const EVOLUTION_SET = new Set<UpgradeType>(EVOLUTION_UPGRADE_TYPES);
+const IMPLEMENTED_UPGRADES = new Set<UpgradeType>(Object.keys(UPGRADE_OPTIONS) as UpgradeType[]);
+const EPIC_TYPES = new Set<UpgradeType>([
+  "fullSteam",
+  ...EVOLUTION_UPGRADE_TYPES,
+]);
 
 function evolutionPrereqsMet(type: UpgradeType, upgrades: UpgradeStats): boolean {
   const s = upgrades.stacks;
+  const hasAnyOtherEpic = (): boolean => {
+    for (const key of EPIC_TYPES) {
+      if (key === "krakenCall") continue;
+      if ((s[key] ?? 0) > 0) return true;
+    }
+    return false;
+  };
   switch (type) {
     case "deathBlossom":
       return (
@@ -22,6 +34,17 @@ function evolutionPrereqsMet(type: UpgradeType, upgrades: UpgradeStats): boolean
         (s.explosiveRounds ?? 0) >= UPGRADE_OPTIONS.explosiveRounds.maxStacks &&
         (s.afterburner ?? 0) >= UPGRADE_OPTIONS.afterburner.maxStacks
       );
+    case "krakenCall":
+      return (
+        (s.fireRate ?? 0) >= UPGRADE_OPTIONS.fireRate.maxStacks &&
+        (s.pierce ?? 0) >= UPGRADE_OPTIONS.pierce.maxStacks &&
+        hasAnyOtherEpic()
+      );
+    case "phantomFleet":
+      return (
+        (s.afterburner ?? 0) >= UPGRADE_OPTIONS.afterburner.maxStacks &&
+        (s.ghostTide ?? 0) >= 1
+      );
     default:
       return false;
   }
@@ -31,6 +54,10 @@ export function buildUpgradeChoices(upgrades: UpgradeStats): UpgradeOption[] {
   const available: UpgradeOption[] = [];
 
   for (const key of Object.keys(UPGRADE_OPTIONS) as UpgradeType[]) {
+    if (!IMPLEMENTED_UPGRADES.has(key)) {
+      continue;
+    }
+
     const opt = UPGRADE_OPTIONS[key];
     const currentStacks = upgrades.stacks[key] || 0;
 
@@ -55,9 +82,9 @@ export function buildUpgradeChoices(upgrades: UpgradeStats): UpgradeOption[] {
   }
 
   const weightMap: Record<"common" | "uncommon" | "rare" | "epic", number> = {
-    common: 10,
+    common: 9,
     uncommon: 5,
-    rare: 2,
+    rare: 3,
     epic: 1,
   };
 
@@ -105,6 +132,39 @@ export function applyUpgrade(upgrades: UpgradeStats, type: UpgradeType): void {
   if (type === "speed") upgrades.speedMult *= 1.15;
   if (type === "cooldown") upgrades.cooldownMult *= 0.82;
   if (type === "boostRepeat") upgrades.cooldownMult *= 0.6;
+}
+
+export function applyDamageMitigation(rawDamage: number, upgrades: UpgradeStats): number {
+  if (rawDamage <= 0) {
+    return 0;
+  }
+  const armorStacks = Math.max(0, upgrades.stacks.armor ?? 0);
+  const evolutionMitigation = (upgrades.stacks.ironclad ?? 0) > 0 ? 0.5 : 0;
+  const mitigation = Math.min(0.85, armorStacks * 0.15 + evolutionMitigation);
+  return rawDamage * (1 - mitigation);
+}
+
+export function getUpgradePrerequisiteDescription(type: UpgradeType): string | null {
+  switch (type) {
+    case "fullSteam":
+      return "Max Powder Frenzy + Max Trade Winds";
+    case "deathBlossom":
+      return "Max Powder Frenzy + Max Twin Cannons";
+    case "ghostTide":
+      return "Max Trade Winds + Second Wind";
+    case "ironclad":
+      return "Max Iron Plating + Max Hull Reinforcement";
+    case "tidalSweep":
+      return "Max Salvage Net + Max Deep Dredge";
+    case "hellfireWake":
+      return "Max Explosive Rounds + Max Afterburner";
+    case "krakenCall":
+      return "Max Powder Frenzy + Max Armor Piercing + any epic";
+    case "phantomFleet":
+      return "Max Afterburner + Ghost Tide";
+    default:
+      return null;
+  }
 }
 
 export function retargetNextUpgradeThreshold(upgrades: UpgradeStats, collectedCoins: number): void {

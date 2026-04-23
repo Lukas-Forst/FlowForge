@@ -13,9 +13,12 @@ export function processPickups(
   cooldowns: Cooldowns,
   audioEvents?: AudioEvent[],
   audioIdRef?: { value: number },
+  coinMagnetStacks: number = 0,
 ): PickupCollectionResult {
   let coinsGained = 0;
   let triggerUpgrade = false;
+  const pickupRadiusMultiplier = 1 + Math.min(2, Math.max(0, coinMagnetStacks)) * 0.75;
+  const pickupRadius = COIN_PICKUP_RADIUS * pickupRadiusMultiplier;
 
   for (let i = pickups.length - 1; i >= 0; i -= 1) {
     const pickup = pickups[i];
@@ -23,7 +26,7 @@ export function processPickups(
     
     // Different pickups could theoretically have different radii, 
     // but we'll use COIN_PICKUP_RADIUS for all for now.
-    if (dist < COIN_PICKUP_RADIUS) {
+    if (dist < pickupRadius) {
       if (pickup.kind === "coin" || pickup.kind === "gem") {
         coinsGained += pickup.value;
       } else if (pickup.kind === "hp") {

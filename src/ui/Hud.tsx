@@ -71,6 +71,9 @@ export function Hud({ snapshot }: HudProps): ReactElement {
       </div>
 
       {boss ? <BossFrame boss={boss} /> : null}
+      {snapshot.vibePortal.visible && snapshot.vibePortal.near ? (
+        <div className="portal-tooltip">Sail through to visit another Vibe Jam game 🌊</div>
+      ) : null}
       {snapshot.message ? <div className="toast">{snapshot.message.text}</div> : null}
     </>
   );

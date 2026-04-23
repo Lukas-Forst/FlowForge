@@ -13,10 +13,15 @@ export interface CollisionResult {
 export function spawnHarvestableDrops(
   h: HarvestableState,
   spawnedPickups: PickupState[],
-  pickupIdRef: { value: number }
+  pickupIdRef: { value: number },
+  resourceMultiplier: number = 1,
+  gemValueBonus: number = 0,
 ): void {
+  const mult = Math.max(1, resourceMultiplier);
+  const gemBonus = Math.max(0, gemValueBonus);
   const pushCoins = (count: number) => {
-    for (let i = 0; i < count; i += 1) {
+    const total = Math.max(1, Math.round(count * mult));
+    for (let i = 0; i < total; i += 1) {
       const angle = Math.random() * Math.PI * 2;
       const offset = Math.random() * h.radius;
       spawnedPickups.push({
@@ -28,14 +33,15 @@ export function spawnHarvestableDrops(
     }
   };
   const pushGems = (count: number) => {
-    for (let i = 0; i < count; i += 1) {
+    const total = Math.max(1, Math.round(count * mult));
+    for (let i = 0; i < total; i += 1) {
       const angle = Math.random() * Math.PI * 2;
       const offset = Math.random() * h.radius;
       spawnedPickups.push({
         id: pickupIdRef.value++,
         kind: "gem",
         position: { x: h.position.x + Math.cos(angle) * offset, y: h.position.y + Math.sin(angle) * offset },
-        value: 1,
+        value: 1 + gemBonus,
       });
     }
   };
@@ -168,7 +174,20 @@ export function resolveCollisions(
   visualEffects: VisualEffect[],
   effectIdRef: { value: number },
   audioEvents?: AudioEvent[],
+  modifiers?: {
+    hpDropBonusChance?: number;
+    harvestResourceMultiplier?: number;
+    harvestGemValueBonus?: number;
+    ramDamageMultiplier?: number;
+    ramReflectBonus?: number;
+  },
 ): CollisionResult {
+  const hpDropBonus = Math.max(0, modifiers?.hpDropBonusChance ?? 0);
+  const harvestResourceMultiplier = Math.max(1, modifiers?.harvestResourceMultiplier ?? 1);
+  const harvestGemValueBonus = Math.max(0, modifiers?.harvestGemValueBonus ?? 0);
+  const ramDamageMultiplier = Math.max(1, modifiers?.ramDamageMultiplier ?? 1);
+  const ramReflectBonus = Math.max(0, modifiers?.ramReflectBonus ?? 0);
+
   let killsGained = 0;
   let playerDamageTaken = 0;
   let cannonHits = 0;
@@ -198,7 +217,11 @@ export function resolveCollisions(
         enemy.hp -= projectile.damage;
         maxHitDealt = Math.max(maxHitDealt, projectile.damage);
         if (projectile.kind === "playerCannon") cannonHits += 1;
-        projectileConsumed = true;
+        const canPierce = (projectile.pierceRemaining ?? 0) > 0;
+        projectileConsumed = !canPierce;
+        if (canPierce) {
+          projectile.pierceRemaining = (projectile.pierceRemaining ?? 0) - 1;
+        }
         pushEffect(visualEffects, effectIdRef, "hitBurst", enemy.position, 0.26);
         if (audioEvents) {
           audioEvents.push({ id: effectIdRef.value++, sfx: "hit" });
@@ -221,7 +244,7 @@ export function resolveCollisions(
             audioEvents.push({ id: effectIdRef.value++, sfx: "ship_destroyed" });
           }
           const roll = Math.random();
-          if (roll < 0.03) {
+          if (roll < 0.03 + hpDropBonus) {
             spawnedPickups.push({
               id: pickupIdRef.value++,
               kind: "hp",
@@ -271,7 +294,7 @@ export function resolveCollisions(
           });
 
           if (h.hp <= 0) {
-            spawnHarvestableDrops(h, spawnedPickups, pickupIdRef);
+            spawnHarvestableDrops(h, spawnedPickups, pickupIdRef, harvestResourceMultiplier, harvestGemValueBonus);
             harvestables.splice(hIdx, 1);
             pushEffect(visualEffects, effectIdRef, "waterSplash", h.position, 0.8);
             if (audioEvents) {
@@ -303,6 +326,14 @@ export function resolveCollisions(
         pushEffect(visualEffects, effectIdRef, "screenShake", player.position, 0.3);
         enemy.touchTimer = ENEMY_TOUCH_COOLDOWN;
       }
+      if (ramReflectBonus > 0) {
+        enemy.hp -= (20 + playerDamageTaken * 0.4) * ramReflectBonus;
+        if (enemy.hp <= 0) {
+          killsGained += 1;
+          enemies.splice(enemyIdx, 1);
+          pushEffect(visualEffects, effectIdRef, "enemyDeath", enemy.position, 1.0);
+        }
+      }
     }
   }
 
@@ -311,7 +342,7 @@ export function resolveCollisions(
     const touching = distance(h.position, player.position) <= PLAYER_HIT_RADIUS + h.radius;
     
     if (touching) {
-      h.hp -= 50; 
+      h.hp -= 50 * ramDamageMultiplier; 
       pushEffect(visualEffects, effectIdRef, "screenShake", player.position, 0.25);
       pushEffect(visualEffects, effectIdRef, "hitBurst", h.position, 0.4);
       visualEffects.push({
@@ -324,7 +355,7 @@ export function resolveCollisions(
       });
 
       if (h.hp <= 0) {
-        spawnHarvestableDrops(h, spawnedPickups, pickupIdRef);
+        spawnHarvestableDrops(h, spawnedPickups, pickupIdRef, harvestResourceMultiplier, harvestGemValueBonus);
         harvestables.splice(hIdx, 1);
         pushEffect(visualEffects, effectIdRef, "waterSplash", h.position, 0.8);
         pushEffect(visualEffects, effectIdRef, "screenShake", player.position, 0.4);

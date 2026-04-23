@@ -2,12 +2,13 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import type { ReactElement } from "react";
 import { useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { Text } from "@react-three/drei";
 import { ArenaVisualEffects, CombatProjectiles } from "./arcade/CombatVfx";
 import { WaterArena } from "./arcade/WaterArena";
 import { EnemyShip } from "./entities/Enemy";
 import { HarvestableEntity } from "./entities/HarvestableEntity";
 import { PlayerShip } from "./entities/PlayerShip";
-import type { PickupState, GameSnapshot } from "../game/types";
+import type { PickupState, GameSnapshot, MultiplayerPeerState } from "../game/types";
 import { getBlendedRunArcTheme } from "./biomeLerp";
 import { PostFX } from "./postfx/PostFX";
 import { pickFxQuality, type FxQuality } from "./postfx/qualityController";
@@ -17,6 +18,7 @@ const ISO_OFFSET = 24;
 const MAX_FOAM = 12;
 
 type FoamParticle = { x: number; z: number; age: number; maxAge: number; size: number };
+type PortalSpark = { phase: number; radius: number; y: number; speed: number };
 
 function ShipWakeFoam({
   x,
@@ -145,6 +147,8 @@ function CameraFollow({ snapshot }: { snapshot: GameSnapshot }): null {
 
 interface GameSceneProps {
   snapshot: GameSnapshot;
+  remotePlayers?: MultiplayerPeerState[];
+  localPlayerBadge?: Pick<MultiplayerPeerState, "name" | "emoji" | "color"> | null;
 }
 
 function FxQualityTracker({ onQuality }: { onQuality: (q: FxQuality) => void }): null {
@@ -232,7 +236,98 @@ function PickupProp({ pickup }: { pickup: PickupState }): ReactElement {
   );
 }
 
-export function GameScene({ snapshot }: GameSceneProps): ReactElement {
+function VibePortal({
+  x,
+  z,
+}: {
+  x: number;
+  z: number;
+}): ReactElement {
+  const groupRef = useRef<THREE.Group>(null);
+  const sparkRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const sparks = useMemo<PortalSpark[]>(
+    () =>
+      Array.from({ length: 16 }, (_, i) => ({
+        phase: (i / 16) * Math.PI * 2,
+        radius: 1.3 + (i % 4) * 0.18,
+        y: 0.9 + (i % 3) * 0.18,
+        speed: 0.7 + (i % 5) * 0.08,
+      })),
+    [],
+  );
+
+  useFrame((state, delta) => {
+    const t = state.clock.elapsedTime;
+    if (groupRef.current) {
+      groupRef.current.rotation.y += delta * 0.45;
+      groupRef.current.position.y = 0.95 + Math.sin(t * 1.1) * 0.12;
+    }
+
+    for (let i = 0; i < sparks.length; i += 1) {
+      const mesh = sparkRefs.current[i];
+      const spark = sparks[i];
+      if (!mesh || !spark) continue;
+      const angle = spark.phase + t * spark.speed;
+      const r = spark.radius + Math.sin(t * 1.7 + spark.phase) * 0.06;
+      mesh.position.set(Math.cos(angle) * r, spark.y + Math.sin(t * 1.5 + spark.phase) * 0.08, Math.sin(angle) * r);
+      const material = mesh.material as THREE.MeshBasicMaterial;
+      material.opacity = 0.22 + (Math.sin(t * 2.4 + spark.phase) + 1) * 0.18;
+    }
+  });
+
+  return (
+    <group ref={groupRef} position={[x, 0.95, z]}>
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[1.45, 0.2, 18, 56]} />
+        <meshStandardMaterial color="#46ff8a" emissive="#22ff77" emissiveIntensity={1.25} roughness={0.22} metalness={0.2} />
+      </mesh>
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[1.05, 0.06, 10, 48]} />
+        <meshBasicMaterial color="#b8ffd6" transparent opacity={0.58} depthWrite={false} />
+      </mesh>
+      {sparks.map((spark, i) => (
+        <mesh
+          key={`portal-spark-${i}`}
+          ref={(mesh) => {
+            sparkRefs.current[i] = mesh;
+          }}
+          position={[Math.cos(spark.phase) * spark.radius, spark.y, Math.sin(spark.phase) * spark.radius]}
+        >
+          <sphereGeometry args={[0.06, 8, 8]} />
+          <meshBasicMaterial color="#76ffb0" transparent opacity={0.35} depthWrite={false} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function PlayerNameTag({
+  name,
+  emoji,
+  color,
+}: Pick<MultiplayerPeerState, "name" | "emoji" | "color">): ReactElement {
+  return (
+    <group position={[0, 2.2, 0]}>
+      <mesh position={[0, 0.12, 0]}>
+        <sphereGeometry args={[0.09, 8, 8]} />
+        <meshBasicMaterial color={color} />
+      </mesh>
+      <Text
+        position={[0, 0.38, 0]}
+        fontSize={0.22}
+        color="#e8f7ff"
+        outlineColor="rgba(2, 8, 16, 0.9)"
+        outlineWidth={0.03}
+        anchorX="center"
+        anchorY="middle"
+      >
+        {`${emoji} ${name}`}
+      </Text>
+    </group>
+  );
+}
+
+export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = null }: GameSceneProps): ReactElement {
   const elapsed = snapshot.runClock.elapsedTotal;
   const theme = getBlendedRunArcTheme(elapsed);
   const [fxQuality, setFxQuality] = useState<FxQuality>("full");
@@ -265,12 +360,24 @@ export function GameScene({ snapshot }: GameSceneProps): ReactElement {
         elapsedTotal={elapsed}
       />
 
-      <PlayerShip
-        upgradeLevel={snapshot.upgrades.level}
-        position={[snapshot.player.position.x, 0, snapshot.player.position.y]}
-        rotation={[0, snapshot.player.facing, 0]}
-      />
+      <group position={[snapshot.player.position.x, 0, snapshot.player.position.y]} rotation={[0, snapshot.player.facing, 0]}>
+        <PlayerShip upgradeLevel={snapshot.upgrades.level} />
+        {localPlayerBadge ? (
+          <PlayerNameTag name={localPlayerBadge.name} emoji={localPlayerBadge.emoji} color={localPlayerBadge.color} />
+        ) : null}
+      </group>
       <ShipWakeFoam x={snapshot.player.position.x} z={snapshot.player.position.y} facing={snapshot.player.facing} sizeScale={1.05} />
+      {snapshot.vibePortal.visible ? (
+        <VibePortal x={snapshot.vibePortal.position.x} z={snapshot.vibePortal.position.y} />
+      ) : null}
+
+      {remotePlayers.map((peer) => (
+        <group key={`peer-${peer.id}`} position={[peer.position.x, 0, peer.position.y]} rotation={[0, peer.facing, 0]}>
+          <PlayerShip upgradeLevel={peer.upgradeLevel} />
+          <PlayerNameTag name={peer.name} emoji={peer.emoji} color={peer.color} />
+          <ShipWakeFoam x={peer.position.x} z={peer.position.y} facing={peer.facing} sizeScale={0.98} />
+        </group>
+      ))}
 
       {snapshot.enemies.map((enemy) => (
         <group key={enemy.id}>

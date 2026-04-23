@@ -18,10 +18,27 @@ import { spawnEnemiesToCap, updateEnemySpawning } from "./systems/enemySpawner";
 import { runBossAttacks, updateMegaBossEncounter } from "./systems/bossSpawner";
 import { updateHarvestableSpawning } from "./systems/harvestableSpawner";
 import { updatePlayerMovement } from "./systems/playerController";
-import { applyUpgrade, buildUpgradeChoices, countEvolutionStacks, emitLevelUpEvents, retargetNextUpgradeThreshold } from "./systems/upgrades";
+import {
+  applyDamageMitigation,
+  applyUpgrade,
+  buildUpgradeChoices,
+  countEvolutionStacks,
+  emitLevelUpEvents,
+  retargetNextUpgradeThreshold,
+} from "./systems/upgrades";
 import { BASE_PASSIVE_BROADSIDE_INTERVAL, UPGRADE_OPTIONS } from "./constants";
-import type { FlashMessage, GameSnapshot, MovementKey, RunRecord, UpgradeType } from "./types";
+import type { FlashMessage, GameSnapshot, MovementKey, MultiplayerWorldState, RunRecord, UpgradeType } from "./types";
 import { runPassiveBroadside } from "./systems/passiveBroadside";
+import { distance } from "./utils";
+
+const VIBE_PORTAL_UNLOCK_TIME = 120;
+const VIBE_PORTAL_NEAR_DISTANCE = 8;
+const VIBE_PORTAL_TRIGGER_DISTANCE = 2.4;
+const VIBE_PORTAL_POSITION = { x: 36, y: -28 } as const;
+const SACRIFICE_RIG_PERIOD = 28;
+const TIDAL_SWEEP_PERIOD = 8;
+const KRAKEN_ACTIVE_TIME = 15;
+const PHANTOM_FLEET_ACTIVE_TIME = 8;
 
 export function decayPostFxPulse(
   pulse: GameSnapshot["postFxPulse"],
@@ -85,6 +102,12 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "loading"): GameSn
     },
     pendingUpgradeOptions: [],
     message: null,
+    vibePortal: {
+      position: { x: VIBE_PORTAL_POSITION.x, y: VIBE_PORTAL_POSITION.y },
+      visible: false,
+      near: false,
+      triggered: false,
+    },
     spawnIntensity: 0,
     runClock: {
       phase: "wave",
@@ -119,6 +142,10 @@ function copySnapshot(snapshot: GameSnapshot): GameSnapshot {
     stats: { ...snapshot.stats },
     pendingUpgradeOptions: snapshot.pendingUpgradeOptions.map((option) => ({ ...option })),
     message: snapshot.message ? { ...snapshot.message } : null,
+    vibePortal: {
+      ...snapshot.vibePortal,
+      position: { ...snapshot.vibePortal.position },
+    },
     runClock: { ...snapshot.runClock },
   };
 }
@@ -134,6 +161,7 @@ export interface UseGameStateApi {
   togglePause: () => void;
   quitRun: () => void;
   tick: (delta: number) => void;
+  applyMultiplayerWorld: (world: MultiplayerWorldState) => void;
   finishLoading: () => void;
   setLoadingProgress: (progress: number, label: string) => void;
   consumeAudioEvents: () => GameSnapshot["audioEvents"];
@@ -153,6 +181,15 @@ export function useGameState(): UseGameStateApi {
   const passiveBroadsideTimerRef = useRef({ value: BASE_PASSIVE_BROADSIDE_INTERVAL });
   const hitPauseTimerRef = useRef({ value: 0 });
   const megaBossSpawnedRef = useRef({ value: false });
+  const bilgePumpTimerRef = useRef({ value: 0 });
+  const sacrificeRigTimerRef = useRef({ value: SACRIFICE_RIG_PERIOD });
+  const tidalSweepTimerRef = useRef({ value: TIDAL_SWEEP_PERIOD });
+  const pressGangNextKillRef = useRef({ value: 20 });
+  const krakenAttackTimerRef = useRef({ value: 0 });
+  const krakenRemainingRef = useRef({ value: 0 });
+  const krakenUsedRef = useRef({ value: false });
+  const phantomFleetRemainingRef = useRef({ value: 0 });
+  const phantomFleetAttackTimerRef = useRef({ value: 0.24 });
 
   const syncState = useCallback(() => {
     setSnapshot(copySnapshot(stateRef.current));
@@ -175,6 +212,15 @@ export function useGameState(): UseGameStateApi {
     passiveBroadsideTimerRef.current.value = BASE_PASSIVE_BROADSIDE_INTERVAL;
     hitPauseTimerRef.current.value = 0;
     megaBossSpawnedRef.current.value = false;
+    bilgePumpTimerRef.current.value = 0;
+    sacrificeRigTimerRef.current.value = SACRIFICE_RIG_PERIOD;
+    tidalSweepTimerRef.current.value = TIDAL_SWEEP_PERIOD;
+    pressGangNextKillRef.current.value = 20;
+    krakenAttackTimerRef.current.value = 0;
+    krakenRemainingRef.current.value = 0;
+    krakenUsedRef.current.value = false;
+    phantomFleetRemainingRef.current.value = 0;
+    phantomFleetAttackTimerRef.current.value = 0.24;
     syncState();
   }, [syncState]);
 
@@ -230,6 +276,7 @@ export function useGameState(): UseGameStateApi {
       state.projectiles,
       state.visualEffects,
       effectIdRef.current,
+      state.upgrades.stacks.cannonSpread ?? 0,
     );
     if (!fired) {
       setMessage({
@@ -255,6 +302,22 @@ export function useGameState(): UseGameStateApi {
         remaining: 0.65,
       });
     } else {
+      if ((state.upgrades.stacks.boostRepeat ?? 0) > 0) {
+        state.cooldowns.boostActiveRemaining = Math.max(
+          state.cooldowns.boostActiveRemaining,
+          state.cooldowns.boostActiveDuration * 1.5,
+        );
+      }
+      if ((state.upgrades.stacks.ghostHull ?? 0) > 0) {
+        state.cooldowns.invulnRemaining = Math.max(state.cooldowns.invulnRemaining, 1.25);
+      }
+      if ((state.upgrades.stacks.ghostTide ?? 0) > 0) {
+        state.cooldowns.boostRemaining = Math.min(state.cooldowns.boostRemaining, 0.45);
+      }
+      if ((state.upgrades.stacks.phantomFleet ?? 0) > 0) {
+        phantomFleetRemainingRef.current.value = PHANTOM_FLEET_ACTIVE_TIME;
+        phantomFleetAttackTimerRef.current.value = 0.1;
+      }
       setMessage(null);
     }
     syncState();
@@ -271,6 +334,11 @@ export function useGameState(): UseGameStateApi {
       state.player.hp = state.player.maxHp;
     }
     retargetNextUpgradeThreshold(state.upgrades, state.stats.collectedCoins);
+    if (type === "krakenCall" && !krakenUsedRef.current.value) {
+      krakenUsedRef.current.value = true;
+      krakenRemainingRef.current.value = KRAKEN_ACTIVE_TIME;
+      krakenAttackTimerRef.current.value = 0.12;
+    }
     state.phase = "playing";
     state.pendingUpgradeOptions = [];
     state.postFxPulse = emitLevelUpEvents(
@@ -295,6 +363,27 @@ export function useGameState(): UseGameStateApi {
   const setLoadingProgress = useCallback((progress: number, label: string) => {
     const state = stateRef.current;
     state.loading = { progress: Math.max(0, Math.min(1, progress)), label };
+    syncState();
+  }, [syncState]);
+
+  const applyMultiplayerWorld = useCallback((world: MultiplayerWorldState) => {
+    const state = stateRef.current;
+    state.runClock = {
+      phase: world.runClock.phase,
+      phaseTime: world.runClock.phaseTime,
+      elapsedTotal: world.runClock.elapsedTotal,
+    };
+    state.runBiome = world.runBiome;
+    state.spawnIntensity = world.spawnIntensity;
+    state.enemies = world.enemies.map((enemy) => ({
+      ...enemy,
+      position: { ...enemy.position },
+    }));
+    state.pickups = world.pickups.map((pickup) => ({
+      ...pickup,
+      position: { ...pickup.position },
+    }));
+    state.stats.collectedCoins = world.sharedCoins;
     syncState();
   }, [syncState]);
 
@@ -345,6 +434,22 @@ export function useGameState(): UseGameStateApi {
     rc.elapsedTotal += step;
     rc.phaseTime += step;
 
+    const portal = state.vibePortal;
+    portal.visible = rc.elapsedTotal >= VIBE_PORTAL_UNLOCK_TIME;
+    if (!portal.visible || portal.triggered) {
+      portal.near = false;
+    } else {
+      const dx = state.player.position.x - portal.position.x;
+      const dy = state.player.position.y - portal.position.y;
+      const dist = Math.hypot(dx, dy);
+      portal.near = dist <= VIBE_PORTAL_NEAR_DISTANCE;
+      if (state.phase === "playing" && dist <= VIBE_PORTAL_TRIGGER_DISTANCE) {
+        portal.triggered = true;
+        portal.near = false;
+        setMessage({ text: "Sailing to the Vibe Portal...", remaining: 1.2 });
+      }
+    }
+
     if (rc.phase === "wave" && rc.phaseTime >= 60) {
       rc.phase = "elite";
       rc.phaseTime = 0;
@@ -375,12 +480,14 @@ export function useGameState(): UseGameStateApi {
 
     state.runBiome = getRunRegionBiome(rc.elapsedTotal);
 
+    const ghostTideSpeedBoost = (state.upgrades.stacks.ghostTide ?? 0) > 0 ? 1.6 : 1;
     updatePlayerMovement(
       state.player,
       inputRef.current,
       step,
-      state.upgrades.speedMult * getBoostSpeedMultiplier(state.cooldowns),
+      state.upgrades.speedMult * ghostTideSpeedBoost * getBoostSpeedMultiplier(state.cooldowns),
     );
+    const fullSteamActive = (state.upgrades.stacks.fullSteam ?? 0) > 0 && state.cooldowns.boostActiveRemaining > 0;
     runAutoAttack(
       state.enemies,
       state.player,
@@ -391,7 +498,13 @@ export function useGameState(): UseGameStateApi {
       state.visualEffects,
       effectIdRef.current,
       step,
-      state.cooldowns.frenzyRemaining > 0,
+      state.cooldowns.frenzyRemaining > 0 || fullSteamActive,
+      state.upgrades.stacks.projectileCount ?? 0,
+      state.upgrades.stacks.pierce ?? 0,
+      state.upgrades.stacks.sternChaser ?? 0,
+      state.upgrades.stacks.grapeshot ?? 0,
+      state.upgrades.stacks.explosiveRounds ?? 0,
+      state.upgrades.stacks.deathBlossom ?? 0,
     );
     runPassiveBroadside(
       state.player,
@@ -440,6 +553,133 @@ export function useGameState(): UseGameStateApi {
     runBossAttacks(state.enemies, state.player, projectileIdRef.current, state.projectiles, state.visualEffects, effectIdRef.current, step);
     updateProjectileMotion(state.projectiles, state.player.position, step, state.visualEffects, effectIdRef.current);
 
+    bilgePumpTimerRef.current.value += step;
+    if (bilgePumpTimerRef.current.value >= 1) {
+      bilgePumpTimerRef.current.value -= 1;
+      const regen = (state.upgrades.stacks.bilgePump ?? 0) + ((state.upgrades.stacks.ironclad ?? 0) > 0 ? 1 : 0);
+      if (regen > 0) {
+        state.player.hp = Math.min(state.player.maxHp, state.player.hp + regen);
+      }
+    }
+
+    sacrificeRigTimerRef.current.value -= step;
+    if (
+      (state.upgrades.stacks.sacrificeRig ?? 0) > 0 &&
+      sacrificeRigTimerRef.current.value <= 0 &&
+      state.player.hp > 28
+    ) {
+      sacrificeRigTimerRef.current.value = SACRIFICE_RIG_PERIOD;
+      state.player.hp = Math.max(1, state.player.hp - 20);
+      for (let i = 0; i < 12; i += 1) {
+        const angle = (Math.PI * 2 * i) / 12;
+        state.pickups.push({
+          id: pickupIdRef.current.value++,
+          kind: "coin",
+          position: { x: state.player.position.x + Math.cos(angle) * 2.3, y: state.player.position.y + Math.sin(angle) * 2.3 },
+          value: 2,
+        });
+      }
+      state.audioEvents.push({ id: effectIdRef.current.value++, sfx: "upgrade_sting" });
+    }
+
+    tidalSweepTimerRef.current.value -= step;
+    if ((state.upgrades.stacks.tidalSweep ?? 0) > 0 && tidalSweepTimerRef.current.value <= 0) {
+      tidalSweepTimerRef.current.value = TIDAL_SWEEP_PERIOD;
+      for (const pickup of state.pickups) {
+        pickup.position.x = state.player.position.x + (Math.random() - 0.5) * 0.4;
+        pickup.position.y = state.player.position.y + (Math.random() - 0.5) * 0.4;
+      }
+    }
+
+    if (state.cooldowns.boostActiveRemaining > 0 && (state.upgrades.stacks.afterburner ?? 0) > 0) {
+      const burnDps = 18 + (state.upgrades.stacks.afterburner ?? 0) * 14 + ((state.upgrades.stacks.hellfireWake ?? 0) > 0 ? 18 : 0);
+      const burnRadius = (state.upgrades.stacks.hellfireWake ?? 0) > 0 ? 2.5 : 1.6;
+      for (let i = state.enemies.length - 1; i >= 0; i -= 1) {
+        const enemy = state.enemies[i];
+        if (distance(enemy.position, state.player.position) <= burnRadius) {
+          enemy.hp -= burnDps * step;
+          if (enemy.hp <= 0) {
+            state.enemies.splice(i, 1);
+            state.stats.enemiesKilled += 1;
+            state.pickups.push({
+              id: pickupIdRef.current.value++,
+              kind: "coin",
+              position: { ...enemy.position },
+              value: 1 + (state.upgrades.stacks.crowsNest ?? 0),
+            });
+          }
+        }
+      }
+    }
+
+    if (krakenRemainingRef.current.value > 0) {
+      krakenRemainingRef.current.value = Math.max(0, krakenRemainingRef.current.value - step);
+      krakenAttackTimerRef.current.value -= step;
+      if (krakenAttackTimerRef.current.value <= 0) {
+        krakenAttackTimerRef.current.value = 0.35;
+        const krakenHits = 2 + ((state.upgrades.stacks.fullSteam ?? 0) > 0 ? 1 : 0);
+        for (let hit = 0; hit < krakenHits; hit += 1) {
+          let targetIndex = -1;
+          let targetDistance = Number.POSITIVE_INFINITY;
+          for (let i = 0; i < state.enemies.length; i += 1) {
+            const d = distance(state.enemies[i].position, state.player.position);
+            if (d < 18 && d < targetDistance) {
+              targetDistance = d;
+              targetIndex = i;
+            }
+          }
+          if (targetIndex >= 0) {
+            const target = state.enemies[targetIndex];
+            target.hp -= 42;
+            state.visualEffects.push({
+              id: effectIdRef.current.value++,
+              kind: "hitBurst",
+              position: { ...target.position },
+              remaining: 0.35,
+              color: "#5ef3ff",
+            });
+            if (target.hp <= 0) {
+              state.enemies.splice(targetIndex, 1);
+              state.stats.enemiesKilled += 1;
+              state.pickups.push({
+                id: pickupIdRef.current.value++,
+                kind: "coin",
+                position: { ...target.position },
+                value: 1,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    if (phantomFleetRemainingRef.current.value > 0 && (state.upgrades.stacks.phantomFleet ?? 0) > 0) {
+      phantomFleetRemainingRef.current.value = Math.max(0, phantomFleetRemainingRef.current.value - step);
+      phantomFleetAttackTimerRef.current.value -= step;
+      if (phantomFleetAttackTimerRef.current.value <= 0) {
+        phantomFleetAttackTimerRef.current.value = 0.28;
+        const forward = { x: Math.cos(state.player.facing), y: Math.sin(state.player.facing) };
+        const right = { x: -forward.y, y: forward.x };
+        const offsets = [-1.15, 1.15];
+        for (const offset of offsets) {
+          const origin = {
+            x: state.player.position.x + right.x * offset - forward.x * 1.2,
+            y: state.player.position.y + right.y * offset - forward.y * 1.2,
+          };
+          state.projectiles.push({
+            id: projectileIdRef.current.value++,
+            kind: "playerAuto",
+            position: origin,
+            velocity: { x: forward.x * 20, y: forward.y * 20 },
+            ttl: 2.1,
+            damage: 16,
+            radius: 0.34,
+            pierceRemaining: Math.max(0, state.upgrades.stacks.pierce ?? 0),
+          });
+        }
+      }
+    }
+
     const collisionResult = resolveCollisions(
       state.player,
       state.enemies,
@@ -449,17 +689,36 @@ export function useGameState(): UseGameStateApi {
       state.visualEffects,
       effectIdRef.current,
       state.audioEvents,
+      {
+        hpDropBonusChance: (state.upgrades.stacks.scavenger ?? 0) * 0.08,
+        harvestResourceMultiplier: 1 + (state.upgrades.stacks.deepDredge ?? 0) * 0.5,
+        harvestGemValueBonus: state.upgrades.stacks.crowsNest ?? 0,
+        ramDamageMultiplier: 1 + (state.upgrades.stacks.ramProw ?? 0) * 0.75 + ((state.upgrades.stacks.ironclad ?? 0) > 0 ? 0.75 : 0),
+        ramReflectBonus: (state.upgrades.stacks.ironclad ?? 0) > 0 ? 1.5 : 0,
+      },
     );
 
     if (collisionResult.spawnedPickups) {
       state.pickups.push(...collisionResult.spawnedPickups);
     }
     state.stats.enemiesKilled += collisionResult.killsGained;
+    if ((state.upgrades.stacks.pressGang ?? 0) > 0) {
+      while (state.stats.enemiesKilled >= pressGangNextKillRef.current.value) {
+        pressGangNextKillRef.current.value += 20;
+        state.pickups.push({
+          id: pickupIdRef.current.value++,
+          kind: "chest",
+          position: { x: state.player.position.x + (Math.random() - 0.5) * 6, y: state.player.position.y + (Math.random() - 0.5) * 6 },
+          value: 0,
+        });
+      }
+    }
     
-    // Apply invulnerability frame block
+    // Apply invulnerability frame block + armor mitigation.
     if (state.cooldowns.invulnRemaining <= 0) {
-      state.player.hp = Math.max(0, state.player.hp - collisionResult.playerDamageTaken);
-      if (collisionResult.playerDamageTaken > 0) {
+      const mitigatedDamage = applyDamageMitigation(collisionResult.playerDamageTaken, state.upgrades);
+      state.player.hp = Math.max(0, state.player.hp - mitigatedDamage);
+      if (mitigatedDamage > 0) {
         state.stats.currentUnscathedStreak = 0;
       } else {
         state.stats.currentUnscathedStreak += step;
@@ -475,6 +734,7 @@ export function useGameState(): UseGameStateApi {
       state.cooldowns,
       state.audioEvents,
       effectIdRef.current,
+      state.upgrades.stacks.coinMagnet ?? 0,
     );
     state.stats.collectedCoins += coinsGained;
 
@@ -567,6 +827,7 @@ export function useGameState(): UseGameStateApi {
     togglePause,
     quitRun,
     tick,
+    applyMultiplayerWorld,
     finishLoading,
     setLoadingProgress,
     consumeAudioEvents,

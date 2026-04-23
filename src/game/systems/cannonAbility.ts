@@ -17,6 +17,7 @@ export function tryFireCannon(
   projectiles: ProjectileState[],
   visualEffects: VisualEffect[],
   effectIdRef: { value: number },
+  cannonSpreadStacks: number = 0,
 ): boolean {
   if (cooldowns.cannonRemaining > 0) {
     return false;
@@ -28,7 +29,8 @@ export function tryFireCannon(
   const right = perpRight(forward);
   const port = { x: -right.x, y: -right.y };
 
-  const total = CANNON_SALVO_COUNT;
+  const spreadStacks = Math.max(0, cannonSpreadStacks);
+  const total = CANNON_SALVO_COUNT + spreadStacks * 2;
   const portCount = Math.ceil(total / 2);
   const starboardCount = total - portCount;
 
@@ -41,8 +43,9 @@ export function tryFireCannon(
     originOffset: { x: number; y: number },
   ): void => {
     if (sideCount <= 0) return;
-    const start = -CANNON_BROADSIDE_SPREAD_RADIANS / 2;
-    const step = CANNON_BROADSIDE_SPREAD_RADIANS / Math.max(1, sideCount - 1);
+    const spreadRadians = CANNON_BROADSIDE_SPREAD_RADIANS * (1 + spreadStacks * 0.22);
+    const start = -spreadRadians / 2;
+    const step = spreadRadians / Math.max(1, sideCount - 1);
     for (let i = 0; i < sideCount; i += 1) {
       const localOffset = start + step * i;
       const angle = sideAngle + localOffset;

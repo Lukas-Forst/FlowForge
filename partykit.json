@@ -1,0 +1,5 @@
+{
+  "name": "flowforge-party",
+  "main": "party/flowforge.ts",
+  "compatibilityDate": "2026-04-23"
+}

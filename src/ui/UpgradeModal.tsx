@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import { useState } from "react";
+import { getUpgradePrerequisiteDescription } from "../game/systems/upgrades";
 import type { UpgradeOption } from "../game/types";
 
 interface UpgradeModalProps {
@@ -21,7 +22,9 @@ export function UpgradeModal({ options, onPick }: UpgradeModalProps): ReactEleme
       <div className="upgrade-modal-panel">
         <h2 style={{ fontFamily: "'Luckiest Guy', system-ui, sans-serif", letterSpacing: 2, margin: 0 }}>CHOOSE UPGRADE</h2>
         <div className="upgrade-grid-v2">
-          {options.map((option) => (
+          {options.map((option) => {
+            const prereq = getUpgradePrerequisiteDescription(option.type);
+            return (
             <button
               className={`upgrade-card ${picked === option.type ? "picked" : ""}`}
               key={option.type}
@@ -31,8 +34,10 @@ export function UpgradeModal({ options, onPick }: UpgradeModalProps): ReactEleme
             >
               <strong>{option.label}</strong>
               <span>{option.description}</span>
+              {prereq ? <span style={{ marginTop: 6, opacity: 0.9, color: "#9edfff" }}>Prereq: {prereq}</span> : null}
             </button>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

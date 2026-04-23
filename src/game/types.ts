@@ -61,7 +61,9 @@ export type UpgradeType =
   | "ghostTide"
   | "ironclad"
   | "tidalSweep"
-  | "hellfireWake";
+  | "hellfireWake"
+  | "krakenCall"
+  | "phantomFleet";
 
 export type EnemyType = "corsair" | "bomber" | "brute" | "swarmer" | "sniper" | "boss" | "shore_battery";
 
@@ -128,6 +130,7 @@ export interface ProjectileState {
   ttl: number;
   damage: number;
   radius: number;
+  pierceRemaining?: number;
 }
 
 export type VisualEffectKind = "waterSplash" | "hitBurst" | "muzzleFlash" | "waterRippleSmall" | "telegraphRing" | "damageNumber" | "enemyDeath" | "screenShake";
@@ -210,6 +213,33 @@ export interface FlashMessage {
   remaining: number;
 }
 
+export interface VibePortalState {
+  position: Vec2;
+  visible: boolean;
+  near: boolean;
+  triggered: boolean;
+}
+
+export interface MultiplayerPeerState {
+  id: string;
+  name: string;
+  color: string;
+  emoji: string;
+  position: Vec2;
+  facing: number;
+  hp: number;
+  upgradeLevel: number;
+}
+
+export interface MultiplayerWorldState {
+  runClock: GameSnapshot["runClock"];
+  runBiome: BiomeType;
+  spawnIntensity: number;
+  enemies: EnemyState[];
+  pickups: PickupState[];
+  sharedCoins: number;
+}
+
 export interface RunRecord {
   score: number;
   timeSurvived: number;
@@ -236,6 +266,7 @@ export interface GameSnapshot {
   stats: GameStats;
   pendingUpgradeOptions: UpgradeOption[];
   message: FlashMessage | null;
+  vibePortal: VibePortalState;
   spawnIntensity: number;
   runClock: {
     phase: "wave" | "elite" | "lull" | "boss";
