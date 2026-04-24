@@ -12,6 +12,7 @@ import type { PickupState, GameSnapshot, MultiplayerPeerState } from "../game/ty
 import { getBlendedRunArcTheme } from "./biomeLerp";
 import { PostFX } from "./postfx/PostFX";
 import { pickFxQuality, type FxQuality } from "./postfx/qualityController";
+import { isChromiumBased, getDefaultFxQuality } from "../utils/browserPerf";
 
 const ISO_OFFSET = 24;
 
@@ -152,8 +153,8 @@ interface GameSceneProps {
 }
 
 function FxQualityTracker({ onQuality }: { onQuality: (q: FxQuality) => void }): null {
-  const avgFpsRef = useRef(60);
-  const qualityRef = useRef<FxQuality>("full");
+  const avgFpsRef = useRef(isChromiumBased() ? 30 : 60);
+  const qualityRef = useRef<FxQuality>(getDefaultFxQuality());
   const override = useMemo(() => {
     const qs = new URLSearchParams(window.location.search);
     const forced = qs.get("fx");
@@ -330,7 +331,7 @@ function PlayerNameTag({
 export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = null }: GameSceneProps): ReactElement {
   const elapsed = snapshot.runClock.elapsedTotal;
   const theme = getBlendedRunArcTheme(elapsed);
-  const [fxQuality, setFxQuality] = useState<FxQuality>("full");
+  const [fxQuality, setFxQuality] = useState<FxQuality>(getDefaultFxQuality);
   return (
     <Canvas shadows dpr={[1, 1.8]} gl={{ powerPreference: "high-performance" }} orthographic camera={{ position: [ISO_OFFSET, ISO_OFFSET, ISO_OFFSET], zoom: 22, near: 0.1, far: 600 }}>
       <color attach="background" args={[theme.backgroundColor]} />
