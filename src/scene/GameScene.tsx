@@ -332,7 +332,7 @@ export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = nul
   const theme = getBlendedRunArcTheme(elapsed);
   const [fxQuality, setFxQuality] = useState<FxQuality>("full");
   return (
-    <Canvas shadows dpr={[1, 1.8]} orthographic camera={{ position: [ISO_OFFSET, ISO_OFFSET, ISO_OFFSET], zoom: 22, near: 0.1, far: 600 }}>
+    <Canvas shadows dpr={[1, 1.8]} gl={{ powerPreference: "high-performance" }} orthographic camera={{ position: [ISO_OFFSET, ISO_OFFSET, ISO_OFFSET], zoom: 22, near: 0.1, far: 600 }}>
       <color attach="background" args={[theme.backgroundColor]} />
       <fog attach="fog" args={[theme.fog.color, theme.fog.near, theme.fog.far]} />
       <ambientLight intensity={theme.ambient.intensity} color={theme.ambient.color} />
