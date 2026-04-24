@@ -11,10 +11,10 @@
     "test": "vitest run",
     "assets:size-check": "node ./scripts/assets/size-check.mjs",
     "assets:optimize": "node ./scripts/assets/optimize.mjs",
+    "assets:props:generate": "node ./scripts/meshy/generate-props.mjs",
+    "assets:props:plan": "node ./scripts/meshy/generate-props.mjs --dry-run",
     "assets:structures:generate": "node ./scripts/meshy/generate-structures.mjs",
-    "assets:structures:plan": "node ./scripts/meshy/generate-structures.mjs --dry-run",
-    "assets:meshy-props": "node ./scripts/copy-meshy-props.mjs",
-    "assets:meshy-props:move": "node ./scripts/copy-meshy-props.mjs --move"
+    "assets:structures:plan": "node ./scripts/meshy/generate-structures.mjs --dry-run"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
