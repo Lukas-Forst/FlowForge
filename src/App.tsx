@@ -24,7 +24,7 @@ const MOVEMENT_KEYS: Record<string, MovementKey> = {
 };
 
 function isRecognizedAbilityKey(code: string): boolean {
-  return code === "KeyQ" || code === "KeyE" || code === "KeyR" || code === "Space";
+  return code === "Space" || code === "ShiftLeft" || code === "ShiftRight" || code === "KeyE";
 }
 
 type NetMode = "solo" | "host" | "client";
@@ -92,6 +92,7 @@ export default function App(): ReactElement {
     setMovementKey,
     triggerCannon,
     triggerBoost,
+    triggerExtra,
     chooseUpgrade,
     togglePause,
     quitRun,
@@ -161,14 +162,19 @@ export default function App(): ReactElement {
         return;
       }
 
-      if (event.code === "KeyQ" && !event.repeat) {
+      if (event.code === "Space" && !event.repeat) {
+        event.preventDefault();
         triggerCannon();
         return;
       }
 
-      if (event.code === "Space" && !event.repeat) {
-        event.preventDefault();
+      if ((event.code === "ShiftLeft" || event.code === "ShiftRight") && !event.repeat) {
         triggerBoost();
+        return;
+      }
+
+      if (event.code === "KeyE" && !event.repeat) {
+        triggerExtra();
         return;
       }
 
@@ -206,7 +212,7 @@ export default function App(): ReactElement {
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", clearMovement);
     };
-  }, [restartRun, setMovementKey, snapshot.phase, startRun, togglePause, triggerBoost, triggerCannon]);
+  }, [restartRun, setMovementKey, snapshot.phase, startRun, togglePause, triggerBoost, triggerCannon, triggerExtra]);
 
   useEffect(() => {
     const kick = () => {

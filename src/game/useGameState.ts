@@ -29,7 +29,7 @@ import {
 import { BASE_PASSIVE_BROADSIDE_INTERVAL, UPGRADE_OPTIONS } from "./constants";
 import type { FlashMessage, GameSnapshot, MovementKey, MultiplayerWorldState, RunRecord, UpgradeType } from "./types";
 import { runPassiveBroadside } from "./systems/passiveBroadside";
-import { distance } from "./utils";
+import { directionFromAngle, distance, perpRight } from "./utils";
 
 const VIBE_PORTAL_UNLOCK_TIME = 120;
 const VIBE_PORTAL_NEAR_DISTANCE = 8;
@@ -39,6 +39,7 @@ const SACRIFICE_RIG_PERIOD = 28;
 const TIDAL_SWEEP_PERIOD = 8;
 const KRAKEN_ACTIVE_TIME = 15;
 const PHANTOM_FLEET_ACTIVE_TIME = 8;
+const DRONE_SWARM_ACTIVE_TIME = 10;
 
 export function decayPostFxPulse(
   pulse: GameSnapshot["postFxPulse"],
@@ -52,6 +53,31 @@ export function decayPostFxPulse(
 
 export function shouldAdvanceSimThisTick(phase: GameSnapshot["phase"]): boolean {
   return phase === "playing" || phase === "upgrade";
+}
+
+function spawnRadialBarrage(
+  count: number,
+  speed: number,
+  damage: number,
+  ttl: number,
+  projectileIdRef: { value: number },
+  projectiles: GameSnapshot["projectiles"],
+  origin: { x: number; y: number },
+): void {
+  for (let i = 0; i < count; i += 1) {
+    const angle = (Math.PI * 2 * i) / count;
+    const dir = directionFromAngle(angle);
+    projectiles.push({
+      id: projectileIdRef.value++,
+      kind: "playerCannon",
+      position: { x: origin.x, y: origin.y },
+      velocity: { x: dir.x * speed, y: dir.y * speed },
+      ttl,
+      damage,
+      radius: 0.36,
+      pierceRemaining: 0,
+    });
+  }
 }
 
 function createInitialSnapshot(phase: GameSnapshot["phase"] = "loading"): GameSnapshot {
@@ -79,6 +105,9 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "loading"): GameSn
       cooldownMult: 1,
       nextThreshold: 10,
       stacks: {} as Record<UpgradeType, number>,
+      activeCannonAbility: "cannon",
+      activeBoostAbility: "boost",
+      activeExtraAbility: null,
     },
     cooldowns: {
       cannonRemaining: 0,
@@ -87,6 +116,8 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "loading"): GameSn
       boostDuration: BOOST_COOLDOWN,
       boostActiveRemaining: 0,
       boostActiveDuration: BOOST_ACTIVE_TIME,
+      extraRemaining: 0,
+      extraDuration: 12,
       invulnRemaining: 0,
       frenzyRemaining: 0,
     },
@@ -157,6 +188,7 @@ export interface UseGameStateApi {
   setMovementKey: (key: MovementKey, pressed: boolean) => void;
   triggerCannon: () => void;
   triggerBoost: () => void;
+  triggerExtra: () => void;
   chooseUpgrade: (type: UpgradeType) => void;
   togglePause: () => void;
   quitRun: () => void;
@@ -190,6 +222,8 @@ export function useGameState(): UseGameStateApi {
   const krakenUsedRef = useRef({ value: false });
   const phantomFleetRemainingRef = useRef({ value: 0 });
   const phantomFleetAttackTimerRef = useRef({ value: 0.24 });
+  const droneSwarmRemainingRef = useRef({ value: 0 });
+  const droneSwarmAttackTimerRef = useRef({ value: 0.2 });
 
   const syncState = useCallback(() => {
     setSnapshot(copySnapshot(stateRef.current));
@@ -221,6 +255,8 @@ export function useGameState(): UseGameStateApi {
     krakenUsedRef.current.value = false;
     phantomFleetRemainingRef.current.value = 0;
     phantomFleetAttackTimerRef.current.value = 0.24;
+    droneSwarmRemainingRef.current.value = 0;
+    droneSwarmAttackTimerRef.current.value = 0.2;
     syncState();
   }, [syncState]);
 
@@ -268,16 +304,57 @@ export function useGameState(): UseGameStateApi {
     if (state.phase !== "playing") {
       return;
     }
-    const fired = tryFireCannon(
-      state.player,
-      state.cooldowns,
-      projectileIdRef.current,
-      state.upgrades.cooldownMult,
-      state.projectiles,
-      state.visualEffects,
-      effectIdRef.current,
-      state.upgrades.stacks.cannonSpread ?? 0,
-    );
+    let fired = false;
+    switch (state.upgrades.activeCannonAbility ?? "cannon") {
+      case "drones":
+        if (state.cooldowns.cannonRemaining <= 0) {
+          state.cooldowns.cannonDuration = Math.max(3.5, 8 * state.upgrades.cooldownMult);
+          state.cooldowns.cannonRemaining = state.cooldowns.cannonDuration;
+          droneSwarmRemainingRef.current.value = DRONE_SWARM_ACTIVE_TIME;
+          droneSwarmAttackTimerRef.current.value = 0.12;
+          fired = true;
+        }
+        break;
+      case "chainShot":
+        if (state.cooldowns.cannonRemaining <= 0) {
+          const dir = directionFromAngle(state.player.facing);
+          state.projectiles.push({
+            id: projectileIdRef.current.value++,
+            kind: "playerCannon",
+            position: { x: state.player.position.x + dir.x * 1.1, y: state.player.position.y + dir.y * 1.1 },
+            velocity: { x: dir.x * 20, y: dir.y * 20 },
+            ttl: 2.2,
+            damage: 68,
+            radius: 0.55,
+            pierceRemaining: 99,
+          });
+          state.cooldowns.cannonDuration = Math.max(2.5, 7 * state.upgrades.cooldownMult);
+          state.cooldowns.cannonRemaining = state.cooldowns.cannonDuration;
+          fired = true;
+        }
+        break;
+      case "flare":
+        if (state.cooldowns.cannonRemaining <= 0) {
+          spawnRadialBarrage(7, 12, 24, 1.1, projectileIdRef.current, state.projectiles, state.player.position);
+          state.cooldowns.cannonDuration = Math.max(3.5, 9 * state.upgrades.cooldownMult);
+          state.cooldowns.cannonRemaining = state.cooldowns.cannonDuration;
+          fired = true;
+        }
+        break;
+      case "cannon":
+      default:
+        fired = tryFireCannon(
+          state.player,
+          state.cooldowns,
+          projectileIdRef.current,
+          state.upgrades.cooldownMult,
+          state.projectiles,
+          state.visualEffects,
+          effectIdRef.current,
+          state.upgrades.stacks.cannonSpread ?? 0,
+        );
+        break;
+    }
     if (!fired) {
       setMessage({
         text: "Cannons reloading...",
@@ -295,7 +372,57 @@ export function useGameState(): UseGameStateApi {
     if (state.phase !== "playing") {
       return;
     }
-    const boosted = tryActivateBoost(state.cooldowns, state.upgrades.cooldownMult);
+    let boosted = false;
+    switch (state.upgrades.activeBoostAbility ?? "boost") {
+      case "mines": {
+        if (state.cooldowns.boostRemaining <= 0) {
+          const forward = directionFromAngle(state.player.facing);
+          const right = perpRight(forward);
+          const spawn = (lat: number, back: number): void => {
+            const p = {
+              x: state.player.position.x + right.x * lat - forward.x * back,
+              y: state.player.position.y + right.y * lat - forward.y * back,
+            };
+            state.projectiles.push({
+              id: projectileIdRef.current.value++,
+              kind: "playerCannon",
+              position: p,
+              velocity: { x: -forward.x * 2, y: -forward.y * 2 },
+              ttl: 8,
+              damage: 60,
+              radius: 0.5,
+            });
+          };
+          spawn(-0.9, 1.6);
+          spawn(0, 2.1);
+          spawn(0.9, 1.6);
+          state.cooldowns.boostDuration = Math.max(4.5, 10 * state.upgrades.cooldownMult);
+          state.cooldowns.boostRemaining = state.cooldowns.boostDuration;
+          boosted = true;
+        }
+        break;
+      }
+      case "ringBarrage":
+        if (state.cooldowns.boostRemaining <= 0) {
+          spawnRadialBarrage(10, 9, 35, 2.4, projectileIdRef.current, state.projectiles, state.player.position);
+          state.cooldowns.boostDuration = Math.max(4.5, 10 * state.upgrades.cooldownMult);
+          state.cooldowns.boostRemaining = state.cooldowns.boostDuration;
+          boosted = true;
+        }
+        break;
+      case "anchorDrop":
+        if (state.cooldowns.boostRemaining <= 0) {
+          spawnRadialBarrage(8, 7.5, 45, 1.2, projectileIdRef.current, state.projectiles, state.player.position);
+          state.cooldowns.boostDuration = Math.max(3.5, 9 * state.upgrades.cooldownMult);
+          state.cooldowns.boostRemaining = state.cooldowns.boostDuration;
+          boosted = true;
+        }
+        break;
+      case "boost":
+      default:
+        boosted = tryActivateBoost(state.cooldowns, state.upgrades.cooldownMult);
+        break;
+    }
     if (!boosted) {
       setMessage({
         text: "Boost recharging...",
@@ -320,6 +447,53 @@ export function useGameState(): UseGameStateApi {
       }
       setMessage(null);
     }
+    syncState();
+  }, [setMessage, syncState]);
+
+  const triggerExtra = useCallback(() => {
+    const state = stateRef.current;
+    if (state.phase !== "playing") return;
+    if (!state.upgrades.activeExtraAbility) {
+      setMessage({ text: "No extra ability equipped yet", remaining: 0.8 });
+      syncState();
+      return;
+    }
+    if ((state.cooldowns.extraRemaining ?? 0) > 0) {
+      setMessage({ text: "Extra ability recharging...", remaining: 0.7 });
+      syncState();
+      return;
+    }
+    const ability = state.upgrades.activeExtraAbility;
+    const forward = directionFromAngle(state.player.facing);
+    if (ability === "torpedo") {
+      state.projectiles.push({
+        id: projectileIdRef.current.value++,
+        kind: "playerCannon",
+        position: { x: state.player.position.x + forward.x * 1.2, y: state.player.position.y + forward.y * 1.2 },
+        velocity: { x: forward.x * 8, y: forward.y * 8 },
+        ttl: 2.8,
+        damage: 80,
+        radius: 0.65,
+        pierceRemaining: 99,
+      });
+      state.cooldowns.extraDuration = Math.max(6, 12 * state.upgrades.cooldownMult);
+    } else if (ability === "depthCharge") {
+      state.projectiles.push({
+        id: projectileIdRef.current.value++,
+        kind: "playerCannon",
+        position: { x: state.player.position.x, y: state.player.position.y },
+        velocity: { x: 0, y: 0 },
+        ttl: 1.5,
+        damage: 100,
+        radius: 0.95,
+      });
+      state.cooldowns.extraDuration = Math.max(7, 14 * state.upgrades.cooldownMult);
+    } else {
+      spawnRadialBarrage(6, 6, 18, 1.6, projectileIdRef.current, state.projectiles, state.player.position);
+      state.cooldowns.extraDuration = Math.max(5.5, 11 * state.upgrades.cooldownMult);
+    }
+    state.cooldowns.extraRemaining = state.cooldowns.extraDuration;
+    setMessage(null);
     syncState();
   }, [setMessage, syncState]);
 
@@ -427,6 +601,7 @@ export function useGameState(): UseGameStateApi {
     state.cooldowns.cannonRemaining = Math.max(0, state.cooldowns.cannonRemaining - step);
     state.cooldowns.boostRemaining = Math.max(0, state.cooldowns.boostRemaining - step);
     state.cooldowns.boostActiveRemaining = Math.max(0, state.cooldowns.boostActiveRemaining - step);
+    state.cooldowns.extraRemaining = Math.max(0, (state.cooldowns.extraRemaining ?? 0) - step);
     state.cooldowns.invulnRemaining = Math.max(0, state.cooldowns.invulnRemaining - step);
     state.cooldowns.frenzyRemaining = Math.max(0, state.cooldowns.frenzyRemaining - step);
 
@@ -506,6 +681,28 @@ export function useGameState(): UseGameStateApi {
       state.upgrades.stacks.explosiveRounds ?? 0,
       state.upgrades.stacks.deathBlossom ?? 0,
     );
+    if (droneSwarmRemainingRef.current.value > 0 && state.enemies.length > 0) {
+      droneSwarmRemainingRef.current.value = Math.max(0, droneSwarmRemainingRef.current.value - step);
+      droneSwarmAttackTimerRef.current.value -= step;
+      if (droneSwarmAttackTimerRef.current.value <= 0) {
+        droneSwarmAttackTimerRef.current.value = 0.18;
+        const droneCount = 3;
+        for (let i = 0; i < droneCount; i += 1) {
+          const angle = state.player.facing + (Math.PI * 2 * i) / droneCount;
+          const dir = directionFromAngle(angle);
+          state.projectiles.push({
+            id: projectileIdRef.current.value++,
+            kind: "playerAuto",
+            position: { x: state.player.position.x + dir.x * 1.4, y: state.player.position.y + dir.y * 1.4 },
+            velocity: { x: dir.x * 18, y: dir.y * 18 },
+            ttl: 0.9,
+            damage: 16,
+            radius: 0.28,
+            pierceRemaining: 0,
+          });
+        }
+      }
+    }
     runPassiveBroadside(
       state.player,
       state.upgrades,
@@ -823,6 +1020,7 @@ export function useGameState(): UseGameStateApi {
     setMovementKey,
     triggerCannon,
     triggerBoost,
+    triggerExtra,
     chooseUpgrade,
     togglePause,
     quitRun,

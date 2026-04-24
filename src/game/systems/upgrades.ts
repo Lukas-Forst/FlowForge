@@ -1,5 +1,6 @@
 import { EVOLUTION_UPGRADE_TYPES, UPGRADE_OPTIONS } from "../constants";
 import type { AudioEvent, PostFxPulse, UpgradeOption, UpgradeStats, UpgradeType, Vec2, VisualEffect } from "../types";
+import { applyAbilityUpgrade, isAbilityCardRelevant, isAbilityLockedIn, isAbilityUpgrade } from "./abilitySlots";
 
 const EVOLUTION_SET = new Set<UpgradeType>(EVOLUTION_UPGRADE_TYPES);
 const IMPLEMENTED_UPGRADES = new Set<UpgradeType>(Object.keys(UPGRADE_OPTIONS) as UpgradeType[]);
@@ -60,6 +61,14 @@ export function buildUpgradeChoices(upgrades: UpgradeStats): UpgradeOption[] {
 
     const opt = UPGRADE_OPTIONS[key];
     const currentStacks = upgrades.stacks[key] || 0;
+    if (isAbilityUpgrade(key)) {
+      if (isAbilityLockedIn(upgrades)) {
+        continue;
+      }
+      if (!isAbilityCardRelevant(key, upgrades)) {
+        continue;
+      }
+    }
 
     if (EVOLUTION_SET.has(key)) {
       if (currentStacks >= opt.maxStacks) {
@@ -127,6 +136,7 @@ export function applyUpgrade(upgrades: UpgradeStats, type: UpgradeType): void {
   upgrades.level += 1;
   upgrades.nextThreshold += upgrades.level + 4;
   upgrades.stacks[type] = (upgrades.stacks[type] || 0) + 1;
+  applyAbilityUpgrade(upgrades, type);
 
   if (type === "fireRate") upgrades.fireRateMult *= 1.22;
   if (type === "speed") upgrades.speedMult *= 1.15;

@@ -121,4 +121,13 @@ export const UPGRADE_OPTIONS: Record<UpgradeOption["type"], UpgradeOption> = {
   hellfireWake: { type: "hellfireWake", label: "Hellfire Wake (EVOLVED)", description: "Boost trails ignite and detonate surrounding enemies.", rarity: "epic", maxStacks: 1 },
   krakenCall: { type: "krakenCall", label: "Kraken Call (EVOLVED)", description: "Once per run, summon a kraken ally for 15s. Requires max Fire Rate + max Pierce + one epic.", rarity: "epic", maxStacks: 1 },
   phantomFleet: { type: "phantomFleet", label: "Phantom Fleet (EVOLVED)", description: "After each boost, 2 ghost decoys auto-fire for 8s. Requires max Afterburner + Ghost Tide.", rarity: "epic", maxStacks: 1 },
+  cannonDrones: { type: "cannonDrones", label: "Drone Swarm", description: "SPACE deploys 3 combat drones for 10s.", rarity: "rare", maxStacks: 1 },
+  cannonFlare: { type: "cannonFlare", label: "Flare Burst", description: "SPACE fires a wide flare cone that staggers enemies.", rarity: "rare", maxStacks: 1 },
+  cannonChainShot: { type: "cannonChainShot", label: "Chain Shot", description: "SPACE fires a piercing heavy chain shot.", rarity: "rare", maxStacks: 1 },
+  boostMines: { type: "boostMines", label: "Sea Mines", description: "SHIFT drops 3 drifting mines behind your ship.", rarity: "rare", maxStacks: 1 },
+  boostRingBarrage: { type: "boostRingBarrage", label: "Ring Barrage", description: "SHIFT launches a 360-degree mortar ring.", rarity: "rare", maxStacks: 1 },
+  boostAnchorDrop: { type: "boostAnchorDrop", label: "Anchor Drop", description: "SHIFT emits a short-range shockwave slam.", rarity: "rare", maxStacks: 1 },
+  extraTorpedo: { type: "extraTorpedo", label: "Torpedo", description: "Unlock E: launch a piercing heavy torpedo.", rarity: "rare", maxStacks: 1 },
+  extraDepthCharge: { type: "extraDepthCharge", label: "Depth Charge", description: "Unlock E: lob a delayed depth explosion.", rarity: "rare", maxStacks: 1 },
+  extraOilSlick: { type: "extraOilSlick", label: "Oil Slick", description: "Unlock E: drop a burning slowing slick.", rarity: "rare", maxStacks: 1 },
 };

@@ -26,6 +26,7 @@ export function Hud({ snapshot }: HudProps): ReactElement {
   const hpRatio = snapshot.player.maxHp > 0 ? Math.max(0, Math.min(1, snapshot.player.hp / snapshot.player.maxHp)) : 0;
   const cannonReady = snapshot.cooldowns.cannonRemaining <= 0;
   const boostReady = snapshot.cooldowns.boostRemaining <= 0;
+  const extraReady = (snapshot.cooldowns.extraRemaining ?? 0) <= 0;
   const safeTime = Math.max(0, snapshot.stats.timeSurvived);
   const xpProgress = snapshot.upgrades.nextThreshold > 0 ? Math.min(1, Math.max(0, snapshot.stats.collectedCoins / snapshot.upgrades.nextThreshold)) : 0;
   const boss = snapshot.enemies.find((e) => e.type === "boss");
@@ -56,15 +57,21 @@ export function Hud({ snapshot }: HudProps): ReactElement {
             </div>
           </div>
           <div className="hud-v2-row">
-            <span>Q CANNON</span>
+            <span>SPACE CANNON</span>
             <div className="hud-v2-ability-bar">
               <PulseMeter value={cooldownPercent(snapshot.cooldowns.cannonRemaining, snapshot.cooldowns.cannonDuration)} color="#ffcc66" ready={cannonReady} />
             </div>
           </div>
           <div className="hud-v2-row">
-            <span>SPACE BOOST</span>
+            <span>SHIFT BOOST</span>
             <div className="hud-v2-ability-bar">
               <PulseMeter value={cooldownPercent(snapshot.cooldowns.boostRemaining, snapshot.cooldowns.boostDuration)} color="#88ddff" ready={boostReady} />
+            </div>
+          </div>
+          <div className="hud-v2-row">
+            <span>E EXTRA</span>
+            <div className="hud-v2-ability-bar">
+              <PulseMeter value={cooldownPercent(snapshot.cooldowns.extraRemaining ?? 0, snapshot.cooldowns.extraDuration ?? 1)} color="#d28cff" ready={extraReady} />
             </div>
           </div>
         </div>

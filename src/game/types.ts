@@ -63,7 +63,20 @@ export type UpgradeType =
   | "tidalSweep"
   | "hellfireWake"
   | "krakenCall"
-  | "phantomFleet";
+  | "phantomFleet"
+  | "cannonDrones"
+  | "cannonFlare"
+  | "cannonChainShot"
+  | "boostMines"
+  | "boostRingBarrage"
+  | "boostAnchorDrop"
+  | "extraTorpedo"
+  | "extraDepthCharge"
+  | "extraOilSlick";
+
+export type CannonAbilityType = "cannon" | "drones" | "flare" | "chainShot";
+export type BoostAbilityType = "boost" | "mines" | "ringBarrage" | "anchorDrop";
+export type ExtraAbilityType = "torpedo" | "depthCharge" | "oilSlick";
 
 export type EnemyType = "corsair" | "bomber" | "brute" | "swarmer" | "sniper" | "boss" | "shore_battery";
 
@@ -168,6 +181,9 @@ export interface UpgradeStats {
   cooldownMult: number;
   nextThreshold: number;
   stacks: Record<UpgradeType, number>;
+  activeCannonAbility?: CannonAbilityType;
+  activeBoostAbility?: BoostAbilityType;
+  activeExtraAbility?: ExtraAbilityType | null;
 }
 
 export interface Cooldowns {
@@ -177,6 +193,8 @@ export interface Cooldowns {
   boostDuration: number;
   boostActiveRemaining: number;
   boostActiveDuration: number;
+  extraRemaining?: number;
+  extraDuration?: number;
   invulnRemaining: number;
   frenzyRemaining: number;
 }
