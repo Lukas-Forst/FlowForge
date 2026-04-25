@@ -13,6 +13,7 @@ import { PauseScreen } from "./ui/PauseScreen";
 import { LevelUpRibbon } from "./ui/LevelUpRibbon";
 import { SplashScreen } from "./ui/SplashScreen";
 import { StartScreen } from "./ui/StartScreen";
+import { ControlsHelpModal } from "./ui/ControlsHelpModal";
 import { TutorialOverlay } from "./ui/TutorialOverlay";
 import { UpgradeModal } from "./ui/UpgradeModal";
 
@@ -134,7 +135,14 @@ export default function App(): ReactElement {
       return true;
     }
   });
+  const [showControlsHelp, setShowControlsHelp] = useState(false);
   const [flashSignal, setFlashSignal] = useState(0);
+  const snapshotRef = useRef(snapshot);
+  snapshotRef.current = snapshot;
+  const showTutorialRef = useRef(showTutorial);
+  showTutorialRef.current = showTutorial;
+  const showControlsHelpRef = useRef(showControlsHelp);
+  showControlsHelpRef.current = showControlsHelp;
 
   useEffect(() => {
     multiplayerRef.current = multiplayer;
@@ -156,6 +164,30 @@ export default function App(): ReactElement {
     };
 
     const onKeyDown = (event: KeyboardEvent): void => {
+      if (showControlsHelp) {
+        if (!event.repeat && (event.code === "Escape" || event.code === "KeyP")) {
+          event.preventDefault();
+          setShowControlsHelp(false);
+        }
+        return;
+      }
+
+      const wantsControlsHelp =
+        event.code === "F1" || event.key === "?" || (event.shiftKey && event.code === "Slash");
+      if (wantsControlsHelp && !event.repeat) {
+        const phaseOk =
+          snapshot.phase === "start" ||
+          snapshot.phase === "playing" ||
+          snapshot.phase === "paused" ||
+          snapshot.phase === "upgrade" ||
+          snapshot.phase === "gameover";
+        if (phaseOk) {
+          event.preventDefault();
+          setShowControlsHelp((open) => !open);
+          return;
+        }
+      }
+
       const movement = MOVEMENT_KEYS[event.key.toLowerCase()];
       if (movement) {
         setMovementKey(movement, true);
@@ -180,7 +212,9 @@ export default function App(): ReactElement {
 
       if (event.code === "Escape" || event.code === "KeyP") {
         if (!event.repeat) {
-          togglePause();
+          if (!(showTutorial && snapshot.phase === "playing")) {
+            togglePause();
+          }
         }
         return;
       }
@@ -212,7 +246,18 @@ export default function App(): ReactElement {
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", clearMovement);
     };
-  }, [restartRun, setMovementKey, snapshot.phase, startRun, togglePause, triggerBoost, triggerCannon, triggerExtra]);
+  }, [
+    restartRun,
+    setMovementKey,
+    showControlsHelp,
+    showTutorial,
+    snapshot.phase,
+    startRun,
+    togglePause,
+    triggerBoost,
+    triggerCannon,
+    triggerExtra,
+  ]);
 
   useEffect(() => {
     const kick = () => {
@@ -240,7 +285,13 @@ export default function App(): ReactElement {
     const frame = (now: number): void => {
       const delta = Math.min(0.05, (now - last) / 1000);
       last = now;
-      tick(delta);
+      const snap = snapshotRef.current;
+      const simBlockedByUi =
+        (showTutorialRef.current && snap.phase === "playing") ||
+        (showControlsHelpRef.current && (snap.phase === "playing" || snap.phase === "upgrade"));
+      if (!simBlockedByUi) {
+        tick(delta);
+      }
       const mgr = audioMgrRef.current;
       if (mgr) {
         mgr.drain(consumeAudioEvents());
@@ -254,28 +305,29 @@ export default function App(): ReactElement {
         const profile = localProfileRef.current;
         const isOpen = socket?.readyState === WebSocket.OPEN;
         if (socket && isOpen && profile && net.mode !== "solo") {
+          const latest = snapshotRef.current;
           const basePlayer: Omit<MultiplayerPeerState, "id"> = {
             ...profile,
-            position: { ...snapshot.player.position },
-            facing: snapshot.player.facing,
-            hp: snapshot.player.hp,
-            upgradeLevel: snapshot.upgrades.level,
+            position: { ...latest.player.position },
+            facing: latest.player.facing,
+            hp: latest.player.hp,
+            upgradeLevel: latest.upgrades.level,
           };
           socket.send(JSON.stringify({ type: "player_update", player: basePlayer }));
           if (net.mode === "host") {
             const world: MultiplayerWorldState = {
-              runClock: { ...snapshot.runClock },
-              runBiome: snapshot.runBiome,
-              spawnIntensity: snapshot.spawnIntensity,
-              enemies: snapshot.enemies.map((enemy) => ({
+              runClock: { ...latest.runClock },
+              runBiome: latest.runBiome,
+              spawnIntensity: latest.spawnIntensity,
+              enemies: latest.enemies.map((enemy) => ({
                 ...enemy,
                 position: { ...enemy.position },
               })),
-              pickups: snapshot.pickups.map((pickup) => ({
+              pickups: latest.pickups.map((pickup) => ({
                 ...pickup,
                 position: { ...pickup.position },
               })),
-              sharedCoins: snapshot.stats.collectedCoins,
+              sharedCoins: latest.stats.collectedCoins,
             };
             socket.send(JSON.stringify({ type: "world_update", world, hostPlayer: basePlayer }));
           }
@@ -286,7 +338,7 @@ export default function App(): ReactElement {
 
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
-  }, [consumeAudioEvents, snapshot, tick]);
+  }, [consumeAudioEvents, tick]);
 
   useEffect(() => {
     if (snapshot.phase === "start" || snapshot.phase === "loading") {
@@ -344,6 +396,16 @@ export default function App(): ReactElement {
       // Ignore storage failures and continue.
     }
     setShowTutorial(false);
+  };
+
+  const resetTutorialPreference = (): void => {
+    try {
+      localStorage.removeItem("hasSeenTutorial");
+    } catch {
+      /* ignore */
+    }
+    setShowTutorial(true);
+    setShowControlsHelp(false);
   };
 
   const disconnectParty = (): void => {
@@ -493,6 +555,9 @@ export default function App(): ReactElement {
         <>
           <GameScene snapshot={snapshot} remotePlayers={remotePlayers} localPlayerBadge={localPlayerBadge} />
           {showTutorial && snapshot.phase === "playing" ? <TutorialOverlay onFinish={finishTutorial} /> : null}
+          {showControlsHelp ? (
+            <ControlsHelpModal onClose={() => setShowControlsHelp(false)} onResetTutorial={resetTutorialPreference} />
+          ) : null}
           <ScreenFlash signal={flashSignal} />
           <LevelUpRibbon signal={flashSignal} />
           {(snapshot.phase === "playing" || snapshot.phase === "upgrade" || snapshot.phase === "paused") && <Hud snapshot={snapshot} />}
@@ -508,8 +573,17 @@ export default function App(): ReactElement {
             </>
           )}
           {snapshot.phase === "playing" && <AssetPreloader tier="deferred" />}
-          {snapshot.phase === "paused" && <PauseScreen snapshot={snapshot} onResume={togglePause} onQuit={quitRun} />}
-          {snapshot.phase === "upgrade" && <UpgradeModal options={snapshot.pendingUpgradeOptions} onPick={chooseUpgrade} />}
+          {snapshot.phase === "paused" && (
+            <PauseScreen
+              snapshot={snapshot}
+              onResume={togglePause}
+              onQuit={quitRun}
+              onShowControls={() => setShowControlsHelp(true)}
+            />
+          )}
+          {snapshot.phase === "upgrade" && (
+            <UpgradeModal options={snapshot.pendingUpgradeOptions} onPick={chooseUpgrade} stacks={snapshot.upgrades.stacks} />
+          )}
           {snapshot.phase === "gameover" && <GameOverScreen snapshot={snapshot} onRestart={restartRun} />}
         </>
       )}

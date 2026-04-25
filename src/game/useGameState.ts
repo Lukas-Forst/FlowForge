@@ -8,10 +8,13 @@ import {
   BASE_PLAYER_SPEED,
 } from "./constants";
 import { runAutoAttack } from "./systems/autoAttack";
-import { getBoostSpeedMultiplier, tryActivateBoost } from "./systems/boostAbility";
-import { tryFireCannon } from "./systems/cannonAbility";
+import { getBoostSpeedMultiplier } from "./systems/boostAbility";
+import { triggerExtraAbility } from "./systems/abilityExecution";
 import { resolveCollisions, updateEnemyMovement, updateProjectileMotion } from "./systems/collision";
+import { updateDelayedAoEs } from "./systems/delayedAoE";
+import { runEliteAbilities } from "./systems/eliteAbilities";
 import { processPickups } from "./systems/pickups";
+import { updateSeaMines } from "./systems/seaMines";
 import { runEnemyRangedAttacks } from "./systems/enemyRanged";
 import { getRunArcEnemyCap, computeRunSpawnIntensity, getRunRegionBiome } from "./systems/runArc";
 import { spawnEnemiesToCap, updateEnemySpawning } from "./systems/enemySpawner";
@@ -94,6 +97,8 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "loading"): GameSn
     enemies: [],
     harvestables: [],
     projectiles: [],
+    delayedAoEs: [],
+    mines: [],
     visualEffects: [],
     audioEvents: [],
     postFxPulse: null,
@@ -114,6 +119,8 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "loading"): GameSn
       cannonDuration: BASE_CANNON_COOLDOWN,
       boostRemaining: 0,
       boostDuration: BOOST_COOLDOWN,
+      extraRemaining: 0,
+      extraDuration: 0,
       boostActiveRemaining: 0,
       boostActiveDuration: BOOST_ACTIVE_TIME,
       extraRemaining: 0,
@@ -160,6 +167,15 @@ function copySnapshot(snapshot: GameSnapshot): GameSnapshot {
       ...projectile,
       position: { ...projectile.position },
       velocity: { ...projectile.velocity },
+    })),
+    delayedAoEs: snapshot.delayedAoEs.map((aoe) => ({
+      ...aoe,
+      position: { ...aoe.position },
+    })),
+    mines: snapshot.mines.map((mine) => ({
+      ...mine,
+      position: { ...mine.position },
+      velocity: { ...mine.velocity },
     })),
     visualEffects: snapshot.visualEffects.map((effect) => ({
       ...effect,
@@ -208,6 +224,8 @@ export function useGameState(): UseGameStateApi {
   const projectileIdRef = useRef({ value: 1 });
   const pickupIdRef = useRef({ value: 1 });
   const effectIdRef = useRef({ value: 1 });
+  const delayedAoEIdRef = useRef({ value: 1 });
+  const mineIdRef = useRef({ value: 1 });
   const spawnTimerRef = useRef({ value: 0.2 });
   const autoAttackTimerRef = useRef({ value: BASE_AUTO_ATTACK_INTERVAL });
   const passiveBroadsideTimerRef = useRef({ value: BASE_PASSIVE_BROADSIDE_INTERVAL });
@@ -241,6 +259,8 @@ export function useGameState(): UseGameStateApi {
     projectileIdRef.current.value = 1;
     pickupIdRef.current.value = 1;
     effectIdRef.current.value = 1;
+    delayedAoEIdRef.current.value = 1;
+    mineIdRef.current.value = 1;
     spawnTimerRef.current.value = 0.2;
     autoAttackTimerRef.current.value = BASE_AUTO_ATTACK_INTERVAL;
     passiveBroadsideTimerRef.current.value = BASE_PASSIVE_BROADSIDE_INTERVAL;
@@ -264,7 +284,7 @@ export function useGameState(): UseGameStateApi {
     resetForRun("playing");
     const state = stateRef.current;
     const cap = getRunArcEnemyCap(0, { hasMegaBoss: false, legacyBossPhase: false });
-    spawnEnemiesToCap(state.enemies, enemyIdRef.current, state.player.position, 0, cap);
+    spawnEnemiesToCap(state.enemies, enemyIdRef.current, state.player.position, 0, cap, state.runClock.phase);
     syncState();
   }, [resetForRun]);
 
@@ -272,7 +292,7 @@ export function useGameState(): UseGameStateApi {
     resetForRun("playing");
     const state = stateRef.current;
     const cap = getRunArcEnemyCap(0, { hasMegaBoss: false, legacyBossPhase: false });
-    spawnEnemiesToCap(state.enemies, enemyIdRef.current, state.player.position, 0, cap);
+    spawnEnemiesToCap(state.enemies, enemyIdRef.current, state.player.position, 0, cap, state.runClock.phase);
     syncState();
   }, [resetForRun]);
 
@@ -452,48 +472,10 @@ export function useGameState(): UseGameStateApi {
 
   const triggerExtra = useCallback(() => {
     const state = stateRef.current;
-    if (state.phase !== "playing") return;
-    if (!state.upgrades.activeExtraAbility) {
-      setMessage({ text: "No extra ability equipped yet", remaining: 0.8 });
-      syncState();
+    if (state.phase !== "playing") {
       return;
     }
-    if ((state.cooldowns.extraRemaining ?? 0) > 0) {
-      setMessage({ text: "Extra ability recharging...", remaining: 0.7 });
-      syncState();
-      return;
-    }
-    const ability = state.upgrades.activeExtraAbility;
-    const forward = directionFromAngle(state.player.facing);
-    if (ability === "torpedo") {
-      state.projectiles.push({
-        id: projectileIdRef.current.value++,
-        kind: "playerCannon",
-        position: { x: state.player.position.x + forward.x * 1.2, y: state.player.position.y + forward.y * 1.2 },
-        velocity: { x: forward.x * 8, y: forward.y * 8 },
-        ttl: 2.8,
-        damage: 80,
-        radius: 0.65,
-        pierceRemaining: 99,
-      });
-      state.cooldowns.extraDuration = Math.max(6, 12 * state.upgrades.cooldownMult);
-    } else if (ability === "depthCharge") {
-      state.projectiles.push({
-        id: projectileIdRef.current.value++,
-        kind: "playerCannon",
-        position: { x: state.player.position.x, y: state.player.position.y },
-        velocity: { x: 0, y: 0 },
-        ttl: 1.5,
-        damage: 100,
-        radius: 0.95,
-      });
-      state.cooldowns.extraDuration = Math.max(7, 14 * state.upgrades.cooldownMult);
-    } else {
-      spawnRadialBarrage(6, 6, 18, 1.6, projectileIdRef.current, state.projectiles, state.player.position);
-      state.cooldowns.extraDuration = Math.max(5.5, 11 * state.upgrades.cooldownMult);
-    }
-    state.cooldowns.extraRemaining = state.cooldowns.extraDuration;
-    setMessage(null);
+    triggerExtraAbility(state, projectileIdRef.current, delayedAoEIdRef.current, setMessage);
     syncState();
   }, [setMessage, syncState]);
 
@@ -600,6 +582,7 @@ export function useGameState(): UseGameStateApi {
     );
     state.cooldowns.cannonRemaining = Math.max(0, state.cooldowns.cannonRemaining - step);
     state.cooldowns.boostRemaining = Math.max(0, state.cooldowns.boostRemaining - step);
+    state.cooldowns.extraRemaining = Math.max(0, state.cooldowns.extraRemaining - step);
     state.cooldowns.boostActiveRemaining = Math.max(0, state.cooldowns.boostActiveRemaining - step);
     state.cooldowns.extraRemaining = Math.max(0, (state.cooldowns.extraRemaining ?? 0) - step);
     state.cooldowns.invulnRemaining = Math.max(0, state.cooldowns.invulnRemaining - step);
@@ -628,6 +611,7 @@ export function useGameState(): UseGameStateApi {
     if (rc.phase === "wave" && rc.phaseTime >= 60) {
       rc.phase = "elite";
       rc.phaseTime = 0;
+      setMessage({ text: "Elite surge — chest nearby, expect gold-flag ships!", remaining: 2.6 });
       // Spawn chest reward
       const a1 = Math.random() * Math.PI * 2;
       state.pickups.push({
@@ -639,6 +623,7 @@ export function useGameState(): UseGameStateApi {
     } else if (rc.phase === "elite" && rc.phaseTime >= 10) {
       rc.phase = "lull";
       rc.phaseTime = 0;
+      setMessage({ text: "Lull — few foes, supply drop incoming.", remaining: 2.2 });
       // Spawn supply drop reward
       const a2 = Math.random() * Math.PI * 2;
       const supplyKind = Math.random() < 0.34 ? "supply_heal" : Math.random() < 0.5 ? "supply_frenzy" : "supply_invuln";
@@ -651,6 +636,7 @@ export function useGameState(): UseGameStateApi {
     } else if (rc.phase === "lull" && rc.phaseTime >= 15) {
       rc.phase = "wave";
       rc.phaseTime = 0;
+      setMessage({ text: "Wave resuming — full pressure returns.", remaining: 1.8 });
     }
 
     state.runBiome = getRunRegionBiome(rc.elapsedTotal);
@@ -746,9 +732,37 @@ export function useGameState(): UseGameStateApi {
       step,
     );
     updateEnemyMovement(state.enemies, state.player, step);
+    runEliteAbilities(
+      state.enemies,
+      state.player,
+      projectileIdRef.current,
+      state.projectiles,
+      state.delayedAoEs,
+      delayedAoEIdRef.current,
+      state.visualEffects,
+      effectIdRef.current,
+      step,
+    );
     runEnemyRangedAttacks(state.enemies, state.player, projectileIdRef.current, state.projectiles, state.visualEffects, effectIdRef.current, step);
     runBossAttacks(state.enemies, state.player, projectileIdRef.current, state.projectiles, state.visualEffects, effectIdRef.current, step);
     updateProjectileMotion(state.projectiles, state.player.position, step, state.visualEffects, effectIdRef.current);
+    const delayedAoEResult = updateDelayedAoEs(
+      state.delayedAoEs,
+      state.enemies,
+      state.player,
+      state.visualEffects,
+      effectIdRef.current,
+      step,
+    );
+    state.stats.enemiesKilled += delayedAoEResult.enemyKills;
+    const seaMineResult = updateSeaMines(
+      state.mines,
+      state.enemies,
+      state.visualEffects,
+      effectIdRef.current,
+      step,
+    );
+    state.stats.enemiesKilled += seaMineResult.enemyKills;
 
     bilgePumpTimerRef.current.value += step;
     if (bilgePumpTimerRef.current.value >= 1) {
@@ -899,6 +913,13 @@ export function useGameState(): UseGameStateApi {
       state.pickups.push(...collisionResult.spawnedPickups);
     }
     state.stats.enemiesKilled += collisionResult.killsGained;
+    if (collisionResult.eliteKillsGained > 0) {
+      const bountyText =
+        collisionResult.eliteKillsGained === 1
+          ? "Elite bounty secured!"
+          : `Elite bounties x${collisionResult.eliteKillsGained}!`;
+      setMessage({ text: bountyText, remaining: 0.95 });
+    }
     if ((state.upgrades.stacks.pressGang ?? 0) > 0) {
       while (state.stats.enemiesKilled >= pressGangNextKillRef.current.value) {
         pressGangNextKillRef.current.value += 20;

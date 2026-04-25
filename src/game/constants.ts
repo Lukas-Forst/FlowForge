@@ -46,8 +46,29 @@ export const BASE_SPAWN_INTERVAL = 0.82;
 export const MIN_SPAWN_INTERVAL = 0.2;
 
 export const BOOST_COOLDOWN = 4.5;
-export const BOOST_ACTIVE_TIME = 0.22;
-export const BOOST_SPEED_MULTIPLIER = 3.1;
+export const BOOST_ACTIVE_TIME = 1.1;
+export const BOOST_SPEED_MULTIPLIER = 1.55;
+export const BOOST_COOLDOWN_CONSUME_FRACTION = 0.5;
+export const RING_BARRAGE_SHELL_COUNT = 10;
+export const RING_BARRAGE_IMPACT_DELAY = 0.7;
+export const RING_BARRAGE_DAMAGE = 55;
+export const RING_BARRAGE_RADIUS = 2.8;
+export const RING_BARRAGE_RING_DISTANCE = 7.5;
+export const SEA_MINE_DROP_COUNT = 3;
+export const SEA_MINE_ARMING_TIME = 0.4;
+export const SEA_MINE_LIFETIME = 8;
+export const SEA_MINE_RADIUS = 3.2;
+export const SEA_MINE_DAMAGE = 70;
+export const SEA_MINE_DRIFT_SPEED = 1.2;
+export const DEPTH_CHARGE_COOLDOWN = 14;
+export const DEPTH_CHARGE_DELAY = 1.5;
+export const DEPTH_CHARGE_DAMAGE = 110;
+export const DEPTH_CHARGE_RADIUS = 5.5;
+export const TORPEDO_COOLDOWN = 10;
+export const TORPEDO_DAMAGE = 85;
+export const TORPEDO_SPEED = 24;
+export const TORPEDO_TTL = 2.8;
+export const TORPEDO_RADIUS = 0.42;
 
 export const COIN_PICKUP_RADIUS = 1.4;
 export const PLAYER_HIT_RADIUS = 1.15;
@@ -100,13 +121,17 @@ export const UPGRADE_OPTIONS: Record<UpgradeOption["type"], UpgradeOption> = {
   coinMagnet: { type: "coinMagnet", label: "Salvage Net", description: "Increase coin pickup radius.", rarity: "uncommon", maxStacks: 2 },
   armor: { type: "armor", label: "Iron Plating", description: "Reduce damage taken by 15%.", rarity: "uncommon", maxStacks: 3 },
   boostRepeat: { type: "boostRepeat", label: "Second Wind", description: "Boost cooldown -40%, active time +50%.", rarity: "rare", maxStacks: 1 },
+  ringBarrage: { type: "ringBarrage", label: "Ring Barrage", description: "Boost triggers delayed mortar impacts in a ring around your ship.", rarity: "rare", maxStacks: 2 },
   cannonSpread: { type: "cannonSpread", label: "Shrapnel Blast", description: "Cannon salvo size +2, wider arc.", rarity: "rare", maxStacks: 2 },
+  extraTorpedo: { type: "extraTorpedo", label: "Torpedo", description: "Unlocks E special: fire a heavy forward torpedo.", rarity: "rare", maxStacks: 2 },
+  extraDepthCharge: { type: "extraDepthCharge", label: "Depth Charge", description: "Unlocks E special: delayed heavy AoE blast dropped from your stern.", rarity: "rare", maxStacks: 1 },
   fullSteam: { type: "fullSteam", label: "Full Steam Ahead", description: "Auto-fire doubled while boost is active.", rarity: "epic", maxStacks: 1 },
   grapeshot: { type: "grapeshot", label: "Grapeshot", description: "Auto-shots add two split pellets with reduced damage.", rarity: "rare", maxStacks: 2 },
   sternChaser: { type: "sternChaser", label: "Stern Chaser", description: "Adds rear-firing auto-shots.", rarity: "uncommon", maxStacks: 2 },
   explosiveRounds: { type: "explosiveRounds", label: "Explosive Rounds", description: "Player shots gain blast radius and impact damage.", rarity: "rare", maxStacks: 2 },
   ramProw: { type: "ramProw", label: "Ram Prow", description: "Ramming enemies deals scaling hull damage.", rarity: "uncommon", maxStacks: 2 },
   ghostHull: { type: "ghostHull", label: "Ghost Hull", description: "Gain temporary invulnerability after boosting.", rarity: "uncommon", maxStacks: 1 },
+  boostMines: { type: "boostMines", label: "Sea Mines", description: "Boosting drops mines behind your ship that arm and explode on contact.", rarity: "rare", maxStacks: 2 },
   afterburner: { type: "afterburner", label: "Afterburner", description: "Boosting burns nearby enemies over time.", rarity: "rare", maxStacks: 2 },
   bilgePump: { type: "bilgePump", label: "Bilge Pump", description: "Regenerate hull integrity each second.", rarity: "uncommon", maxStacks: 2 },
   scavenger: { type: "scavenger", label: "Scavenger", description: "Defeated enemies are more likely to drop HP salvage.", rarity: "uncommon", maxStacks: 2 },

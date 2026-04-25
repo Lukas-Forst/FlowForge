@@ -8,7 +8,7 @@ const BIOME_COLOR: Record<BiomeType, string> = {
   boss_storm: "#ff6060",
 };
 
-function formatBiomeName(biome: string): string {
+export function formatBiomeName(biome: string): string {
   return biome
     .split("_")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))

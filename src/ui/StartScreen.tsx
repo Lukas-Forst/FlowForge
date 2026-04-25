@@ -52,6 +52,9 @@ export function StartScreen({ onPlaySolo, onCreateLobby, onJoinLobby, connection
         </div>
 
         <p className="hint">Move with WASD. Fire cannon salvo with Q. Boost forward with Space.</p>
+        <p className="hint" style={{ marginTop: 4 }}>
+          Press ? or F1 anytime for the full control list and tips.
+        </p>
         <div style={{ width: "100%", marginTop: 10, display: "grid", gap: 8 }}>
           <input
             value={name}

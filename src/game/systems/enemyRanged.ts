@@ -24,6 +24,7 @@ export function runEnemyRangedAttacks(
 ): void {
   for (const enemy of enemies) {
     if (enemy.type === "swarmer" || enemy.type === "bomber") continue;
+    if (enemy.isElite && (enemy.type === "corsair" || enemy.type === "brute" || enemy.type === "sniper")) continue;
 
     enemy.rangedCooldown -= delta;
 

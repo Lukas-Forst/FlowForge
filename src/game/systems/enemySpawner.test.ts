@@ -1,5 +1,35 @@
-import { describe, expect, it } from "vitest";
-import { getEnemyCap } from "./enemySpawner";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { getEnemyCap, rollSpawnIsElite } from "./enemySpawner";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe("rollSpawnIsElite", () => {
+  it("forces elites during the elite clock phase", () => {
+    expect(rollSpawnIsElite(999, "elite")).toBe(true);
+  });
+
+  it("never rolls elites during lull", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    expect(rollSpawnIsElite(999, "lull")).toBe(false);
+  });
+
+  it("early wave has no random elites (region 1 spawn chance is 0)", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    expect(rollSpawnIsElite(30, "wave")).toBe(false);
+  });
+
+  it("later wave can spawn elites when roll succeeds", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.05);
+    expect(rollSpawnIsElite(400, "wave")).toBe(true);
+  });
+
+  it("later wave respects failed elite roll", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.95);
+    expect(rollSpawnIsElite(400, "wave")).toBe(false);
+  });
+});
 
 describe("getEnemyCap", () => {
   it("starts with higher early pressure and ramps up faster", () => {

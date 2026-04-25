@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 import { EVOLUTION_UPGRADE_TYPES, UPGRADE_OPTIONS } from "../game/constants";
 import type { GameSnapshot, UpgradeType } from "../game/types";
+import { formatBiomeName } from "./BiomeBadge";
 
 interface GameOverScreenProps {
   snapshot: GameSnapshot;
@@ -22,6 +23,23 @@ function getTopUpgrades(snapshot: GameSnapshot, limit: number): string[] {
 
 function getEvolutions(snapshot: GameSnapshot): string[] {
   return EVOLUTION_UPGRADE_TYPES.filter((type) => (snapshot.upgrades.stacks[type] ?? 0) > 0).map((type) => UPGRADE_OPTIONS[type].label);
+}
+
+function buildRunSummaryText(snapshot: GameSnapshot, topUpgrades: string[], evolutions: string[]): string {
+  const lines = [
+    `FlowForge run`,
+    `Score: ${snapshot.stats.score}`,
+    `Time: ${snapshot.stats.timeSurvived.toFixed(1)}s`,
+    `Kills: ${snapshot.stats.enemiesKilled}`,
+    `Coins: ${snapshot.stats.collectedCoins}`,
+    `Evolutions: ${snapshot.stats.evolutionsUnlocked}`,
+    `Region: ${formatBiomeName(snapshot.runBiome)}`,
+    `Unscathed streak (best): ${snapshot.stats.longestUnscathedStreak.toFixed(1)}s`,
+    `Biggest hit: ${snapshot.stats.biggestHit.toFixed(0)}`,
+    `Top upgrades: ${topUpgrades.length ? topUpgrades.join("; ") : "—"}`,
+    `Evolution path: ${evolutions.length ? evolutions.join(", ") : "—"}`,
+  ];
+  return lines.join("\n");
 }
 
 function createRunReportImage(
@@ -111,9 +129,11 @@ export function GameOverScreen({ snapshot, onRestart }: GameOverScreenProps): Re
   const [showReport, setShowReport] = useState(false);
   const [reportImageUrl, setReportImageUrl] = useState<string>("");
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [copyHint, setCopyHint] = useState<string | null>(null);
 
   const topUpgrades = useMemo(() => getTopUpgrades(snapshot, 3), [snapshot]);
   const evolutions = useMemo(() => getEvolutions(snapshot), [snapshot]);
+  const summaryText = useMemo(() => buildRunSummaryText(snapshot, topUpgrades, evolutions), [snapshot, topUpgrades, evolutions]);
   const topEvolution = evolutions[0] ?? "No Evolution";
 
   const tweetText = useMemo(
@@ -133,19 +153,34 @@ export function GameOverScreen({ snapshot, onRestart }: GameOverScreenProps): Re
     setIsGeneratingImage(false);
   };
 
+  const copySummary = async (): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(summaryText);
+      setCopyHint("Copied to clipboard");
+      window.setTimeout(() => setCopyHint(null), 2000);
+    } catch {
+      setCopyHint("Copy blocked — select text in the share modal instead");
+      window.setTimeout(() => setCopyHint(null), 3200);
+    }
+  };
+
   return (
     <div className="overlay center">
       <div className="panel" style={{ textAlign: "center", minWidth: "360px" }}>
         <h2>{isNewRecord ? "🎉 NEW RECORD! 🎉" : "Ship Sunk"}</h2>
         <div style={{ background: "rgba(0,0,0,0.1)", padding: "12px", borderRadius: "8px", margin: "12px 0" }}>
           <p style={{ margin: "4px 0" }}>Final Score: <strong style={{ fontSize: "1.2em" }}>{snapshot.stats.score}</strong></p>
-          <p style={{ margin: "4px 0", fontSize: "0.9em", color: "#ddd" }}>(Floor Time) + (10 × Kills) + (2 × Coins)</p>
+          <p style={{ margin: "4px 0", fontSize: "0.85em", color: "#ddd" }}>
+            floor(time×100 + kills×25 + coins×2 + evolutions×500)
+          </p>
         </div>
 
         <div style={{ textAlign: "left", fontSize: "0.95em", margin: "16px 0", lineHeight: "1.6" }}>
           <p style={{ margin: "4px 0" }}>⏱️ Time Survived: <strong>{snapshot.stats.timeSurvived.toFixed(1)}s</strong></p>
           <p style={{ margin: "4px 0" }}>☠️ Enemies Sunk: <strong>{snapshot.stats.enemiesKilled}</strong></p>
           <p style={{ margin: "4px 0" }}>💎 Loot Collected: <strong>{snapshot.stats.collectedCoins}</strong></p>
+          <p style={{ margin: "4px 0" }}>🧭 Last region: <strong>{formatBiomeName(snapshot.runBiome)}</strong></p>
+          <p style={{ margin: "4px 0" }}>🧬 Evolutions this run: <strong>{snapshot.stats.evolutionsUnlocked}</strong></p>
           <p style={{ margin: "4px 0", color: "#fbbf24" }}>🛡️ Unscathed Streak: <strong>{snapshot.stats.longestUnscathedStreak.toFixed(1)}s</strong></p>
           <p style={{ margin: "4px 0", color: "#ef4444" }}>💥 Biggest Hit Dealt: <strong>{snapshot.stats.biggestHit.toFixed(0)}</strong></p>
         </div>
@@ -153,6 +188,10 @@ export function GameOverScreen({ snapshot, onRestart }: GameOverScreenProps): Re
           <button type="button" className="legendary-share-btn" onClick={openReport}>
             Share Your Legendary Run
           </button>
+          <button type="button" onClick={() => void copySummary()}>
+            Copy run summary
+          </button>
+          {copyHint ? <p className="hint" style={{ margin: 0 }}>{copyHint}</p> : null}
           <button type="button" onClick={onRestart}>
             Restart Run
           </button>

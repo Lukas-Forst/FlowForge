@@ -43,13 +43,17 @@ export type UpgradeType =
   | "coinMagnet"
   | "armor"
   | "boostRepeat"
+  | "ringBarrage"
   | "cannonSpread"
+  | "extraTorpedo"
+  | "extraDepthCharge"
   | "fullSteam"
   | "grapeshot"
   | "sternChaser"
   | "explosiveRounds"
   | "ramProw"
   | "ghostHull"
+  | "boostMines"
   | "afterburner"
   | "bilgePump"
   | "scavenger"
@@ -129,7 +133,7 @@ export interface HarvestableState {
   rotation: number;
 }
 
-export type ProjectileKind = "playerAuto" | "playerCannon" | "enemyCorsair" | "enemyBomber" | "enemyBrute" | "enemySniper" | "enemyBoss" | "enemyBattery";
+export type ProjectileKind = "playerAuto" | "playerCannon" | "playerTorpedo" | "enemyCorsair" | "enemyBomber" | "enemyBrute" | "enemySniper" | "enemyBoss" | "enemyBattery";
 
 export function isEnemyProjectileKind(kind: ProjectileKind): boolean {
   return kind === "enemyCorsair" || kind === "enemyBomber" || kind === "enemyBrute" || kind === "enemySniper" || kind === "enemyBoss" || kind === "enemyBattery";
@@ -144,6 +148,26 @@ export interface ProjectileState {
   damage: number;
   radius: number;
   pierceRemaining?: number;
+}
+
+export interface DelayedAoEState {
+  id: number;
+  position: Vec2;
+  remaining: number;
+  radius: number;
+  damage: number;
+  source: "player" | "enemy";
+  visualType?: "mortar" | "depthCharge" | "shockwave" | "boss";
+}
+
+export interface MineState {
+  id: number;
+  position: Vec2;
+  velocity: Vec2;
+  armingRemaining: number;
+  lifetimeRemaining: number;
+  radius: number;
+  damage: number;
 }
 
 export type VisualEffectKind = "waterSplash" | "hitBurst" | "muzzleFlash" | "waterRippleSmall" | "telegraphRing" | "damageNumber" | "enemyDeath" | "screenShake";
@@ -191,10 +215,10 @@ export interface Cooldowns {
   cannonDuration: number;
   boostRemaining: number;
   boostDuration: number;
+  extraRemaining: number;
+  extraDuration: number;
   boostActiveRemaining: number;
   boostActiveDuration: number;
-  extraRemaining?: number;
-  extraDuration?: number;
   invulnRemaining: number;
   frenzyRemaining: number;
 }
@@ -275,6 +299,8 @@ export interface GameSnapshot {
   enemies: EnemyState[];
   harvestables: HarvestableState[];
   projectiles: ProjectileState[];
+  delayedAoEs: DelayedAoEState[];
+  mines: MineState[];
   visualEffects: VisualEffect[];
   audioEvents: AudioEvent[];
   postFxPulse: PostFxPulse | null;

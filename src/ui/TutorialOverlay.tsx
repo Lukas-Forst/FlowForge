@@ -28,12 +28,13 @@ const STEPS: readonly TutorialStep[] = [
     visual: "autoFire",
   },
   {
-    title: "Space / tap to fire cannon salvo",
-    subtitle: "Shift / button to boost",
+    title: "Q — cannon salvo (wide burst)",
+    subtitle: "Space — speed boost to reposition or escape",
     visual: "abilities",
   },
   {
     title: "Collect coins → choose upgrades",
+    subtitle: "Watch the top HUD: Wave → Elite (chest) → Lull (supply)",
     visual: "upgrade",
   },
   {
@@ -71,8 +72,8 @@ function TutorialVisual({ kind }: { kind: TutorialStep["visual"] }): ReactElemen
   if (kind === "abilities") {
     return (
       <div className="tutorial-visual abilities">
+        <div className="tutorial-key">Q</div>
         <div className="tutorial-key">SPACE</div>
-        <div className="tutorial-key">SHIFT</div>
       </div>
     );
   }
@@ -145,6 +146,17 @@ export function TutorialOverlay({ onFinish }: TutorialOverlayProps): ReactElemen
     onFinish();
   };
 
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.code === "Escape") {
+        event.preventDefault();
+        onFinish();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onFinish]);
+
   return (
     <div className="tutorial-overlay" onClick={finish} role="button" tabIndex={0} onKeyDown={finish}>
       <div className="tutorial-panel" onClick={(event) => event.stopPropagation()}>
@@ -160,6 +172,9 @@ export function TutorialOverlay({ onFinish }: TutorialOverlayProps): ReactElemen
           </button>
         ) : null}
         <div className="tutorial-hint">{instruction}</div>
+        <button type="button" className="tutorial-skip-btn" onClick={finish}>
+          Skip intro
+        </button>
       </div>
     </div>
   );

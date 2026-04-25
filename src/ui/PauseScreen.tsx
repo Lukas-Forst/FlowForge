@@ -5,9 +5,10 @@ interface PauseScreenProps {
   snapshot: GameSnapshot;
   onResume: () => void;
   onQuit: () => void;
+  onShowControls?: () => void;
 }
 
-export function PauseScreen({ snapshot, onResume, onQuit }: PauseScreenProps): ReactElement {
+export function PauseScreen({ snapshot, onResume, onQuit, onShowControls }: PauseScreenProps): ReactElement {
   return (
     <div className="overlay center">
       <div className="panel" style={{ textAlign: "center" }}>
@@ -20,15 +21,20 @@ export function PauseScreen({ snapshot, onResume, onQuit }: PauseScreenProps): R
           <p style={{ margin: "4px 0" }}>Collected Loot: <strong>{snapshot.stats.collectedCoins}</strong></p>
         </div>
 
-        <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+        <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
           <button type="button" onClick={onResume}>
             Resume
           </button>
+          {onShowControls ? (
+            <button type="button" onClick={onShowControls}>
+              Controls (?)
+            </button>
+          ) : null}
           <button type="button" onClick={onQuit} style={{ background: "#cc4444" }}>
             Quit
           </button>
         </div>
-        <p className="hint" style={{ marginTop: "16px" }}>Press ESC or P to resume</p>
+        <p className="hint" style={{ marginTop: "16px" }}>Press ESC or P to resume · ? or F1 for full controls</p>
       </div>
     </div>
   );

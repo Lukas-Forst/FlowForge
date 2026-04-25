@@ -4,6 +4,7 @@ import { isEnemyProjectileKind, type AudioEvent, type EnemyState, type PickupSta
 
 export interface CollisionResult {
   killsGained: number;
+  eliteKillsGained: number;
   playerDamageTaken: number;
   spawnedPickups: PickupState[];
   cannonHits: number;
@@ -189,6 +190,7 @@ export function resolveCollisions(
   const ramReflectBonus = Math.max(0, modifiers?.ramReflectBonus ?? 0);
 
   let killsGained = 0;
+  let eliteKillsGained = 0;
   let playerDamageTaken = 0;
   let cannonHits = 0;
   let maxHitDealt = 0;
@@ -238,20 +240,26 @@ export function resolveCollisions(
 
         if (enemy.hp <= 0) {
           killsGained += 1;
+          if (enemy.isElite) {
+            eliteKillsGained += 1;
+          }
           enemies.splice(enemyIdx, 1);
           pushEffect(visualEffects, effectIdRef, "enemyDeath", enemy.position, 1.0);
           if (audioEvents) {
             audioEvents.push({ id: effectIdRef.value++, sfx: "ship_destroyed" });
           }
+          const eliteHpDropBonus = enemy.isElite ? 0.04 : 0;
+          const eliteGemDropBonus = enemy.isElite ? 0.13 : 0;
+          const eliteCoinValueBonus = enemy.isElite ? 1 : 0;
           const roll = Math.random();
-          if (roll < 0.03 + hpDropBonus) {
+          if (roll < 0.03 + hpDropBonus + eliteHpDropBonus) {
             spawnedPickups.push({
               id: pickupIdRef.value++,
               kind: "hp",
               position: { ...enemy.position },
               value: 10,
             });
-          } else if (roll < 0.07) {
+          } else if (roll < 0.07 + eliteGemDropBonus) {
             spawnedPickups.push({
               id: pickupIdRef.value++,
               kind: "gem",
@@ -263,7 +271,7 @@ export function resolveCollisions(
               id: pickupIdRef.value++,
               kind: "coin",
               position: { ...enemy.position },
-              value: 1,
+              value: 1 + eliteCoinValueBonus,
             });
           }
         }
@@ -330,6 +338,9 @@ export function resolveCollisions(
         enemy.hp -= (20 + playerDamageTaken * 0.4) * ramReflectBonus;
         if (enemy.hp <= 0) {
           killsGained += 1;
+          if (enemy.isElite) {
+            eliteKillsGained += 1;
+          }
           enemies.splice(enemyIdx, 1);
           pushEffect(visualEffects, effectIdRef, "enemyDeath", enemy.position, 1.0);
         }
@@ -366,5 +377,5 @@ export function resolveCollisions(
     }
   }
 
-  return { killsGained, playerDamageTaken, spawnedPickups, cannonHits, maxHitDealt };
+  return { killsGained, eliteKillsGained, playerDamageTaken, spawnedPickups, cannonHits, maxHitDealt };
 }

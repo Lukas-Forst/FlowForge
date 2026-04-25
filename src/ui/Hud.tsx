@@ -6,6 +6,7 @@ import { BiomeBadge } from "./BiomeBadge";
 import { BossFrame } from "./BossFrame";
 import { LevelPill } from "./LevelPill";
 import { PulseMeter } from "./PulseMeter";
+import { getRunPhaseHudLabels } from "./runPhaseHud";
 import { XPBar } from "./XPBar";
 
 interface HudProps {
@@ -26,15 +27,30 @@ export function Hud({ snapshot }: HudProps): ReactElement {
   const hpRatio = snapshot.player.maxHp > 0 ? Math.max(0, Math.min(1, snapshot.player.hp / snapshot.player.maxHp)) : 0;
   const cannonReady = snapshot.cooldowns.cannonRemaining <= 0;
   const boostReady = snapshot.cooldowns.boostRemaining <= 0;
-  const extraReady = (snapshot.cooldowns.extraRemaining ?? 0) <= 0;
+  const extraReady = snapshot.cooldowns.extraRemaining <= 0;
+  const extraLabel =
+    (snapshot.upgrades.stacks.extraTorpedo ?? 0) > 0
+      ? "E TORPEDO"
+      : (snapshot.upgrades.stacks.extraDepthCharge ?? 0) > 0
+        ? "E DEPTH CHARGE"
+        : "E SPECIAL";
   const safeTime = Math.max(0, snapshot.stats.timeSurvived);
   const xpProgress = snapshot.upgrades.nextThreshold > 0 ? Math.min(1, Math.max(0, snapshot.stats.collectedCoins / snapshot.upgrades.nextThreshold)) : 0;
   const boss = snapshot.enemies.find((e) => e.type === "boss");
+  const eliteOnField =
+    snapshot.runClock.phase === "elite"
+      ? snapshot.enemies.reduce((n, e) => n + (e.isElite ? 1 : 0), 0)
+      : undefined;
+  const runPhase = getRunPhaseHudLabels(snapshot.runClock, eliteOnField);
 
   return (
     <>
       <XPBar progress={xpProgress} level={snapshot.upgrades.level} />
       <LevelPill level={snapshot.upgrades.level} />
+      <div className={`hud-wave-clock hud-wave-clock--${snapshot.runClock.phase}`} aria-live="polite">
+        <span className="hud-wave-phase">{runPhase.phase}</span>
+        <span className="hud-wave-detail">{runPhase.detail}</span>
+      </div>
 
       <div className="hud-v2">
         <div className="hud-v2-corner top-right">
@@ -69,9 +85,9 @@ export function Hud({ snapshot }: HudProps): ReactElement {
             </div>
           </div>
           <div className="hud-v2-row">
-            <span>E EXTRA</span>
+            <span>{extraLabel}</span>
             <div className="hud-v2-ability-bar">
-              <PulseMeter value={cooldownPercent(snapshot.cooldowns.extraRemaining ?? 0, snapshot.cooldowns.extraDuration ?? 1)} color="#d28cff" ready={extraReady} />
+              <PulseMeter value={cooldownPercent(snapshot.cooldowns.extraRemaining, snapshot.cooldowns.extraDuration)} color="#b8a2ff" ready={extraReady} />
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { resolveCollisions } from "./collision";
 import type { EnemyState, HarvestableState, PlayerState, ProjectileState, VisualEffect } from "../types";
 
@@ -74,5 +74,34 @@ describe("resolveCollisions", () => {
     resolveCollisions(player, enemies, harvestables, projectiles, { value: 1 }, visualEffects, { value: 1 });
 
     expect(projectiles).toHaveLength(0);
+  });
+
+  it("gives elite kills a better fallback coin reward", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.9);
+    const player = createPlayer();
+    const enemy = createEnemy(1);
+    enemy.isElite = true;
+    enemy.hp = 8;
+    const enemies: EnemyState[] = [enemy];
+    const harvestables: HarvestableState[] = [];
+    const projectiles: ProjectileState[] = [
+      {
+        id: 1,
+        kind: "playerAuto",
+        position: { x: 0, y: 0 },
+        velocity: { x: 0, y: 0 },
+        ttl: 1,
+        damage: 15,
+        radius: 0.5,
+      },
+    ];
+    const visualEffects: VisualEffect[] = [];
+
+    const result = resolveCollisions(player, enemies, harvestables, projectiles, { value: 1 }, visualEffects, { value: 1 });
+    const drop = result.spawnedPickups[0];
+    expect(drop?.kind).toBe("coin");
+    expect(drop?.value).toBe(2);
+    expect(result.eliteKillsGained).toBe(1);
+    vi.restoreAllMocks();
   });
 });

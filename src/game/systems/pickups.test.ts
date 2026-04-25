@@ -18,6 +18,8 @@ function createCooldowns(): Cooldowns {
     cannonDuration: 5,
     boostRemaining: 0,
     boostDuration: 4.5,
+    extraRemaining: 0,
+    extraDuration: 0,
     boostActiveRemaining: 0,
     boostActiveDuration: 0.22,
     invulnRemaining: 0,
