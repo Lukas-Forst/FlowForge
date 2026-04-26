@@ -6,11 +6,13 @@ import type { UpgradeOption, UpgradeType } from "../game/types";
 interface UpgradeModalProps {
   options: UpgradeOption[];
   onPick: (type: UpgradeOption["type"]) => void;
+  title?: string;
   /** Current stacks per upgrade (for "owned" counts on cards). */
   stacks?: Partial<Record<UpgradeType, number>>;
+  variant?: "default" | "elite";
 }
 
-export function UpgradeModal({ options, onPick, stacks }: UpgradeModalProps): ReactElement {
+export function UpgradeModal({ options, onPick, title = "CHOOSE UPGRADE", stacks, variant = "default" }: UpgradeModalProps): ReactElement {
   const [picked, setPicked] = useState<UpgradeOption["type"] | null>(null);
 
   const handlePick = (type: UpgradeOption["type"]) => {
@@ -21,8 +23,8 @@ export function UpgradeModal({ options, onPick, stacks }: UpgradeModalProps): Re
 
   return (
     <div className="upgrade-modal">
-      <div className="upgrade-modal-panel">
-        <h2 style={{ fontFamily: "'Luckiest Guy', system-ui, sans-serif", letterSpacing: 2, margin: 0 }}>CHOOSE UPGRADE</h2>
+      <div className={`upgrade-modal-panel ${variant === "elite" ? "upgrade-modal-panel--elite" : ""}`}>
+        <h2 style={{ fontFamily: "'Luckiest Guy', system-ui, sans-serif", letterSpacing: 2, margin: 0 }}>{title}</h2>
         <div className="upgrade-grid-v2">
           {options.map((option) => {
             const prereq = getUpgradePrerequisiteDescription(option.type);

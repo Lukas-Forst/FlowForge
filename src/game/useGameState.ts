@@ -8,7 +8,8 @@ import {
   BASE_PLAYER_SPEED,
 } from "./constants";
 import { runAutoAttack } from "./systems/autoAttack";
-import { getBoostSpeedMultiplier } from "./systems/boostAbility";
+import { getBoostSpeedMultiplier, tryActivateBoost } from "./systems/boostAbility";
+import { tryFireCannon } from "./systems/cannonAbility";
 import { triggerExtraAbility } from "./systems/abilityExecution";
 import { resolveCollisions, updateEnemyMovement, updateProjectileMotion } from "./systems/collision";
 import { updateDelayedAoEs } from "./systems/delayedAoE";
@@ -23,7 +24,9 @@ import { updateHarvestableSpawning } from "./systems/harvestableSpawner";
 import { updatePlayerMovement } from "./systems/playerController";
 import {
   applyDamageMitigation,
+  applyEliteExtraAbilitySelection,
   applyUpgrade,
+  buildEliteExtraAbilityChoices,
   buildUpgradeChoices,
   countEvolutionStacks,
   emitLevelUpEvents,
@@ -119,8 +122,6 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "loading"): GameSn
       cannonDuration: BASE_CANNON_COOLDOWN,
       boostRemaining: 0,
       boostDuration: BOOST_COOLDOWN,
-      extraRemaining: 0,
-      extraDuration: 0,
       boostActiveRemaining: 0,
       boostActiveDuration: BOOST_ACTIVE_TIME,
       extraRemaining: 0,
@@ -139,6 +140,7 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "loading"): GameSn
       evolutionsUnlocked: 0,
     },
     pendingUpgradeOptions: [],
+    pendingUpgradeContext: "levelup",
     message: null,
     vibePortal: {
       position: { x: VIBE_PORTAL_POSITION.x, y: VIBE_PORTAL_POSITION.y },
@@ -188,6 +190,7 @@ function copySnapshot(snapshot: GameSnapshot): GameSnapshot {
     cooldowns: { ...snapshot.cooldowns },
     stats: { ...snapshot.stats },
     pendingUpgradeOptions: snapshot.pendingUpgradeOptions.map((option) => ({ ...option })),
+    pendingUpgradeContext: snapshot.pendingUpgradeContext,
     message: snapshot.message ? { ...snapshot.message } : null,
     vibePortal: {
       ...snapshot.vibePortal,
@@ -484,26 +487,32 @@ export function useGameState(): UseGameStateApi {
     if (state.phase !== "upgrade") {
       return;
     }
-    applyUpgrade(state.upgrades, type);
-    if (type === "maxHp") {
-      state.player.maxHp += 25;
-      state.player.hp = state.player.maxHp;
-    }
-    retargetNextUpgradeThreshold(state.upgrades, state.stats.collectedCoins);
-    if (type === "krakenCall" && !krakenUsedRef.current.value) {
-      krakenUsedRef.current.value = true;
-      krakenRemainingRef.current.value = KRAKEN_ACTIVE_TIME;
-      krakenAttackTimerRef.current.value = 0.12;
+    if (state.pendingUpgradeContext === "eliteExtra") {
+      applyEliteExtraAbilitySelection(state.upgrades, type);
+      setMessage({ text: "Elite spoils claimed: E ability equipped!", remaining: 1.1 });
+    } else {
+      applyUpgrade(state.upgrades, type);
+      if (type === "maxHp") {
+        state.player.maxHp += 25;
+        state.player.hp = state.player.maxHp;
+      }
+      retargetNextUpgradeThreshold(state.upgrades, state.stats.collectedCoins);
+      if (type === "krakenCall" && !krakenUsedRef.current.value) {
+        krakenUsedRef.current.value = true;
+        krakenRemainingRef.current.value = KRAKEN_ACTIVE_TIME;
+        krakenAttackTimerRef.current.value = 0.12;
+      }
+      state.postFxPulse = emitLevelUpEvents(
+        state.player.position,
+        state.audioEvents,
+        state.visualEffects,
+        effectIdRef.current,
+      );
+      setMessage({ text: `${type} upgraded!`, remaining: 0.8 });
     }
     state.phase = "playing";
     state.pendingUpgradeOptions = [];
-    state.postFxPulse = emitLevelUpEvents(
-      state.player.position,
-      state.audioEvents,
-      state.visualEffects,
-      effectIdRef.current,
-    );
-    setMessage({ text: `${type} upgraded!`, remaining: 0.8 });
+    state.pendingUpgradeContext = "levelup";
     syncState();
   }, [setMessage, syncState]);
 
@@ -914,11 +923,15 @@ export function useGameState(): UseGameStateApi {
     }
     state.stats.enemiesKilled += collisionResult.killsGained;
     if (collisionResult.eliteKillsGained > 0) {
-      const bountyText =
-        collisionResult.eliteKillsGained === 1
-          ? "Elite bounty secured!"
-          : `Elite bounties x${collisionResult.eliteKillsGained}!`;
-      setMessage({ text: bountyText, remaining: 0.95 });
+      const eliteChoices = buildEliteExtraAbilityChoices(state.upgrades);
+      if (state.phase === "playing" && eliteChoices.length > 0) {
+        state.phase = "upgrade";
+        state.pendingUpgradeContext = "eliteExtra";
+        state.pendingUpgradeOptions = eliteChoices;
+        setMessage({ text: "Elite defeated! Choose an E ability.", remaining: 99 });
+        syncState();
+        return;
+      }
     }
     if ((state.upgrades.stacks.pressGang ?? 0) > 0) {
       while (state.stats.enemiesKilled >= pressGangNextKillRef.current.value) {
@@ -974,6 +987,7 @@ export function useGameState(): UseGameStateApi {
     if (state.player.hp <= 0) {
       state.phase = "gameover";
       state.pendingUpgradeOptions = [];
+      state.pendingUpgradeContext = "levelup";
       state.stats.evolutionsUnlocked = countEvolutionStacks(state.upgrades);
       state.stats.score = Math.floor(
         state.stats.timeSurvived * 100 + state.stats.enemiesKilled * 25 + state.stats.collectedCoins * 2 + state.stats.evolutionsUnlocked * 500
@@ -1025,6 +1039,7 @@ export function useGameState(): UseGameStateApi {
         return;
       }
       state.phase = "upgrade";
+      state.pendingUpgradeContext = "levelup";
       state.pendingUpgradeOptions = choices;
       setMessage({ text: "Choose your upgrade", remaining: 99 });
       syncState();

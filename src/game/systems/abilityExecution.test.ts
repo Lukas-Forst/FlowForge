@@ -47,6 +47,7 @@ function makeSnapshot(): GameSnapshot {
       evolutionsUnlocked: 0,
     },
     pendingUpgradeOptions: [],
+    pendingUpgradeContext: "levelup",
     message: null,
     vibePortal: { position: { x: 0, y: 0 }, visible: false, near: false, triggered: false },
     spawnIntensity: 0,

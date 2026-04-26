@@ -197,6 +197,15 @@ export function EnemyShip({ type, isElite = false, ...props }: EnemyShipProps): 
 
   return (
     <group scale={isElite ? 1.3 : 1} {...props}>
+      {isElite ? (
+        <>
+          <mesh position={[0, 0.1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[1.25, 1.6, 32]} />
+            <meshBasicMaterial color="#ffd35f" transparent opacity={0.4} />
+          </mesh>
+          <pointLight color="#ffcf66" intensity={1.4} distance={4.8} />
+        </>
+      ) : null}
       <ShipModelVisual
         config={ENEMY_MODEL_CONFIGS[type]}
         fallback={variant}

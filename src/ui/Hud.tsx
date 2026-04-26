@@ -33,7 +33,10 @@ export function Hud({ snapshot }: HudProps): ReactElement {
       ? "E TORPEDO"
       : (snapshot.upgrades.stacks.extraDepthCharge ?? 0) > 0
         ? "E DEPTH CHARGE"
+        : (snapshot.upgrades.stacks.extraOilSlick ?? 0) > 0
+          ? "E OIL SLICK"
         : "E SPECIAL";
+  const extraNeedsUnlock = !snapshot.upgrades.activeExtraAbility;
   const safeTime = Math.max(0, snapshot.stats.timeSurvived);
   const xpProgress = snapshot.upgrades.nextThreshold > 0 ? Math.min(1, Math.max(0, snapshot.stats.collectedCoins / snapshot.upgrades.nextThreshold)) : 0;
   const boss = snapshot.enemies.find((e) => e.type === "boss");
@@ -84,8 +87,8 @@ export function Hud({ snapshot }: HudProps): ReactElement {
               <PulseMeter value={cooldownPercent(snapshot.cooldowns.boostRemaining, snapshot.cooldowns.boostDuration)} color="#88ddff" ready={boostReady} />
             </div>
           </div>
-          <div className="hud-v2-row">
-            <span>{extraLabel}</span>
+          <div className={`hud-v2-row ${extraNeedsUnlock ? "hud-v2-row--extra-empty" : ""}`}>
+            <span>{extraNeedsUnlock ? "E SPECIAL (LOCKED)" : extraLabel}</span>
             <div className="hud-v2-ability-bar">
               <PulseMeter value={cooldownPercent(snapshot.cooldowns.extraRemaining, snapshot.cooldowns.extraDuration)} color="#b8a2ff" ready={extraReady} />
             </div>

@@ -729,6 +729,16 @@ button:hover {
 .hud-v2-hp-bar { width: 180px; }
 .hud-v2-ability-bar { width: 140px; }
 
+.hud-v2-row--extra-empty span:first-child {
+  color: #ffd983;
+  animation: hud-extra-lock-pulse 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes hud-extra-lock-pulse {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.35); }
+}
+
 .screen-flash {
   position: fixed;
   inset: 0;
@@ -805,6 +815,11 @@ button:hover {
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: #e2ecf0;
   font-family: system-ui, sans-serif;
+}
+
+.upgrade-modal-panel--elite {
+  border-color: rgba(255, 210, 110, 0.5);
+  box-shadow: 0 0 28px rgba(255, 190, 80, 0.22);
 }
 
 .upgrade-grid-v2 {

@@ -309,6 +309,7 @@ export interface GameSnapshot {
   cooldowns: Cooldowns;
   stats: GameStats;
   pendingUpgradeOptions: UpgradeOption[];
+  pendingUpgradeContext: "levelup" | "eliteExtra";
   message: FlashMessage | null;
   vibePortal: VibePortalState;
   spawnIntensity: number;

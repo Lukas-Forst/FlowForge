@@ -582,7 +582,13 @@ export default function App(): ReactElement {
             />
           )}
           {snapshot.phase === "upgrade" && (
-            <UpgradeModal options={snapshot.pendingUpgradeOptions} onPick={chooseUpgrade} stacks={snapshot.upgrades.stacks} />
+            <UpgradeModal
+              options={snapshot.pendingUpgradeOptions}
+              onPick={chooseUpgrade}
+              stacks={snapshot.upgrades.stacks}
+              title={snapshot.pendingUpgradeContext === "eliteExtra" ? "ELITE SPOILS - CHOOSE E ABILITY" : "CHOOSE UPGRADE"}
+              variant={snapshot.pendingUpgradeContext === "eliteExtra" ? "elite" : "default"}
+            />
           )}
           {snapshot.phase === "gameover" && <GameOverScreen snapshot={snapshot} onRestart={restartRun} />}
         </>

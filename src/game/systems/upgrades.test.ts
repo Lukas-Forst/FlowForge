@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { AudioEvent, UpgradeStats, VisualEffect } from "../types";
-import { applyDamageMitigation, buildUpgradeChoices, emitLevelUpEvents, retargetNextUpgradeThreshold } from "./upgrades";
+import {
+  applyDamageMitigation,
+  applyEliteExtraAbilitySelection,
+  buildEliteExtraAbilityChoices,
+  buildUpgradeChoices,
+  emitLevelUpEvents,
+  retargetNextUpgradeThreshold,
+} from "./upgrades";
 import { UPGRADE_OPTIONS } from "../constants";
 
 describe("emitLevelUpEvents", () => {
@@ -139,5 +146,64 @@ describe("buildUpgradeChoices", () => {
     const choices = buildUpgradeChoices(upgrades);
     const choiceTypes = choices.map((choice) => choice.type);
     expect(choiceTypes).toContain("phantomFleet");
+  });
+});
+
+describe("elite extra ability rewards", () => {
+  it("returns unowned E-ability cards first", () => {
+    const upgrades: UpgradeStats = {
+      level: 0,
+      fireRateMult: 1,
+      speedMult: 1,
+      cooldownMult: 1,
+      nextThreshold: 10,
+      stacks: { extraTorpedo: 1 } as UpgradeStats["stacks"],
+      activeCannonAbility: "cannon",
+      activeBoostAbility: "boost",
+      activeExtraAbility: "torpedo",
+    };
+    const choices = buildEliteExtraAbilityChoices(upgrades);
+    const choiceTypes = choices.map((choice) => choice.type);
+    expect(choiceTypes).toContain("extraDepthCharge");
+    expect(choiceTypes).toContain("extraOilSlick");
+    expect(choiceTypes).not.toContain("extraTorpedo");
+  });
+
+  it("falls back to all E-ability cards if all are owned", () => {
+    const upgrades: UpgradeStats = {
+      level: 0,
+      fireRateMult: 1,
+      speedMult: 1,
+      cooldownMult: 1,
+      nextThreshold: 10,
+      stacks: {
+        extraTorpedo: 1,
+        extraDepthCharge: 1,
+        extraOilSlick: 1,
+      } as UpgradeStats["stacks"],
+      activeCannonAbility: "cannon",
+      activeBoostAbility: "boost",
+      activeExtraAbility: "oilSlick",
+    };
+    const choices = buildEliteExtraAbilityChoices(upgrades);
+    expect(choices).toHaveLength(3);
+  });
+
+  it("equips the chosen E ability without affecting level", () => {
+    const upgrades: UpgradeStats = {
+      level: 5,
+      fireRateMult: 1,
+      speedMult: 1,
+      cooldownMult: 1,
+      nextThreshold: 40,
+      stacks: {} as UpgradeStats["stacks"],
+      activeCannonAbility: "cannon",
+      activeBoostAbility: "boost",
+      activeExtraAbility: null,
+    };
+    applyEliteExtraAbilitySelection(upgrades, "extraDepthCharge");
+    expect(upgrades.activeExtraAbility).toBe("depthCharge");
+    expect(upgrades.stacks.extraDepthCharge).toBe(1);
+    expect(upgrades.level).toBe(5);
   });
 });

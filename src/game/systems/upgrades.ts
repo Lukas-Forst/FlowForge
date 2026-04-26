@@ -132,6 +132,21 @@ export function buildUpgradeChoices(upgrades: UpgradeStats): UpgradeOption[] {
   return choices;
 }
 
+const ELITE_EXTRA_ABILITY_TYPES: UpgradeType[] = ["extraTorpedo", "extraDepthCharge", "extraOilSlick"];
+
+export function buildEliteExtraAbilityChoices(upgrades: UpgradeStats): UpgradeOption[] {
+  const choices: UpgradeOption[] = [];
+  for (const type of ELITE_EXTRA_ABILITY_TYPES) {
+    const option = UPGRADE_OPTIONS[type];
+    if (!option) continue;
+    const isOwned = (upgrades.stacks[type] ?? 0) > 0;
+    if (!isOwned) {
+      choices.push(option);
+    }
+  }
+  return choices.length > 0 ? choices : ELITE_EXTRA_ABILITY_TYPES.map((type) => UPGRADE_OPTIONS[type]);
+}
+
 export function applyUpgrade(upgrades: UpgradeStats, type: UpgradeType): void {
   upgrades.level += 1;
   upgrades.nextThreshold += upgrades.level + 4;
@@ -142,6 +157,14 @@ export function applyUpgrade(upgrades: UpgradeStats, type: UpgradeType): void {
   if (type === "speed") upgrades.speedMult *= 1.15;
   if (type === "cooldown") upgrades.cooldownMult *= 0.82;
   if (type === "boostRepeat") upgrades.cooldownMult *= 0.6;
+}
+
+export function applyEliteExtraAbilitySelection(upgrades: UpgradeStats, type: UpgradeType): void {
+  if (!ELITE_EXTRA_ABILITY_TYPES.includes(type)) {
+    return;
+  }
+  upgrades.stacks[type] = Math.max(1, upgrades.stacks[type] ?? 0);
+  applyAbilityUpgrade(upgrades, type);
 }
 
 export function applyDamageMitigation(rawDamage: number, upgrades: UpgradeStats): number {
