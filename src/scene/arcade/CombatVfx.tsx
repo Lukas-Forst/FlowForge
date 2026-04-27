@@ -40,6 +40,15 @@ function projectileCore(kind: ProjectileKind): {
         metalness: 0.4,
         roughness: 0.24,
       };
+    case "playerTorpedo":
+      return {
+        radius: 0.3,
+        color: "#c5f2ff",
+        emissive: "#35d4ff",
+        emissiveIntensity: 2.1,
+        metalness: 0.46,
+        roughness: 0.2,
+      };
     case "enemyCorsair":
       return {
         radius: 0.2,
@@ -86,10 +95,12 @@ function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): R
   const yaw = speed > 0.05 ? Math.atan2(vx, vz) : 0;
   const core = projectileCore(p.kind);
   const trail =
-    p.kind === "playerAuto" || p.kind === "playerCannon" || p.kind === "enemyBrute" || p.kind === "enemyBomber";
+    p.kind === "playerAuto" || p.kind === "playerCannon" || p.kind === "playerTorpedo" || p.kind === "enemyBrute" || p.kind === "enemyBomber";
 
-  const trailLen = p.kind === "enemyBomber" ? 0.72 : p.kind === "enemyBrute" ? 0.66 : p.kind === "playerCannon" ? 0.62 : 0.58;
-  const trailRad = p.kind === "enemyBomber" ? 0.035 : p.kind === "enemyBrute" ? 0.12 : p.kind === "playerCannon" ? 0.11 : 0.05;
+  const trailLen =
+    p.kind === "enemyBomber" ? 0.72 : p.kind === "enemyBrute" ? 0.66 : p.kind === "playerCannon" ? 0.62 : p.kind === "playerTorpedo" ? 0.9 : 0.58;
+  const trailRad =
+    p.kind === "enemyBomber" ? 0.035 : p.kind === "enemyBrute" ? 0.12 : p.kind === "playerCannon" ? 0.11 : p.kind === "playerTorpedo" ? 0.14 : 0.05;
 
   return (
     <group position={[p.position.x, 0.56, p.position.y]} rotation={[0, yaw, 0]}>
@@ -108,9 +119,9 @@ function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): R
           <mesh position={[0, 0, -trailLen * 0.48]} rotation={[Math.PI / 2, 0, 0]}>
             <coneGeometry args={[trailRad, trailLen, 6]} />
             <meshStandardMaterial
-              color={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? "#d5aaff" : "#808892") : "#ffd698"}
-              emissive={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? "#7c2fca" : "#2f3640") : "#ff8c22"}
-              emissiveIntensity={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? 1.8 : 1.2) : 0.68}
+              color={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? "#d5aaff" : "#808892") : p.kind === "playerTorpedo" ? "#b9f0ff" : "#ffd698"}
+              emissive={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? "#7c2fca" : "#2f3640") : p.kind === "playerTorpedo" ? "#35d4ff" : "#ff8c22"}
+              emissiveIntensity={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? 1.8 : 1.2) : p.kind === "playerTorpedo" ? 1.3 : 0.68}
               transparent
               opacity={0.9}
               depthWrite={false}
@@ -119,13 +130,19 @@ function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): R
           <mesh position={[0, 0, -trailLen * 0.52]} rotation={[Math.PI / 2, 0, 0]} scale={[1.25, 1.1, 1.25]}>
             <coneGeometry args={[trailRad, trailLen, 6]} />
             <meshBasicMaterial
-              color={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? "#d7c3ec" : "#8e949e") : "#fff2d1"}
+              color={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? "#d7c3ec" : "#8e949e") : p.kind === "playerTorpedo" ? "#dff8ff" : "#fff2d1"}
               transparent
-              opacity={p.kind.startsWith("enemy") ? 0.16 : 0.26}
+              opacity={p.kind.startsWith("enemy") ? 0.16 : p.kind === "playerTorpedo" ? 0.34 : 0.26}
               depthWrite={false}
             />
           </mesh>
         </>
+      ) : null}
+      {p.kind === "playerTorpedo" ? (
+        <mesh scale={[1.35, 0.85, 1.75]}>
+          <sphereGeometry args={[core.radius, 10, 10]} />
+          <meshBasicMaterial color="#e8fbff" transparent opacity={0.22} depthWrite={false} />
+        </mesh>
       ) : null}
       {p.kind === "playerAuto" || p.kind === "playerCannon" ? (
         <mesh scale={[1.18, 1.18, 1.18]}>

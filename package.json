@@ -9,6 +9,7 @@
     "prebuild": "node ./scripts/assets/size-check.mjs",
     "preview": "vite preview",
     "test": "vitest run",
+    "perf:guard": "node ./scripts/perf/guard.mjs",
     "assets:size-check": "node ./scripts/assets/size-check.mjs",
     "assets:optimize": "node ./scripts/assets/optimize.mjs",
     "assets:props:generate": "node ./scripts/meshy/generate-props.mjs",

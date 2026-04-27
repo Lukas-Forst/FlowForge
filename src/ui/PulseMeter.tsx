@@ -6,9 +6,10 @@ interface PulseMeterProps {
   color: string;
   ready?: boolean;
   damageSignal?: number;
+  variant?: "default" | "special";
 }
 
-export function PulseMeter({ value, color, ready, damageSignal }: PulseMeterProps): ReactElement {
+export function PulseMeter({ value, color, ready, damageSignal, variant = "default" }: PulseMeterProps): ReactElement {
   const [flashing, setFlashing] = useState(false);
   const lastSignal = useRef(damageSignal ?? 0);
 
@@ -22,7 +23,7 @@ export function PulseMeter({ value, color, ready, damageSignal }: PulseMeterProp
     }
   }, [damageSignal]);
 
-  const classes = `pulse-meter ${ready ? "ready" : ""} ${flashing ? "damage-flash" : ""}`;
+  const classes = `pulse-meter ${variant === "special" ? "special" : ""} ${ready ? "ready" : ""} ${flashing ? "damage-flash" : ""}`;
   return (
     <div className={classes} style={{ color }}>
       <div className="pulse-meter-fill" style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%`, background: color }} />

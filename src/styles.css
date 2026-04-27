@@ -438,9 +438,28 @@ button:hover {
   animation: pulse-glow 0.9s ease-in-out infinite alternate;
 }
 
+.pulse-meter.special {
+  border: 1px solid rgba(184, 162, 255, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 14px rgba(143, 98, 255, 0.18);
+}
+
+.pulse-meter.special .pulse-meter-fill {
+  background: linear-gradient(90deg, #7258ff 0%, #a679ff 45%, #e0b3ff 100%) !important;
+}
+
+.pulse-meter.special.ready .pulse-meter-fill {
+  animation: pulse-glow 0.9s ease-in-out infinite alternate, special-ready-sweep 0.75s ease-in-out infinite;
+}
+
 @keyframes pulse-glow {
   from { filter: brightness(1); }
   to { filter: brightness(1.5); }
+}
+
+@keyframes special-ready-sweep {
+  0% { transform: translateX(-3%); }
+  50% { transform: translateX(0); }
+  100% { transform: translateX(3%); }
 }
 
 .pulse-meter.damage-flash {

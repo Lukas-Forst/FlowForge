@@ -90,7 +90,12 @@ export function Hud({ snapshot }: HudProps): ReactElement {
           <div className={`hud-v2-row ${extraNeedsUnlock ? "hud-v2-row--extra-empty" : ""}`}>
             <span>{extraNeedsUnlock ? "E SPECIAL (LOCKED)" : extraLabel}</span>
             <div className="hud-v2-ability-bar">
-              <PulseMeter value={cooldownPercent(snapshot.cooldowns.extraRemaining, snapshot.cooldowns.extraDuration)} color="#b8a2ff" ready={extraReady} />
+              <PulseMeter
+                value={cooldownPercent(snapshot.cooldowns.extraRemaining, snapshot.cooldowns.extraDuration)}
+                color="#b8a2ff"
+                ready={extraReady}
+                variant="special"
+              />
             </div>
           </div>
         </div>
