@@ -157,7 +157,7 @@ export interface DelayedAoEState {
   radius: number;
   damage: number;
   source: "player" | "enemy";
-  visualType?: "mortar" | "depthCharge" | "shockwave" | "boss";
+  visualType?: "mortar" | "depthCharge" | "shockwave" | "boss" | "oilSlick";
 }
 
 export interface MineState {

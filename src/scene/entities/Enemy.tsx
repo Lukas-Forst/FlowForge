@@ -195,15 +195,21 @@ export function EnemyShip({ type, isElite = false, ...props }: EnemyShipProps): 
     smokeIntensity = 1.35;
   }
 
+  const isBoss = type === "boss" || type === "shore_battery";
+
   return (
-    <group scale={isElite ? 1.3 : 1} {...props}>
-      {isElite ? (
+    <group scale={isElite ? 1.34 : isBoss ? 1.16 : 1} {...props}>
+      {isElite || isBoss ? (
         <>
           <mesh position={[0, 0.1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[1.25, 1.6, 32]} />
-            <meshBasicMaterial color="#ffd35f" transparent opacity={0.4} />
+            <ringGeometry args={isBoss ? [1.45, 2.02, 40] : [1.25, 1.6, 32]} />
+            <meshBasicMaterial color={isBoss ? "#ff8a7a" : "#ffd35f"} transparent opacity={isBoss ? 0.52 : 0.4} />
           </mesh>
-          <pointLight color="#ffcf66" intensity={1.4} distance={4.8} />
+          <mesh position={[0, 0.14, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={isBoss ? [2.16, 2.5, 40] : [1.78, 2.05, 28]} />
+            <meshBasicMaterial color={isBoss ? "#ff5e45" : "#ffefbb"} transparent opacity={isBoss ? 0.22 : 0.16} />
+          </mesh>
+          <pointLight color={isBoss ? "#ff6948" : "#ffcf66"} intensity={isBoss ? 2.2 : 1.4} distance={isBoss ? 8.5 : 4.8} />
         </>
       ) : null}
       <ShipModelVisual

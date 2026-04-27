@@ -5,6 +5,10 @@ import {
   DEPTH_CHARGE_DAMAGE,
   DEPTH_CHARGE_DELAY,
   DEPTH_CHARGE_RADIUS,
+  OIL_SLICK_COOLDOWN,
+  OIL_SLICK_DAMAGE,
+  OIL_SLICK_DELAY,
+  OIL_SLICK_RADIUS,
   RING_BARRAGE_DAMAGE,
   RING_BARRAGE_IMPACT_DELAY,
   RING_BARRAGE_RADIUS,
@@ -121,7 +125,8 @@ export function triggerExtraAbility(
 ): void {
   const hasTorpedo = (state.upgrades.stacks.extraTorpedo ?? 0) > 0;
   const hasDepthCharge = (state.upgrades.stacks.extraDepthCharge ?? 0) > 0;
-  if (!hasTorpedo && !hasDepthCharge) {
+  const hasOilSlick = (state.upgrades.stacks.extraOilSlick ?? 0) > 0;
+  if (!hasTorpedo && !hasDepthCharge && !hasOilSlick) {
     setMessage({
       text: "No special ability equipped.",
       remaining: 0.75,
@@ -159,6 +164,26 @@ export function triggerExtraAbility(
         pierceRemaining: 0,
       });
     }
+    setMessage(null);
+    return;
+  }
+
+  if (hasOilSlick) {
+    state.cooldowns.extraDuration = OIL_SLICK_COOLDOWN * state.upgrades.cooldownMult;
+    state.cooldowns.extraRemaining = state.cooldowns.extraDuration;
+    const backward = { x: -Math.cos(state.player.facing), y: -Math.sin(state.player.facing) };
+    state.delayedAoEs.push({
+      id: delayedAoEIdRef.value++,
+      position: {
+        x: state.player.position.x + backward.x * 1.3,
+        y: state.player.position.y + backward.y * 1.3,
+      },
+      remaining: OIL_SLICK_DELAY,
+      radius: OIL_SLICK_RADIUS,
+      damage: OIL_SLICK_DAMAGE,
+      source: "player",
+      visualType: "oilSlick",
+    });
     setMessage(null);
     return;
   }

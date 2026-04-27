@@ -146,4 +146,14 @@ describe("triggerExtraAbility", () => {
     expect(snapshot.projectiles[0]?.kind).toBe("playerTorpedo");
     expect(snapshot.delayedAoEs).toHaveLength(0);
   });
+
+  it("drops an oil slick delayed impact when extraOilSlick is unlocked", () => {
+    const snapshot = makeSnapshot();
+    snapshot.upgrades.stacks.extraOilSlick = 1;
+    triggerExtraAbility(snapshot, { value: 1 }, { value: 1 }, () => {});
+    expect(snapshot.projectiles).toHaveLength(0);
+    expect(snapshot.delayedAoEs).toHaveLength(1);
+    expect(snapshot.delayedAoEs[0]?.visualType).toBe("oilSlick");
+    expect(snapshot.cooldowns.extraRemaining).toBeGreaterThan(0);
+  });
 });

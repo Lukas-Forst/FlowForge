@@ -8,7 +8,7 @@ import { WaterArena } from "./arcade/WaterArena";
 import { EnemyShip } from "./entities/Enemy";
 import { HarvestableEntity } from "./entities/HarvestableEntity";
 import { PlayerShip } from "./entities/PlayerShip";
-import type { PickupState, GameSnapshot, MultiplayerPeerState } from "../game/types";
+import type { DelayedAoEState, PickupState, GameSnapshot, MineState, MultiplayerPeerState } from "../game/types";
 import { getBlendedRunArcTheme } from "./biomeLerp";
 import { PostFX } from "./postfx/PostFX";
 import { pickFxQuality, type FxQuality } from "./postfx/qualityController";
@@ -328,6 +328,57 @@ function PlayerNameTag({
   );
 }
 
+function DelayedAoEIndicator({ aoe }: { aoe: DelayedAoEState }): ReactElement {
+  const pulse = 0.78 + Math.sin(aoe.remaining * 8) * 0.1;
+  const tint =
+    aoe.visualType === "oilSlick"
+      ? "#2f1d13"
+      : aoe.visualType === "depthCharge"
+        ? "#2f8db6"
+        : "#c85a33";
+
+  return (
+    <group position={[aoe.position.x, 0.045, aoe.position.y]}>
+      {aoe.visualType === "oilSlick" ? (
+        <>
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <circleGeometry args={[aoe.radius * 0.58, 28]} />
+            <meshBasicMaterial color="#1d120d" transparent opacity={0.45} depthWrite={false} />
+          </mesh>
+          <mesh rotation={[-Math.PI / 2, aoe.remaining * 0.45, 0]}>
+            <ringGeometry args={[aoe.radius * 0.38, aoe.radius * 0.7, 36]} />
+            <meshBasicMaterial color="#ff7a2e" transparent opacity={0.28 + (1 - pulse) * 0.35} depthWrite={false} />
+          </mesh>
+        </>
+      ) : null}
+      <mesh rotation={[-Math.PI / 2, aoe.remaining * 0.3, 0]}>
+        <ringGeometry args={[aoe.radius * 0.72 * pulse, aoe.radius * pulse, 34]} />
+        <meshBasicMaterial color={tint} transparent opacity={0.42} depthWrite={false} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, -aoe.remaining * 0.2, 0]}>
+        <ringGeometry args={[aoe.radius * 0.5, aoe.radius * 0.62, 28]} />
+        <meshBasicMaterial color="#f3fdff" transparent opacity={0.2} depthWrite={false} />
+      </mesh>
+    </group>
+  );
+}
+
+function SeaMineVisual({ mine }: { mine: MineState }): ReactElement {
+  const armed = mine.armingRemaining <= 0;
+  return (
+    <group position={[mine.position.x, 0.25, mine.position.y]}>
+      <mesh>
+        <sphereGeometry args={[0.28, 10, 10]} />
+        <meshStandardMaterial color={armed ? "#2b2f38" : "#3f424d"} emissive={armed ? "#6b1c18" : "#1f232c"} emissiveIntensity={armed ? 0.9 : 0.35} />
+      </mesh>
+      <mesh position={[0, 0.34, 0]}>
+        <sphereGeometry args={[0.06, 8, 8]} />
+        <meshBasicMaterial color={armed ? "#ff6f5a" : "#7f8a9a"} />
+      </mesh>
+    </group>
+  );
+}
+
 export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = null }: GameSceneProps): ReactElement {
   const elapsed = snapshot.runClock.elapsedTotal;
   const theme = getBlendedRunArcTheme(elapsed);
@@ -395,6 +446,13 @@ export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = nul
             sizeScale={enemy.type === "brute" ? 1.05 : enemy.type === "bomber" ? 0.86 : 0.78}
           />
         </group>
+      ))}
+
+      {snapshot.delayedAoEs.map((aoe) => (
+        <DelayedAoEIndicator key={`aoe-${aoe.id}`} aoe={aoe} />
+      ))}
+      {snapshot.mines.map((mine) => (
+        <SeaMineVisual key={`mine-${mine.id}`} mine={mine} />
       ))}
 
       <CombatProjectiles projectiles={snapshot.projectiles} />
