@@ -484,6 +484,27 @@ button:hover {
   100% { background: rgba(0, 0, 0, 0.35); }
 }
 
+/* ── Boost Arc ────────────────────────────────────────────── */
+.boost-arc {
+  width: 48px;
+  height: 48px;
+}
+
+.boost-arc-svg {
+  width: 48px;
+  height: 48px;
+}
+
+/* ready pulse */
+.boost-arc.ready {
+  animation: boost-ready-pulse 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes boost-ready-pulse {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.6); }
+}
+
 .xp-bar {
   position: fixed;
   top: 0;

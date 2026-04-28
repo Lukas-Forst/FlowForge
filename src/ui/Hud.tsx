@@ -6,6 +6,7 @@ import { BiomeBadge } from "./BiomeBadge";
 import { BossFrame } from "./BossFrame";
 import { KillStreakHud } from "./KillStreakHud";
 import { LevelPill } from "./LevelPill";
+import { BoostArc } from "./BoostArc";
 import { PulseMeter } from "./PulseMeter";
 import { getRunPhaseHudLabels } from "./runPhaseHud";
 import { XPBar } from "./XPBar";
@@ -84,9 +85,11 @@ export function Hud({ snapshot }: HudProps): ReactElement {
           </div>
           <div className="hud-v2-row">
             <span>SHIFT BOOST</span>
-            <div className="hud-v2-ability-bar">
-              <PulseMeter value={cooldownPercent(snapshot.cooldowns.boostRemaining, snapshot.cooldowns.boostDuration)} color="#88ddff" ready={boostReady} />
-            </div>
+            <BoostArc
+              value={cooldownPercent(snapshot.cooldowns.boostRemaining, snapshot.cooldowns.boostDuration)}
+              ready={boostReady}
+              active={snapshot.cooldowns.boostActiveRemaining > 0}
+            />
           </div>
           <div className={`hud-v2-row ${extraNeedsUnlock ? "hud-v2-row--extra-empty" : ""}`}>
             <span>{extraNeedsUnlock ? "E SPECIAL (LOCKED)" : extraLabel}</span>
