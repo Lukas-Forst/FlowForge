@@ -243,11 +243,12 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
 
   if (effect.kind === "waterSplash") {
     const ring = 0.45 + t * 4.4;
+    const opacity = 0.35 * (1 - t * t);
     return (
       <group position={[effect.position.x, 0.055, effect.position.y]}>
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[ring * 0.35, ring * 0.55, 20]} />
-          <meshBasicMaterial color="#f5fdff" transparent opacity={0.35 * (1 - t)} depthWrite={false} />
+        <mesh rotation={[-Math.PI / 2, 0, 0]} scale={[ring, ring, 1]}>
+          <circleGeometry args={[0.5, 20]} />
+          <meshBasicMaterial color="#f5fdff" transparent opacity={opacity} depthWrite={false} />
         </mesh>
         <mesh position={[0, 0.04, 0]}>
           <sphereGeometry args={[0.12 + t * 0.2, 8, 8]} />
@@ -303,16 +304,24 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
   }
 
   if (effect.kind === "muzzleFlash") {
-    const flashScale = 0.34 + t * 0.46;
+    const flashScale = 0.4 + t * 0.55;
+    const glowScale = 0.6 + t * 0.8;
     return (
       <group position={[effect.position.x, 0.62, effect.position.y]}>
+        {/* outer glow */}
+        <mesh scale={[glowScale, glowScale, glowScale]}>
+          <sphereGeometry args={[0.28, 8, 8]} />
+          <meshBasicMaterial color="#fff4e0" transparent opacity={0.5 * (1 - t * 0.8)} depthWrite={false} />
+        </mesh>
+        {/* core flash */}
         <mesh scale={[flashScale, flashScale, flashScale]}>
           <sphereGeometry args={[0.28, 8, 8]} />
-          <meshBasicMaterial color="#ffe7b8" transparent opacity={0.75 * (1 - t)} depthWrite={false} />
+          <meshBasicMaterial color="#ffe7b8" transparent opacity={0.85 * (1 - t)} depthWrite={false} />
         </mesh>
-        <mesh rotation={[0.2, t * 5, 0]} scale={[flashScale * 1.2, flashScale * 0.8, flashScale * 1.2]}>
-          <octahedronGeometry args={[0.22, 0]} />
-          <meshBasicMaterial color="#ff9c3a" transparent opacity={0.62 * (1 - t)} depthWrite={false} />
+        {/* spark */}
+        <mesh rotation={[0.2, t * 7, 0]} scale={[flashScale * 1.4, flashScale * 0.9, flashScale * 1.4]}>
+          <octahedronGeometry args={[0.24, 0]} />
+          <meshBasicMaterial color="#ff9c3a" transparent opacity={0.7 * (1 - t)} depthWrite={false} />
         </mesh>
       </group>
     );
@@ -351,17 +360,35 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
   }
 
   if (effect.kind === "enemyDeath") {
-    const scale = 1 + t * 4;
+    const scale = 1 + t * 4.5;
+    const sparkCount = 6;
     return (
       <group position={[effect.position.x, 0.2, effect.position.y]}>
+        {/* expanding ring */}
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[scale * 0.4, scale * 0.6, 24]} />
-          <meshBasicMaterial color="#ffbd87" transparent opacity={0.8 * (1 - t)} depthWrite={false} />
+          <ringGeometry args={[scale * 0.4, scale * 0.65, 24]} />
+          <meshBasicMaterial color="#ffbd87" transparent opacity={0.85 * (1 - t)} depthWrite={false} />
         </mesh>
-        <mesh scale={[1 + t * 2, 1 + t * 2, 1 + t * 2]}>
-          <sphereGeometry args={[0.3, 12, 12]} />
-          <meshBasicMaterial color="#ffdfb8" transparent opacity={0.7 * (1 - t)} depthWrite={false} />
+        {/* burst sphere */}
+        <mesh scale={[1 + t * 2.5, 1 + t * 2.5, 1 + t * 2.5]}>
+          <sphereGeometry args={[0.32, 12, 12]} />
+          <meshBasicMaterial color="#ffdfb8" transparent opacity={0.75 * (1 - t)} depthWrite={false} />
         </mesh>
+        {/* debris sparks */}
+        {Array.from({ length: sparkCount }, (_, i) => {
+          const angle = (i / sparkCount) * Math.PI * 2 + t * 3;
+          const dist = 0.3 + t * 2.5;
+          return (
+            <mesh
+              key={i}
+              position={[Math.cos(angle) * dist, 0.3 + t * 1.2, Math.sin(angle) * dist]}
+              scale={[0.08 + t * 0.15, 0.08 + t * 0.15, 0.08 + t * 0.15]}
+            >
+              <boxGeometry args={[1, 1, 1]} />
+              <meshBasicMaterial color="#ffd28b" transparent opacity={0.9 * (1 - t)} depthWrite={false} />
+            </mesh>
+          );
+        })}
       </group>
     );
   }
