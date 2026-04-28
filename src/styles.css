@@ -1154,6 +1154,20 @@ button:hover {
   color: #9edfff;
 }
 
+.upgrade-tooltip-delta {
+  display: block;
+  margin-top: 10px;
+  padding: 7px 10px;
+  background: rgba(0, 0, 0, 0.72);
+  border: 1px solid rgba(255, 204, 102, 0.55);
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffe680;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 .upgrade-card strong {
   display: block;
   font-size: 18px;

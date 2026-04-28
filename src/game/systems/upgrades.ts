@@ -200,6 +200,94 @@ export function getUpgradePrerequisiteDescription(type: UpgradeType): string | n
   }
 }
 
+/**
+ * Returns the upgrade delta preview: [currentValue, newValue, deltaPercent] or null if not applicable.
+ */
+export function getUpgradeDelta(type: UpgradeType, currentStacks: number, upgrades: UpgradeStats): { current: number; next: number; delta: number } | null {
+  switch (type) {
+    case "fireRate": {
+      const cur = upgrades.fireRateMult;
+      const next = cur * 1.22;
+      return { current: cur, next, delta: 22 };
+    }
+    case "speed": {
+      const cur = upgrades.speedMult;
+      const next = cur * 1.15;
+      return { current: cur, next, delta: 15 };
+    }
+    case "cooldown": {
+      const cur = upgrades.cooldownMult;
+      const next = cur * 0.82;
+      // cooldown is reduction, so lower is better — show as negative %
+      const pct = Math.round((1 - 0.82) * 100);
+      return { current: cur, next, delta: -pct };
+    }
+    case "maxHp": {
+      const baseHp = 100;
+      const curHpBonus = currentStacks * 25;
+      const nextHpBonus = (currentStacks + 1) * 25;
+      return { current: baseHp + curHpBonus, next: baseHp + nextHpBonus, delta: 25 };
+    }
+    case "projectileCount": {
+      const cur = 1 + currentStacks;
+      const next = cur + 1;
+      return { current: cur, next, delta: Math.round((1 / cur) * 100) };
+    }
+    case "sideGuns": {
+      const cur = 1 + currentStacks;
+      const next = cur + 1;
+      return { current: cur, next, delta: Math.round((1 / cur) * 100) };
+    }
+    case "pierce": {
+      const cur = currentStacks;
+      const next = cur + 1;
+      return { current: cur, next, delta: next > 0 ? Math.round((1 / cur) * 100) : 100 };
+    }
+    case "armor": {
+      const cur = currentStacks * 15;
+      const next = (currentStacks + 1) * 15;
+      return { current: cur, next, delta: Math.round((1 / cur) * 100) };
+    }
+    case "coinMagnet": {
+      const cur = currentStacks * 0.3 + 1.4;
+      const next = (currentStacks + 1) * 0.3 + 1.4;
+      return { current: Math.round(cur * 10) / 10, next: Math.round(next * 10) / 10, delta: Math.round((0.3 / cur) * 100) };
+    }
+    default:
+      return null;
+  }
+}
+
+function formatDeltaLabel(type: UpgradeType, delta: { current: number; next: number; delta: number }): string {
+  switch (type) {
+    case "fireRate":
+      return `${delta.current.toFixed(2)}x → ${delta.next.toFixed(2)}x (+${delta.delta}%)`;
+    case "speed":
+      return `${delta.current.toFixed(2)}x → ${delta.next.toFixed(2)}x (+${delta.delta}%)`;
+    case "cooldown":
+      return `${delta.current.toFixed(2)}x → ${delta.next.toFixed(2)}x (${delta.delta}%)`;
+    case "maxHp":
+      return `${Math.round(delta.current)} → ${Math.round(delta.next)} HP (+${delta.delta})`;
+    case "projectileCount":
+    case "sideGuns":
+      return `${delta.current} → ${delta.next} shots (+1)`;
+    case "pierce":
+      return `${delta.current} → ${delta.next} pierce (+1)`;
+    case "armor":
+      return `${Math.round(delta.current)}% → ${Math.round(delta.next)}% DR (+15%)`;
+    case "coinMagnet":
+      return `${delta.current} → ${delta.next} pickup radius`;
+    default:
+      return null;
+  }
+}
+
+export function getUpgradeDeltaLabel(type: UpgradeType, currentStacks: number, upgrades: UpgradeStats): string | null {
+  const delta = getUpgradeDelta(type, currentStacks, upgrades);
+  if (!delta) return null;
+  return formatDeltaLabel(type, delta);
+}
+
 export function retargetNextUpgradeThreshold(upgrades: UpgradeStats, collectedCoins: number): void {
   const minStep = upgrades.level + 4;
   upgrades.nextThreshold = Math.max(upgrades.nextThreshold, collectedCoins + minStep);

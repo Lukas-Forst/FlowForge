@@ -586,6 +586,7 @@ export default function App(): ReactElement {
               options={snapshot.pendingUpgradeOptions}
               onPick={chooseUpgrade}
               stacks={snapshot.upgrades.stacks}
+              upgrades={snapshot.upgrades}
               title={snapshot.pendingUpgradeContext === "eliteExtra" ? "ELITE SPOILS - CHOOSE E ABILITY" : "CHOOSE UPGRADE"}
               variant={snapshot.pendingUpgradeContext === "eliteExtra" ? "elite" : "default"}
             />

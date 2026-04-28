@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import { useState } from "react";
-import { getUpgradePrerequisiteDescription } from "../game/systems/upgrades";
-import type { UpgradeOption, UpgradeType } from "../game/types";
+import { getUpgradeDeltaLabel, getUpgradePrerequisiteDescription } from "../game/systems/upgrades";
+import type { UpgradeOption, UpgradeStats, UpgradeType } from "../game/types";
 
 interface UpgradeModalProps {
   options: UpgradeOption[];
@@ -9,11 +9,14 @@ interface UpgradeModalProps {
   title?: string;
   /** Current stacks per upgrade (for "owned" counts on cards). */
   stacks?: Partial<Record<UpgradeType, number>>;
+  /** Full upgrade stats for delta calculation. */
+  upgrades?: UpgradeStats;
   variant?: "default" | "elite";
 }
 
-export function UpgradeModal({ options, onPick, title = "CHOOSE UPGRADE", stacks, variant = "default" }: UpgradeModalProps): ReactElement {
+export function UpgradeModal({ options, onPick, title = "CHOOSE UPGRADE", stacks, upgrades, variant = "default" }: UpgradeModalProps): ReactElement {
   const [picked, setPicked] = useState<UpgradeOption["type"] | null>(null);
+  const [hovered, setHovered] = useState<UpgradeOption["type"] | null>(null);
 
   const handlePick = (type: UpgradeOption["type"]) => {
     if (picked) return;
@@ -35,21 +38,32 @@ export function UpgradeModal({ options, onPick, title = "CHOOSE UPGRADE", stacks
                   Owned {owned}/{option.maxStacks}
                 </span>
               ) : null;
+
+            const deltaLabel = upgrades ? getUpgradeDeltaLabel(option.type, owned, upgrades) : null;
+            const showTooltip = hovered === option.type && deltaLabel;
+
             return (
-            <button
-              className={`upgrade-card upgrade-card--${option.rarity} ${picked === option.type ? "picked" : ""}`}
-              key={option.type}
-              type="button"
-              onClick={() => handlePick(option.type)}
-              disabled={!!picked}
-            >
-              {option.icon ? <span className="upgrade-icon">{option.icon}</span> : null}
-              <span className="upgrade-rarity-pill">{option.rarity}</span>
-              <strong>{option.label}</strong>
-              <span>{option.description}</span>
-              {ownedLine}
-              {prereq ? <span className="upgrade-prereq">Prereq: {prereq}</span> : null}
-            </button>
+              <button
+                className={`upgrade-card upgrade-card--${option.rarity} ${picked === option.type ? "picked" : ""}`}
+                key={option.type}
+                type="button"
+                onClick={() => handlePick(option.type)}
+                onMouseEnter={() => setHovered(option.type)}
+                onMouseLeave={() => setHovered(null)}
+                onFocus={() => setHovered(option.type)}
+                onBlur={() => setHovered(null)}
+                disabled={!!picked}
+              >
+                {option.icon ? <span className="upgrade-icon">{option.icon}</span> : null}
+                <span className="upgrade-rarity-pill">{option.rarity}</span>
+                <strong>{option.label}</strong>
+                <span>{option.description}</span>
+                {ownedLine}
+                {prereq ? <span className="upgrade-prereq">Prereq: {prereq}</span> : null}
+                {showTooltip && (
+                  <span className="upgrade-tooltip-delta">{deltaLabel}</span>
+                )}
+              </button>
             );
           })}
         </div>
