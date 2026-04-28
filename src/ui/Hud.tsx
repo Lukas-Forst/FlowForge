@@ -111,6 +111,13 @@ export function Hud({ snapshot }: HudProps): ReactElement {
         bossMaxHp={boss?.maxHp ?? 1}
       />
       <KillStreakHud snapshot={snapshot} />
+      {snapshot.stats.combatLog.length > 0 ? (
+        <div className="combat-log" aria-live="polite">
+          {snapshot.stats.combatLog.map((entry, i) => (
+            <span key={i} className="combat-log__entry">{entry}</span>
+          ))}
+        </div>
+      ) : null}
       {snapshot.vibePortal.visible && snapshot.vibePortal.near ? (
         <div className="portal-tooltip">Sail through to visit another Vibe Jam game 🌊</div>
       ) : null}

@@ -372,18 +372,22 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
   }
 
   if (effect.kind === "damageNumber") {
-    const baseSize = 0.4;
+    const baseSize = 0.55;
     const scaleMult = effect.scale ?? 1.0;
+    // Crit shake: wiggle left/right based on time + id
+    const shakeX = effect.shake ? Math.sin((effect.id * 7.3 + (effect.remaining / 0.9) * 20) * 4) * 0.12 * (effect.remaining / 0.9) : 0;
+    const shakeY = effect.shake ? Math.cos((effect.id * 5.1 + (effect.remaining / 0.9) * 17) * 3.5) * 0.06 * (effect.remaining / 0.9) : 0;
     return (
-      <group position={[effect.position.x, 0.8 + t * 1.5, effect.position.y]}>
+      <group position={[effect.position.x + shakeX, 0.85 + t * 1.5 + shakeY, effect.position.y]}>
         <Text
           color={effect.color || "#ffffff"}
           fontSize={baseSize * scaleMult}
-          outlineWidth={0.04 * scaleMult}
+          outlineWidth={0.06 * scaleMult}
           outlineColor="#000000"
           anchorX="center"
           anchorY="middle"
-          fillOpacity={1 - Math.pow(t, 2)}
+          fillOpacity={1 - Math.pow(t, 1.5)}
+          fontWeight="bold"
         >
           {effect.text || ""}
         </Text>

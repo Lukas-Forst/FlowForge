@@ -143,6 +143,7 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "loading"): GameSn
       killStreak: 0,
       killStreakBest: 0,
       killStreakFlash: false,
+      combatLog: [],
     },
     pendingUpgradeOptions: [],
     pendingUpgradeContext: "levelup",
@@ -1069,6 +1070,20 @@ export function useGameState(): UseGameStateApi {
         killStreakRef.current.value = 0;
         state.stats.killStreak = 0;
       }
+    }
+
+    // Update combat log — last 5 events
+    if (collisionResult.critsDealt > 0) {
+      state.stats.combatLog = [`⚡ ${collisionResult.critsDealt}x CRIT!`, ...state.stats.combatLog].slice(0, 5);
+    }
+    if (collisionResult.critsGained > 0) {
+      state.stats.combatLog = [`💥 Took ${collisionResult.critsGained}x crit!`, ...state.stats.combatLog].slice(0, 5);
+    }
+    if (collisionResult.killsGained > 0) {
+      state.stats.combatLog = [`💀 +${collisionResult.killsGained} kill${collisionResult.killsGained > 1 ? "s" : ""}`, ...state.stats.combatLog].slice(0, 5);
+    }
+    if (collisionResult.eliteKillsGained > 0) {
+      state.stats.combatLog = [`👑 ELITE SPAWNED!`, ...state.stats.combatLog].slice(0, 5);
     }
 
     state.stats.biggestHit = Math.max(state.stats.biggestHit, collisionResult.maxHitDealt);

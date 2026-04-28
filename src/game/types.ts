@@ -194,6 +194,8 @@ export interface VisualEffect {
   scale?: number; // for damage numbers: bigger damage = bigger text
   intensity?: number; // for screenShake: scales shake magnitude (1.0 = baseline)
   facing?: number; // for afterimage: the direction the ship was facing when ghost was spawned
+  shake?: boolean; // for damageNumber: crit shake/wiggle animation
+  drift?: number; // horizontal drift offset for damage numbers
 }
 
 export type PickupKind =
@@ -254,6 +256,8 @@ export interface GameStats {
   killStreakBest: number;
   /** Set to true briefly when the kill streak breaks; HUD reads and resets it. */
   killStreakFlash: boolean;
+  /** Rolling combat log — last 5 events shown as scrolling strip in HUD. */
+  combatLog: string[];
 }
 
 export interface UpgradeOption {

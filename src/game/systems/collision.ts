@@ -9,6 +9,8 @@ export interface CollisionResult {
   spawnedPickups: PickupState[];
   cannonHits: number;
   maxHitDealt: number;
+  critsGained: number; // enemy hits that were crits (>60 damage to player)
+  critsDealt: number;  // player hits that were crits (>60 damage to enemies)
 }
 
 export function spawnHarvestableDrops(
@@ -222,6 +224,8 @@ export function resolveCollisions(
   let playerDamageTaken = 0;
   let cannonHits = 0;
   let maxHitDealt = 0;
+  let critsGained = 0;
+  let critsDealt = 0;
   const spawnedPickups: PickupState[] = [];
 
   for (let projectileIdx = projectiles.length - 1; projectileIdx >= 0; projectileIdx -= 1) {
@@ -230,6 +234,7 @@ export function resolveCollisions(
     if (isEnemyProjectileKind(projectile.kind)) {
       if (distance(player.position, projectile.position) <= PLAYER_HIT_RADIUS + projectile.radius) {
         playerDamageTaken += projectile.damage;
+        if (projectile.damage > 60) critsGained += 1;
         pushEffect(visualEffects, effectIdRef, "hitBurst", projectile.position, 0.22);
         pushScreenShakeForDamage(visualEffects, effectIdRef, player.position, projectile.damage, 0.35);
         if (audioEvents) {
@@ -267,14 +272,19 @@ export function resolveCollisions(
         }
         
         const isCrit = projectile.damage > 60;
+        if (isCrit) critsDealt += 1;
+        const damageScale = projectile.damage > 80 ? 1.6 : projectile.damage > 60 ? 1.4 : projectile.damage > 40 ? 1.2 : projectile.damage > 20 ? 1.05 : 0.9;
+        // Horizontal drift so rapid hits don't stack vertically — based on unique id to spread them
+        const driftOffset = ((effectIdRef.value + projectile.id) % 11) * 0.12 - 0.6;
         visualEffects.push({
           id: effectIdRef.value++,
           kind: "damageNumber",
-          position: { ...enemy.position },
+          position: { x: enemy.position.x + driftOffset, y: enemy.position.y },
           remaining: 0.9,
           text: projectile.damage.toString(),
           color: isCrit ? "#ff8c00" : "#ffffff",
-          scale: projectile.damage > 80 ? 1.5 : projectile.damage > 40 ? 1.2 : 1.0,
+          scale: damageScale,
+          shake: isCrit,
         });
 
         // Screen shake scales with damage — big hits shake the camera harder
@@ -435,5 +445,5 @@ export function resolveCollisions(
     }
   }
 
-  return { killsGained, eliteKillsGained, playerDamageTaken, spawnedPickups, cannonHits, maxHitDealt };
+  return { killsGained, eliteKillsGained, playerDamageTaken, spawnedPickups, cannonHits, maxHitDealt, critsGained, critsDealt };
 }
