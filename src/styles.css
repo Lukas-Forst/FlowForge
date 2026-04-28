@@ -721,6 +721,96 @@ button:hover {
   height: 100%;
   background: linear-gradient(90deg, #ff2020 0%, #ff7a3a 100%);
   transition: width 150ms ease-out;
+  position: relative;
+}
+
+/* Segmented HP bar dividers */
+.boss-bar-segments {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.boss-bar-segment-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(0, 0, 0, 0.5);
+  transform: translateX(-50%);
+}
+
+/* HP number below bar */
+.boss-hp-label {
+  color: #ff9090;
+  font-size: 11px;
+  letter-spacing: 1px;
+  margin-top: 3px;
+  font-family: monospace;
+  font-weight: 700;
+}
+
+/* Intro overlay */
+.boss-intro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  animation: boss-intro-fadeout 0.4s ease-out 1.6s forwards;
+}
+
+.boss-intro-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+@keyframes boss-intro-fadeout {
+  to {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.boss-intro-warning {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: "Luckiest Guy", system-ui, sans-serif;
+  font-size: 48px;
+  font-weight: 900;
+  color: #ff2020;
+  text-shadow: 0 0 20px rgba(255, 32, 32, 0.9), 0 0 40px rgba(255, 32, 32, 0.6);
+  animation: boss-intro-pulse 0.3s ease-in-out infinite alternate;
+}
+
+.boss-intro-icon {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.boss-intro-label {
+  letter-spacing: 6px;
+}
+
+@keyframes boss-intro-pulse {
+  from { transform: scale(1); }
+  to   { transform: scale(1.08); }
+}
+
+.boss-intro-name {
+  margin-top: 8px;
+  font-family: "Luckiest Guy", system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #ff9060;
+  letter-spacing: 4px;
+  text-shadow: 0 0 12px rgba(255, 144, 96, 0.8);
 }
 
 .hud-v2 {

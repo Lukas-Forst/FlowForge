@@ -102,7 +102,11 @@ export function Hud({ snapshot }: HudProps): ReactElement {
         </div>
       </div>
 
-      {boss ? <BossFrame boss={boss} /> : null}
+      <BossFrame
+        megaBoss={snapshot.megaBoss}
+        bossHp={boss?.hp ?? 0}
+        bossMaxHp={boss?.maxHp ?? 1}
+      />
       <KillStreakHud snapshot={snapshot} />
       {snapshot.vibePortal.visible && snapshot.vibePortal.near ? (
         <div className="portal-tooltip">Sail through to visit another Vibe Jam game 🌊</div>

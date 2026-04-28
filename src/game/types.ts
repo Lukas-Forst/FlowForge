@@ -282,6 +282,12 @@ export interface VibePortalState {
   triggered: boolean;
 }
 
+export interface MegaBossState {
+  spawned: boolean;
+  introRemaining: number; // seconds remaining in intro; 0 = intro done
+  name: string;
+}
+
 export interface MultiplayerPeerState {
   id: string;
   name: string;
@@ -340,6 +346,7 @@ export interface GameSnapshot {
     elapsedTotal: number;
   };
   runBiome: BiomeType;
+  megaBoss: MegaBossState | null;
 }
 
 export type BiomeType = "open_sea" | "island_chain" | "deep_waters" | "boss_storm";

@@ -160,6 +160,7 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "loading"): GameSn
       elapsedTotal: 0,
     },
     runBiome: "open_sea",
+    megaBoss: null,
   };
 }
 
@@ -797,6 +798,15 @@ export function useGameState(): UseGameStateApi {
     const hasBoss = state.enemies.some((e) => e.type === "boss");
     if (!hadBoss && hasBoss) {
       state.audioEvents.push({ id: effectIdRef.current.value++, sfx: "boss_cue", volume: 1.2 });
+      state.megaBoss = { spawned: true, introRemaining: 2.0, name: "STORM LEVIATHAN" };
+    }
+    if (state.megaBoss) {
+      if (state.megaBoss.introRemaining > 0) {
+        state.megaBoss.introRemaining = Math.max(0, state.megaBoss.introRemaining - step);
+      }
+      if (!hasBoss) {
+        state.megaBoss = null;
+      }
     }
     updateHarvestableSpawning(
       state.harvestables,
