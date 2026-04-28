@@ -36,11 +36,7 @@ const PROPS = [
       "A weathered wooden barrel with iron bands, sea-worn and mossy, stylized low-poly pirate game asset, isolated object on transparent background",
     negativePrompt:
       "realistic, photorealistic, high poly, text, label, ground, floor, background, shadow",
-<<<<<<< HEAD
     artStyle: "realistic",
-=======
-    artStyle: "cartoon",
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   },
   {
     id: "propBuoy",
@@ -49,11 +45,7 @@ const PROPS = [
       "A round ocean navigation buoy with red and white stripes, rusted metal, floating, stylized low-poly pirate game asset, isolated object",
     negativePrompt:
       "realistic, photorealistic, high poly, text, water, ocean, ground, background, shadow",
-<<<<<<< HEAD
     artStyle: "realistic",
-=======
-    artStyle: "cartoon",
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   },
   {
     id: "propCrystal",
@@ -62,11 +54,7 @@ const PROPS = [
       "A cluster of mysterious glowing crystals rising from a rocky base, blue-green magical energy, fantasy pirate game asset, low-poly stylized, isolated object",
     negativePrompt:
       "realistic, photorealistic, high poly, dark, ground, water, background, shadow",
-<<<<<<< HEAD
     artStyle: "realistic",
-=======
-    artStyle: "cartoon",
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   },
   {
     id: "propPalm",
@@ -75,11 +63,7 @@ const PROPS = [
       "A single stylized tropical palm tree slightly leaning, warm sunset colors, low-poly pirate game asset, isolated object with visible trunk base",
     negativePrompt:
       "realistic, photorealistic, high poly, multiple trees, forest, ground, background, roots, shadow",
-<<<<<<< HEAD
     artStyle: "realistic",
-=======
-    artStyle: "cartoon",
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   },
   {
     id: "propIsland",
@@ -88,11 +72,7 @@ const PROPS = [
       "A small stylized tropical island with sandy beach and two palm trees seen from a slight top-down angle, low-poly pirate game asset, isolated floating island",
     negativePrompt:
       "realistic, photorealistic, high poly, people, buildings, ocean water, flat, background, shadow",
-<<<<<<< HEAD
     artStyle: "realistic",
-=======
-    artStyle: "cartoon",
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   },
   {
     id: "propRock",
@@ -101,11 +81,7 @@ const PROPS = [
       "A cluster of jagged sea rocks partially covered in barnacles and seaweed, stylized low-poly pirate game asset, isolated object",
     negativePrompt:
       "realistic, photorealistic, high poly, ground, background, water, shadow",
-<<<<<<< HEAD
     artStyle: "realistic",
-=======
-    artStyle: "cartoon",
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   },
   {
     id: "propWreck",
@@ -114,11 +90,7 @@ const PROPS = [
       "A sunken ship wreck half-submerged, broken wooden hull with torn sails and barnacles, stylized low-poly pirate game asset, isolated object",
     negativePrompt:
       "realistic, photorealistic, high poly, people, ground, background, water, shadow",
-<<<<<<< HEAD
     artStyle: "realistic",
-=======
-    artStyle: "cartoon",
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   },
 ];
 
