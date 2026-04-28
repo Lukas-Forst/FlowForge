@@ -987,7 +987,7 @@ export function useGameState(): UseGameStateApi {
     }
 
     if ((collisionResult.playerDamageTaken > 0 && state.cooldowns.invulnRemaining <= 0) || collisionResult.cannonHits > 0) {
-      hitPauseTimerRef.current.value = 0.06;
+      hitPauseTimerRef.current.value = 0.1;
     }
 
     for (let i = state.visualEffects.length - 1; i >= 0; i -= 1) {

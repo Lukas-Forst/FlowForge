@@ -13,7 +13,7 @@ const EFFECT_DURATION: Record<VisualEffectKind, number> = {
   waterRippleSmall: 0.28,
   telegraphRing: 1.2,
   damageNumber: 0.8,
-  enemyDeath: 1.0,
+  enemyDeath: 0.6,
   screenShake: 0.45,
 };
 
@@ -331,12 +331,14 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
   }
 
   if (effect.kind === "damageNumber") {
+    const baseSize = 0.4;
+    const scaleMult = effect.scale ?? 1.0;
     return (
       <group position={[effect.position.x, 0.8 + t * 1.5, effect.position.y]}>
         <Text
           color={effect.color || "#ffffff"}
-          fontSize={0.4}
-          outlineWidth={0.04}
+          fontSize={baseSize * scaleMult}
+          outlineWidth={0.04 * scaleMult}
           outlineColor="#000000"
           anchorX="center"
           anchorY="middle"

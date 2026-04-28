@@ -236,6 +236,7 @@ export function resolveCollisions(
           remaining: 0.8,
           text: projectile.damage.toString(),
           color: projectile.kind === "playerCannon" ? "#fff2a8" : "#ffffff",
+          scale: projectile.damage > 80 ? 1.5 : projectile.damage > 40 ? 1.2 : 1.0,
         });
 
         if (enemy.hp <= 0) {
