@@ -23,21 +23,28 @@ export function runEnemyRangedAttacks(
   delta: number,
 ): void {
   for (const enemy of enemies) {
-    if (enemy.type === "swarmer" || enemy.type === "bomber") continue;
+    if (enemy.type === "swarmer") continue;
     if (enemy.isElite && (enemy.type === "corsair" || enemy.type === "brute" || enemy.type === "sniper")) continue;
 
     enemy.rangedCooldown -= delta;
 
-    if (enemy.type === "brute" || enemy.type === "sniper") {
-      const telegraphThreshold = enemy.type === "brute" ? 0.8 : 1.2;
-      if (enemy.rangedCooldown < telegraphThreshold && enemy.rangedCooldown + delta >= telegraphThreshold) {
-        visualEffects.push({
-          id: effectIdRef.value++,
-          kind: "telegraphRing",
-          position: { ...enemy.position },
-          remaining: telegraphThreshold,
-        });
+    const telegraphThreshold = (() => {
+      switch (enemy.type) {
+        case "brute":   return 0.8;
+        case "sniper":  return 1.2;
+        case "corsair": return 0.4;
+        case "bomber":  return 0.25;
+        default:        return 0;
       }
+    })();
+
+    if (telegraphThreshold > 0 && enemy.rangedCooldown < telegraphThreshold && enemy.rangedCooldown + delta >= telegraphThreshold) {
+      visualEffects.push({
+        id: effectIdRef.value++,
+        kind: "telegraphRing",
+        position: { ...enemy.position },
+        remaining: telegraphThreshold,
+      });
     }
 
     if (enemy.rangedCooldown > 0) {
