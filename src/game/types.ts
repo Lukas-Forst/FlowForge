@@ -187,6 +187,7 @@ export interface VisualEffect {
   remaining: number;
   text?: string;
   color?: string;
+  scale?: number; // for damage numbers: bigger damage = bigger text
 }
 
 export type PickupKind =
