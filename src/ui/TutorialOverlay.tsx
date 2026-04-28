@@ -28,13 +28,21 @@ const STEPS: readonly TutorialStep[] = [
     visual: "autoFire",
   },
   {
+<<<<<<< HEAD
     title: "Q — cannon salvo (wide burst)",
     subtitle: "Space — speed boost to reposition or escape",
+=======
+    title: "Space / tap to fire cannon salvo",
+    subtitle: "Shift / button to boost",
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     visual: "abilities",
   },
   {
     title: "Collect coins → choose upgrades",
+<<<<<<< HEAD
     subtitle: "Watch the top HUD: Wave → Elite (chest) → Lull (supply)",
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     visual: "upgrade",
   },
   {
@@ -72,8 +80,13 @@ function TutorialVisual({ kind }: { kind: TutorialStep["visual"] }): ReactElemen
   if (kind === "abilities") {
     return (
       <div className="tutorial-visual abilities">
+<<<<<<< HEAD
         <div className="tutorial-key">Q</div>
         <div className="tutorial-key">SPACE</div>
+=======
+        <div className="tutorial-key">SPACE</div>
+        <div className="tutorial-key">SHIFT</div>
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       </div>
     );
   }
@@ -146,6 +159,7 @@ export function TutorialOverlay({ onFinish }: TutorialOverlayProps): ReactElemen
     onFinish();
   };
 
+<<<<<<< HEAD
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
       if (event.code === "Escape") {
@@ -157,6 +171,8 @@ export function TutorialOverlay({ onFinish }: TutorialOverlayProps): ReactElemen
     return () => window.removeEventListener("keydown", onKey);
   }, [onFinish]);
 
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   return (
     <div className="tutorial-overlay" onClick={finish} role="button" tabIndex={0} onKeyDown={finish}>
       <div className="tutorial-panel" onClick={(event) => event.stopPropagation()}>
@@ -172,9 +188,12 @@ export function TutorialOverlay({ onFinish }: TutorialOverlayProps): ReactElemen
           </button>
         ) : null}
         <div className="tutorial-hint">{instruction}</div>
+<<<<<<< HEAD
         <button type="button" className="tutorial-skip-btn" onClick={finish}>
           Skip intro
         </button>
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       </div>
     </div>
   );

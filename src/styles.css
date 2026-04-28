@@ -14,7 +14,11 @@ body {
   margin: 0;
   min-height: 100vh;
   overflow: hidden;
+<<<<<<< HEAD
   background: radial-gradient(circle at top, #1a4a6e 0%, #0a2535 70%);
+=======
+  background: radial-gradient(circle at top, #0f2f47 0%, #041521 70%);
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 }
 
 #root,
@@ -277,6 +281,7 @@ button:hover {
   margin-top: 0.35rem;
 }
 
+<<<<<<< HEAD
 .tutorial-skip-btn {
   margin-top: 12px;
   padding: 8px 16px;
@@ -294,6 +299,8 @@ button:hover {
   color: #fff;
 }
 
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 .tutorial-hint {
   margin-top: 0.6rem;
   font-size: 0.88rem;
@@ -438,6 +445,7 @@ button:hover {
   animation: pulse-glow 0.9s ease-in-out infinite alternate;
 }
 
+<<<<<<< HEAD
 .pulse-meter.special {
   border: 1px solid rgba(184, 162, 255, 0.45);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 14px rgba(143, 98, 255, 0.18);
@@ -451,17 +459,22 @@ button:hover {
   animation: pulse-glow 0.9s ease-in-out infinite alternate, special-ready-sweep 0.75s ease-in-out infinite;
 }
 
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 @keyframes pulse-glow {
   from { filter: brightness(1); }
   to { filter: brightness(1.5); }
 }
 
+<<<<<<< HEAD
 @keyframes special-ready-sweep {
   0% { transform: translateX(-3%); }
   50% { transform: translateX(0); }
   100% { transform: translateX(3%); }
 }
 
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 .pulse-meter.damage-flash {
   animation: damage-flash 180ms ease-out;
 }
@@ -515,6 +528,7 @@ button:hover {
   z-index: 31;
 }
 
+<<<<<<< HEAD
 .hud-wave-clock {
   position: fixed;
   top: 14px;
@@ -638,6 +652,8 @@ button:hover {
   color: #cfe9ff;
 }
 
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 .level-pill.bump {
   animation: level-bump 360ms ease-out;
 }
@@ -748,6 +764,7 @@ button:hover {
 .hud-v2-hp-bar { width: 180px; }
 .hud-v2-ability-bar { width: 140px; }
 
+<<<<<<< HEAD
 .hud-v2-row--extra-empty span:first-child {
   color: #ffd983;
   animation: hud-extra-lock-pulse 0.9s ease-in-out infinite alternate;
@@ -758,6 +775,8 @@ button:hover {
   to { filter: brightness(1.35); }
 }
 
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 .screen-flash {
   position: fixed;
   inset: 0;
@@ -836,11 +855,14 @@ button:hover {
   font-family: system-ui, sans-serif;
 }
 
+<<<<<<< HEAD
 .upgrade-modal-panel--elite {
   border-color: rgba(255, 210, 110, 0.5);
   box-shadow: 0 0 28px rgba(255, 190, 80, 0.22);
 }
 
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 .upgrade-grid-v2 {
   display: flex;
   gap: 12px;
@@ -888,6 +910,7 @@ button:hover {
   100% { transform: scale(1); opacity: 0; filter: brightness(2.5); }
 }
 
+<<<<<<< HEAD
 .upgrade-rarity-pill {
   display: inline-block;
   font-size: 10px;
@@ -933,6 +956,8 @@ button:hover {
   color: #9edfff;
 }
 
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 .upgrade-card strong {
   display: block;
   font-size: 18px;

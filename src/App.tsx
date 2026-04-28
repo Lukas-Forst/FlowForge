@@ -13,7 +13,10 @@ import { PauseScreen } from "./ui/PauseScreen";
 import { LevelUpRibbon } from "./ui/LevelUpRibbon";
 import { SplashScreen } from "./ui/SplashScreen";
 import { StartScreen } from "./ui/StartScreen";
+<<<<<<< HEAD
 import { ControlsHelpModal } from "./ui/ControlsHelpModal";
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 import { TutorialOverlay } from "./ui/TutorialOverlay";
 import { UpgradeModal } from "./ui/UpgradeModal";
 
@@ -135,6 +138,7 @@ export default function App(): ReactElement {
       return true;
     }
   });
+<<<<<<< HEAD
   const [showControlsHelp, setShowControlsHelp] = useState(false);
   const [flashSignal, setFlashSignal] = useState(0);
   const snapshotRef = useRef(snapshot);
@@ -143,6 +147,9 @@ export default function App(): ReactElement {
   showTutorialRef.current = showTutorial;
   const showControlsHelpRef = useRef(showControlsHelp);
   showControlsHelpRef.current = showControlsHelp;
+=======
+  const [flashSignal, setFlashSignal] = useState(0);
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 
   useEffect(() => {
     multiplayerRef.current = multiplayer;
@@ -164,6 +171,7 @@ export default function App(): ReactElement {
     };
 
     const onKeyDown = (event: KeyboardEvent): void => {
+<<<<<<< HEAD
       if (showControlsHelp) {
         if (!event.repeat && (event.code === "Escape" || event.code === "KeyP")) {
           event.preventDefault();
@@ -188,6 +196,8 @@ export default function App(): ReactElement {
         }
       }
 
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       const movement = MOVEMENT_KEYS[event.key.toLowerCase()];
       if (movement) {
         setMovementKey(movement, true);
@@ -212,9 +222,13 @@ export default function App(): ReactElement {
 
       if (event.code === "Escape" || event.code === "KeyP") {
         if (!event.repeat) {
+<<<<<<< HEAD
           if (!(showTutorial && snapshot.phase === "playing")) {
             togglePause();
           }
+=======
+          togglePause();
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
         }
         return;
       }
@@ -246,6 +260,7 @@ export default function App(): ReactElement {
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", clearMovement);
     };
+<<<<<<< HEAD
   }, [
     restartRun,
     setMovementKey,
@@ -258,6 +273,9 @@ export default function App(): ReactElement {
     triggerCannon,
     triggerExtra,
   ]);
+=======
+  }, [restartRun, setMovementKey, snapshot.phase, startRun, togglePause, triggerBoost, triggerCannon, triggerExtra]);
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 
   useEffect(() => {
     const kick = () => {
@@ -285,6 +303,7 @@ export default function App(): ReactElement {
     const frame = (now: number): void => {
       const delta = Math.min(0.05, (now - last) / 1000);
       last = now;
+<<<<<<< HEAD
       const snap = snapshotRef.current;
       const simBlockedByUi =
         (showTutorialRef.current && snap.phase === "playing") ||
@@ -292,6 +311,9 @@ export default function App(): ReactElement {
       if (!simBlockedByUi) {
         tick(delta);
       }
+=======
+      tick(delta);
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       const mgr = audioMgrRef.current;
       if (mgr) {
         mgr.drain(consumeAudioEvents());
@@ -305,6 +327,7 @@ export default function App(): ReactElement {
         const profile = localProfileRef.current;
         const isOpen = socket?.readyState === WebSocket.OPEN;
         if (socket && isOpen && profile && net.mode !== "solo") {
+<<<<<<< HEAD
           const latest = snapshotRef.current;
           const basePlayer: Omit<MultiplayerPeerState, "id"> = {
             ...profile,
@@ -312,10 +335,19 @@ export default function App(): ReactElement {
             facing: latest.player.facing,
             hp: latest.player.hp,
             upgradeLevel: latest.upgrades.level,
+=======
+          const basePlayer: Omit<MultiplayerPeerState, "id"> = {
+            ...profile,
+            position: { ...snapshot.player.position },
+            facing: snapshot.player.facing,
+            hp: snapshot.player.hp,
+            upgradeLevel: snapshot.upgrades.level,
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
           };
           socket.send(JSON.stringify({ type: "player_update", player: basePlayer }));
           if (net.mode === "host") {
             const world: MultiplayerWorldState = {
+<<<<<<< HEAD
               runClock: { ...latest.runClock },
               runBiome: latest.runBiome,
               spawnIntensity: latest.spawnIntensity,
@@ -328,6 +360,20 @@ export default function App(): ReactElement {
                 position: { ...pickup.position },
               })),
               sharedCoins: latest.stats.collectedCoins,
+=======
+              runClock: { ...snapshot.runClock },
+              runBiome: snapshot.runBiome,
+              spawnIntensity: snapshot.spawnIntensity,
+              enemies: snapshot.enemies.map((enemy) => ({
+                ...enemy,
+                position: { ...enemy.position },
+              })),
+              pickups: snapshot.pickups.map((pickup) => ({
+                ...pickup,
+                position: { ...pickup.position },
+              })),
+              sharedCoins: snapshot.stats.collectedCoins,
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
             };
             socket.send(JSON.stringify({ type: "world_update", world, hostPlayer: basePlayer }));
           }
@@ -338,7 +384,11 @@ export default function App(): ReactElement {
 
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
+<<<<<<< HEAD
   }, [consumeAudioEvents, tick]);
+=======
+  }, [consumeAudioEvents, snapshot, tick]);
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 
   useEffect(() => {
     if (snapshot.phase === "start" || snapshot.phase === "loading") {
@@ -398,6 +448,7 @@ export default function App(): ReactElement {
     setShowTutorial(false);
   };
 
+<<<<<<< HEAD
   const resetTutorialPreference = (): void => {
     try {
       localStorage.removeItem("hasSeenTutorial");
@@ -408,6 +459,8 @@ export default function App(): ReactElement {
     setShowControlsHelp(false);
   };
 
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   const disconnectParty = (): void => {
     if (socketRef.current) {
       socketRef.current.close();
@@ -555,9 +608,12 @@ export default function App(): ReactElement {
         <>
           <GameScene snapshot={snapshot} remotePlayers={remotePlayers} localPlayerBadge={localPlayerBadge} />
           {showTutorial && snapshot.phase === "playing" ? <TutorialOverlay onFinish={finishTutorial} /> : null}
+<<<<<<< HEAD
           {showControlsHelp ? (
             <ControlsHelpModal onClose={() => setShowControlsHelp(false)} onResetTutorial={resetTutorialPreference} />
           ) : null}
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
           <ScreenFlash signal={flashSignal} />
           <LevelUpRibbon signal={flashSignal} />
           {(snapshot.phase === "playing" || snapshot.phase === "upgrade" || snapshot.phase === "paused") && <Hud snapshot={snapshot} />}
@@ -573,6 +629,7 @@ export default function App(): ReactElement {
             </>
           )}
           {snapshot.phase === "playing" && <AssetPreloader tier="deferred" />}
+<<<<<<< HEAD
           {snapshot.phase === "paused" && (
             <PauseScreen
               snapshot={snapshot}
@@ -590,6 +647,10 @@ export default function App(): ReactElement {
               variant={snapshot.pendingUpgradeContext === "eliteExtra" ? "elite" : "default"}
             />
           )}
+=======
+          {snapshot.phase === "paused" && <PauseScreen snapshot={snapshot} onResume={togglePause} onQuit={quitRun} />}
+          {snapshot.phase === "upgrade" && <UpgradeModal options={snapshot.pendingUpgradeOptions} onPick={chooseUpgrade} />}
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
           {snapshot.phase === "gameover" && <GameOverScreen snapshot={snapshot} onRestart={restartRun} />}
         </>
       )}

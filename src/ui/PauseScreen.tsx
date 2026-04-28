@@ -5,10 +5,16 @@ interface PauseScreenProps {
   snapshot: GameSnapshot;
   onResume: () => void;
   onQuit: () => void;
+<<<<<<< HEAD
   onShowControls?: () => void;
 }
 
 export function PauseScreen({ snapshot, onResume, onQuit, onShowControls }: PauseScreenProps): ReactElement {
+=======
+}
+
+export function PauseScreen({ snapshot, onResume, onQuit }: PauseScreenProps): ReactElement {
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   return (
     <div className="overlay center">
       <div className="panel" style={{ textAlign: "center" }}>
@@ -21,6 +27,7 @@ export function PauseScreen({ snapshot, onResume, onQuit, onShowControls }: Paus
           <p style={{ margin: "4px 0" }}>Collected Loot: <strong>{snapshot.stats.collectedCoins}</strong></p>
         </div>
 
+<<<<<<< HEAD
         <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
           <button type="button" onClick={onResume}>
             Resume
@@ -30,11 +37,21 @@ export function PauseScreen({ snapshot, onResume, onQuit, onShowControls }: Paus
               Controls (?)
             </button>
           ) : null}
+=======
+        <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+          <button type="button" onClick={onResume}>
+            Resume
+          </button>
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
           <button type="button" onClick={onQuit} style={{ background: "#cc4444" }}>
             Quit
           </button>
         </div>
+<<<<<<< HEAD
         <p className="hint" style={{ marginTop: "16px" }}>Press ESC or P to resume · ? or F1 for full controls</p>
+=======
+        <p className="hint" style={{ marginTop: "16px" }}>Press ESC or P to resume</p>
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       </div>
     </div>
   );

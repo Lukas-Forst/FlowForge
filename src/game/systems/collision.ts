@@ -4,7 +4,10 @@ import { isEnemyProjectileKind, type AudioEvent, type EnemyState, type PickupSta
 
 export interface CollisionResult {
   killsGained: number;
+<<<<<<< HEAD
   eliteKillsGained: number;
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   playerDamageTaken: number;
   spawnedPickups: PickupState[];
   cannonHits: number;
@@ -190,7 +193,10 @@ export function resolveCollisions(
   const ramReflectBonus = Math.max(0, modifiers?.ramReflectBonus ?? 0);
 
   let killsGained = 0;
+<<<<<<< HEAD
   let eliteKillsGained = 0;
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   let playerDamageTaken = 0;
   let cannonHits = 0;
   let maxHitDealt = 0;
@@ -218,7 +224,11 @@ export function resolveCollisions(
       if (distance(enemy.position, projectile.position) <= projectile.radius + 0.65) {
         enemy.hp -= projectile.damage;
         maxHitDealt = Math.max(maxHitDealt, projectile.damage);
+<<<<<<< HEAD
         if (projectile.kind === "playerCannon" || projectile.kind === "playerAuto") cannonHits += 1;
+=======
+        if (projectile.kind === "playerCannon") cannonHits += 1;
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
         const canPierce = (projectile.pierceRemaining ?? 0) > 0;
         projectileConsumed = !canPierce;
         if (canPierce) {
@@ -229,39 +239,60 @@ export function resolveCollisions(
           audioEvents.push({ id: effectIdRef.value++, sfx: "hit" });
         }
         
+<<<<<<< HEAD
         const isCrit = projectile.damage > 60;
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
         visualEffects.push({
           id: effectIdRef.value++,
           kind: "damageNumber",
           position: { ...enemy.position },
+<<<<<<< HEAD
           remaining: 0.9,
           text: projectile.damage.toString(),
           color: isCrit ? "#ff8c00" : "#ffffff",
           scale: projectile.damage > 80 ? 1.5 : projectile.damage > 40 ? 1.2 : 1.0,
+=======
+          remaining: 0.8,
+          text: projectile.damage.toString(),
+          color: projectile.kind === "playerCannon" ? "#fff2a8" : "#ffffff",
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
         });
 
         if (enemy.hp <= 0) {
           killsGained += 1;
+<<<<<<< HEAD
           if (enemy.isElite) {
             eliteKillsGained += 1;
           }
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
           enemies.splice(enemyIdx, 1);
           pushEffect(visualEffects, effectIdRef, "enemyDeath", enemy.position, 1.0);
           if (audioEvents) {
             audioEvents.push({ id: effectIdRef.value++, sfx: "ship_destroyed" });
           }
+<<<<<<< HEAD
           const eliteHpDropBonus = enemy.isElite ? 0.04 : 0;
           const eliteGemDropBonus = enemy.isElite ? 0.13 : 0;
           const eliteCoinValueBonus = enemy.isElite ? 1 : 0;
           const roll = Math.random();
           if (roll < 0.03 + hpDropBonus + eliteHpDropBonus) {
+=======
+          const roll = Math.random();
+          if (roll < 0.03 + hpDropBonus) {
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
             spawnedPickups.push({
               id: pickupIdRef.value++,
               kind: "hp",
               position: { ...enemy.position },
               value: 10,
             });
+<<<<<<< HEAD
           } else if (roll < 0.07 + eliteGemDropBonus) {
+=======
+          } else if (roll < 0.07) {
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
             spawnedPickups.push({
               id: pickupIdRef.value++,
               kind: "gem",
@@ -273,7 +304,11 @@ export function resolveCollisions(
               id: pickupIdRef.value++,
               kind: "coin",
               position: { ...enemy.position },
+<<<<<<< HEAD
               value: 1 + eliteCoinValueBonus,
+=======
+              value: 1,
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
             });
           }
         }
@@ -287,7 +322,11 @@ export function resolveCollisions(
         if (distance(h.position, projectile.position) <= projectile.radius + h.radius) {
           h.hp -= projectile.damage;
           maxHitDealt = Math.max(maxHitDealt, projectile.damage);
+<<<<<<< HEAD
           if (projectile.kind === "playerCannon" || projectile.kind === "playerAuto") cannonHits += 1;
+=======
+          if (projectile.kind === "playerCannon") cannonHits += 1;
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
           projectileConsumed = true;
           pushEffect(visualEffects, effectIdRef, "hitBurst", h.position, 0.20);
           if (audioEvents) {
@@ -340,9 +379,12 @@ export function resolveCollisions(
         enemy.hp -= (20 + playerDamageTaken * 0.4) * ramReflectBonus;
         if (enemy.hp <= 0) {
           killsGained += 1;
+<<<<<<< HEAD
           if (enemy.isElite) {
             eliteKillsGained += 1;
           }
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
           enemies.splice(enemyIdx, 1);
           pushEffect(visualEffects, effectIdRef, "enemyDeath", enemy.position, 1.0);
         }
@@ -379,5 +421,9 @@ export function resolveCollisions(
     }
   }
 
+<<<<<<< HEAD
   return { killsGained, eliteKillsGained, playerDamageTaken, spawnedPickups, cannonHits, maxHitDealt };
+=======
+  return { killsGained, playerDamageTaken, spawnedPickups, cannonHits, maxHitDealt };
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 }

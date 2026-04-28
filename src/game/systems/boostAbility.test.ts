@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
+<<<<<<< HEAD
 import { BOOST_ACTIVE_TIME, BOOST_COOLDOWN, BOOST_COOLDOWN_CONSUME_FRACTION, BOOST_SPEED_MULTIPLIER, getBoostSpeedMultiplier, tryActivateBoost } from "./boostAbility";
+=======
+import { BOOST_ACTIVE_TIME, BOOST_COOLDOWN, BOOST_SPEED_MULTIPLIER, getBoostSpeedMultiplier, tryActivateBoost } from "./boostAbility";
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 import type { Cooldowns } from "../types";
 
 function createCooldowns(): Cooldowns {
@@ -8,8 +12,11 @@ function createCooldowns(): Cooldowns {
     cannonDuration: 5,
     boostRemaining: 0,
     boostDuration: BOOST_COOLDOWN,
+<<<<<<< HEAD
     extraRemaining: 0,
     extraDuration: 0,
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     boostActiveRemaining: 0,
     boostActiveDuration: BOOST_ACTIVE_TIME,
     invulnRemaining: 0,
@@ -22,7 +29,11 @@ describe("tryActivateBoost", () => {
     const cooldowns = createCooldowns();
     const activated = tryActivateBoost(cooldowns);
     expect(activated).toBe(true);
+<<<<<<< HEAD
     expect(cooldowns.boostRemaining).toBeCloseTo(BOOST_COOLDOWN * BOOST_COOLDOWN_CONSUME_FRACTION, 5);
+=======
+    expect(cooldowns.boostRemaining).toBe(BOOST_COOLDOWN);
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     expect(cooldowns.boostActiveRemaining).toBe(BOOST_ACTIVE_TIME);
   });
 

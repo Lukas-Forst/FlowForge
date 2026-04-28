@@ -1,8 +1,12 @@
 import type { ReactElement } from "react";
+<<<<<<< HEAD
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { ThreeElements } from "@react-three/fiber";
 import * as THREE from "three";
+=======
+import type { ThreeElements } from "@react-three/fiber";
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 import type { EnemyType } from "../../game/types";
 import { ShipSmoke } from "../effects/ShipSmoke";
 import { ShipModelVisual } from "../models/ShipModelVisual";
@@ -178,6 +182,7 @@ function BruteMesh(): ReactElement {
   );
 }
 
+<<<<<<< HEAD
 function EliteAura({ isBoss }: { isBoss: boolean }): ReactElement {
   const ring1Ref = useRef<THREE.Mesh>(null);
   const ring2Ref = useRef<THREE.Mesh>(null);
@@ -264,6 +269,8 @@ function EliteAura({ isBoss }: { isBoss: boolean }): ReactElement {
   );
 }
 
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 export function EnemyShip({ type, isElite = false, ...props }: EnemyShipProps): ReactElement {
   let variant: ReactElement = <CorsairMesh />;
   if (type === "bomber" || type === "swarmer") {
@@ -284,6 +291,7 @@ export function EnemyShip({ type, isElite = false, ...props }: EnemyShipProps): 
     smokeIntensity = 1.35;
   }
 
+<<<<<<< HEAD
   const isBoss = type === "boss" || type === "shore_battery";
   const showAura = isElite || isBoss;
   const scale = isElite ? (isBoss ? 1.0 : 1.45) : isBoss ? 1.16 : 1;
@@ -291,12 +299,20 @@ export function EnemyShip({ type, isElite = false, ...props }: EnemyShipProps): 
   return (
     <group scale={scale} {...props}>
       {showAura ? <EliteAura isBoss={isBoss} /> : null}
+=======
+  return (
+    <group scale={isElite ? 1.3 : 1} {...props}>
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       <ShipModelVisual
         config={ENEMY_MODEL_CONFIGS[type]}
         fallback={variant}
         eliteTint={isElite}
       />
+<<<<<<< HEAD
       <ShipSmoke stackPositions={smokeStacks} intensity={isElite ? smokeIntensity * 1.4 : smokeIntensity} />
+=======
+      <ShipSmoke stackPositions={smokeStacks} intensity={smokeIntensity} />
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     </group>
   );
 }

@@ -9,7 +9,10 @@
     "prebuild": "node ./scripts/assets/size-check.mjs",
     "preview": "vite preview",
     "test": "vitest run",
+<<<<<<< HEAD
     "perf:guard": "node ./scripts/perf/guard.mjs",
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     "assets:size-check": "node ./scripts/assets/size-check.mjs",
     "assets:optimize": "node ./scripts/assets/optimize.mjs",
     "assets:props:generate": "node ./scripts/meshy/generate-props.mjs",
@@ -41,7 +44,10 @@
     "sharp": "^0.34.4",
     "typescript": "^6.0.2",
     "vite": "^8.0.8",
+<<<<<<< HEAD
     "vite-plugin-static-copy": "^4.1.0",
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     "vitest": "^4.1.4"
   }
 }

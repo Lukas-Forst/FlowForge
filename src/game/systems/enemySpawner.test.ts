@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getEnemyCap, rollSpawnIsElite } from "./enemySpawner";
 
@@ -30,6 +31,10 @@ describe("rollSpawnIsElite", () => {
     expect(rollSpawnIsElite(400, "wave")).toBe(false);
   });
 });
+=======
+import { describe, expect, it } from "vitest";
+import { getEnemyCap } from "./enemySpawner";
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 
 describe("getEnemyCap", () => {
   it("starts with higher early pressure and ramps up faster", () => {

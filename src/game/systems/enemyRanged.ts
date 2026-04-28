@@ -24,7 +24,10 @@ export function runEnemyRangedAttacks(
 ): void {
   for (const enemy of enemies) {
     if (enemy.type === "swarmer" || enemy.type === "bomber") continue;
+<<<<<<< HEAD
     if (enemy.isElite && (enemy.type === "corsair" || enemy.type === "brute" || enemy.type === "sniper")) continue;
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 
     enemy.rangedCooldown -= delta;
 

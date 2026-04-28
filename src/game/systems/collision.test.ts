@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { describe, expect, it, vi } from "vitest";
+=======
+import { describe, expect, it } from "vitest";
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 import { resolveCollisions } from "./collision";
 import type { EnemyState, HarvestableState, PlayerState, ProjectileState, VisualEffect } from "../types";
 
@@ -75,6 +79,7 @@ describe("resolveCollisions", () => {
 
     expect(projectiles).toHaveLength(0);
   });
+<<<<<<< HEAD
 
   it("gives elite kills a better fallback coin reward", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.9);
@@ -104,4 +109,6 @@ describe("resolveCollisions", () => {
     expect(result.eliteKillsGained).toBe(1);
     vi.restoreAllMocks();
   });
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 });

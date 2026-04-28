@@ -8,11 +8,18 @@ import { WaterArena } from "./arcade/WaterArena";
 import { EnemyShip } from "./entities/Enemy";
 import { HarvestableEntity } from "./entities/HarvestableEntity";
 import { PlayerShip } from "./entities/PlayerShip";
+<<<<<<< HEAD
 import type { DelayedAoEState, GameSnapshot, MineState, MultiplayerPeerState, OilSlickState, PickupState } from "../game/types";
 import { getBlendedRunArcTheme } from "./biomeLerp";
 import { PostFX } from "./postfx/PostFX";
 import { pickFxQuality, type FxQuality } from "./postfx/qualityController";
 import { isChromiumBased, getDefaultFxQuality } from "../utils/browserPerf";
+=======
+import type { PickupState, GameSnapshot, MultiplayerPeerState } from "../game/types";
+import { getBlendedRunArcTheme } from "./biomeLerp";
+import { PostFX } from "./postfx/PostFX";
+import { pickFxQuality, type FxQuality } from "./postfx/qualityController";
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 
 const ISO_OFFSET = 24;
 
@@ -120,11 +127,17 @@ function CameraFollow({ snapshot }: { snapshot: GameSnapshot }): null {
     let shakeOffset = 0;
     for (const effect of snapshot.visualEffects) {
       if (effect.kind === "screenShake") {
+<<<<<<< HEAD
         const remaining = Math.max(0, effect.remaining);
         shakeOffset += remaining * remaining * 5; // quadratic for punchier big shakes
       }
     }
     shakeOffset = Math.min(shakeOffset, 0.8); // cap so it never gets ridiculous
+=======
+        shakeOffset += Math.max(0, effect.remaining) * 1.5;
+      }
+    }
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 
     target.set(snapshot.player.position.x, 0, snapshot.player.position.y);
     desired.set(
@@ -134,12 +147,21 @@ function CameraFollow({ snapshot }: { snapshot: GameSnapshot }): null {
     );
 
     // Exponential decay: closes ~89% of gap per frame at 60fps (near-snap follow).
+<<<<<<< HEAD
     const alpha = 1 - Math.pow(0.0005, delta);
     camera.position.lerp(desired, alpha);
 
     if (shakeOffset > 0) {
       camera.position.x += (Math.random() - 0.5) * shakeOffset * 1.2;
       camera.position.z += (Math.random() - 0.5) * shakeOffset * 1.2;
+=======
+    const alpha = 1 - Math.pow(0.001, delta);
+    camera.position.lerp(desired, alpha);
+
+    if (shakeOffset > 0) {
+      camera.position.x += (Math.random() - 0.5) * shakeOffset;
+      camera.position.z += (Math.random() - 0.5) * shakeOffset;
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     }
 
     camera.lookAt(target.x, target.y, target.z);
@@ -155,8 +177,13 @@ interface GameSceneProps {
 }
 
 function FxQualityTracker({ onQuality }: { onQuality: (q: FxQuality) => void }): null {
+<<<<<<< HEAD
   const avgFpsRef = useRef(isChromiumBased() ? 30 : 60);
   const qualityRef = useRef<FxQuality>(getDefaultFxQuality());
+=======
+  const avgFpsRef = useRef(60);
+  const qualityRef = useRef<FxQuality>("full");
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   const override = useMemo(() => {
     const qs = new URLSearchParams(window.location.search);
     const forced = qs.get("fx");
@@ -304,6 +331,7 @@ function VibePortal({
   );
 }
 
+<<<<<<< HEAD
 function DepthChargeBarrel({ aoe }: { aoe: DelayedAoEState }): ReactElement {
   const groupRef = useRef<THREE.Group>(null);
   const bubbleRefs = useRef<(THREE.Mesh | null)[]>([]);
@@ -423,6 +451,8 @@ function OilSlickOverlay({ slick }: { slick: OilSlickState }): ReactElement {
   );
 }
 
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 function PlayerNameTag({
   name,
   emoji,
@@ -449,6 +479,7 @@ function PlayerNameTag({
   );
 }
 
+<<<<<<< HEAD
 function DelayedAoEIndicator({ aoe }: { aoe: DelayedAoEState }): ReactElement {
   const pulse = 0.78 + Math.sin(aoe.remaining * 8) * 0.1;
   const tint =
@@ -506,6 +537,14 @@ export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = nul
   const [fxQuality, setFxQuality] = useState<FxQuality>(getDefaultFxQuality);
   return (
     <Canvas shadows dpr={[1, 1.8]} gl={{ powerPreference: "high-performance" }} orthographic camera={{ position: [ISO_OFFSET, ISO_OFFSET, ISO_OFFSET], zoom: 22, near: 0.1, far: 600 }}>
+=======
+export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = null }: GameSceneProps): ReactElement {
+  const elapsed = snapshot.runClock.elapsedTotal;
+  const theme = getBlendedRunArcTheme(elapsed);
+  const [fxQuality, setFxQuality] = useState<FxQuality>("full");
+  return (
+    <Canvas shadows dpr={[1, 1.8]} orthographic camera={{ position: [ISO_OFFSET, ISO_OFFSET, ISO_OFFSET], zoom: 22, near: 0.1, far: 600 }}>
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       <color attach="background" args={[theme.backgroundColor]} />
       <fog attach="fog" args={[theme.fog.color, theme.fog.near, theme.fog.far]} />
       <ambientLight intensity={theme.ambient.intensity} color={theme.ambient.color} />
@@ -569,6 +608,7 @@ export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = nul
         </group>
       ))}
 
+<<<<<<< HEAD
       {snapshot.delayedAoEs.filter((aoe) => aoe.visualType === "depthCharge").map((aoe) => (
         <DepthChargeBarrel key={`dc-${aoe.id}`} aoe={aoe} />
       ))}
@@ -581,6 +621,8 @@ export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = nul
       {snapshot.mines.map((mine) => (
         <SeaMineVisual key={`mine-${mine.id}`} mine={mine} />
       ))}
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       <CombatProjectiles projectiles={snapshot.projectiles} />
       <ArenaVisualEffects effects={snapshot.visualEffects} />
 

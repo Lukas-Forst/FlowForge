@@ -46,6 +46,7 @@ export const BASE_SPAWN_INTERVAL = 0.82;
 export const MIN_SPAWN_INTERVAL = 0.2;
 
 export const BOOST_COOLDOWN = 4.5;
+<<<<<<< HEAD
 export const BOOST_ACTIVE_TIME = 1.1;
 export const BOOST_SPEED_MULTIPLIER = 1.55;
 export const BOOST_COOLDOWN_CONSUME_FRACTION = 0.5;
@@ -74,6 +75,10 @@ export const OIL_SLICK_DURATION = 6;
 export const OIL_SLICK_RADIUS = 3.5;
 export const OIL_SLICK_DOT_DAMAGE = 8;
 export const OIL_SLICK_DOT_INTERVAL = 0.5;
+=======
+export const BOOST_ACTIVE_TIME = 0.22;
+export const BOOST_SPEED_MULTIPLIER = 3.1;
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 
 export const COIN_PICKUP_RADIUS = 1.4;
 export const PLAYER_HIT_RADIUS = 1.15;
@@ -126,7 +131,10 @@ export const UPGRADE_OPTIONS: Record<UpgradeOption["type"], UpgradeOption> = {
   coinMagnet: { type: "coinMagnet", label: "Salvage Net", description: "Increase coin pickup radius.", rarity: "uncommon", maxStacks: 2 },
   armor: { type: "armor", label: "Iron Plating", description: "Reduce damage taken by 15%.", rarity: "uncommon", maxStacks: 3 },
   boostRepeat: { type: "boostRepeat", label: "Second Wind", description: "Boost cooldown -40%, active time +50%.", rarity: "rare", maxStacks: 1 },
+<<<<<<< HEAD
   ringBarrage: { type: "ringBarrage", label: "Ring Barrage", description: "Boost triggers delayed mortar impacts in a ring around your ship.", rarity: "rare", maxStacks: 2 },
+=======
+>>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   cannonSpread: { type: "cannonSpread", label: "Shrapnel Blast", description: "Cannon salvo size +2, wider arc.", rarity: "rare", maxStacks: 2 },
   fullSteam: { type: "fullSteam", label: "Full Steam Ahead", description: "Auto-fire doubled while boost is active.", rarity: "epic", maxStacks: 1 },
   grapeshot: { type: "grapeshot", label: "Grapeshot", description: "Auto-shots add two split pellets with reduced damage.", rarity: "rare", maxStacks: 2 },
