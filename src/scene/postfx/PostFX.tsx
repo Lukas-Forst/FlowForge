@@ -16,7 +16,7 @@ export function PostFX({ pulse, quality = "full" }: PostFXProps): ReactElement {
 
   return (
     <EffectComposer multisampling={0}>
-      <Bloom intensity={0.45 + strength * 0.8} luminanceThreshold={0.35} luminanceSmoothing={0.25} />
+      <Bloom intensity={Math.min(0.6, 0.45 + strength * 0.8)} luminanceThreshold={0.35} luminanceSmoothing={0.25} />
       {quality === "full" ? (
         <>
           <Vignette eskil={false} offset={0.15} darkness={0.42} />
