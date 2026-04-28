@@ -182,7 +182,7 @@ export interface OilSlickState {
   dotTimer: number;
 }
 
-export type VisualEffectKind = "waterSplash" | "hitBurst" | "depthBurst" | "muzzleFlash" | "waterRippleSmall" | "telegraphRing" | "damageNumber" | "enemyDeath" | "screenShake" | "broadsideCharge" | "cannonReady" | "playerWake" | "projectileSplash";
+export type VisualEffectKind = "waterSplash" | "hitBurst" | "depthBurst" | "muzzleFlash" | "waterRippleSmall" | "telegraphRing" | "damageNumber" | "enemyDeath" | "enemyDeathSmall" | "enemyDeathHeavy" | "enemyDeathExplosive" | "screenShake" | "broadsideCharge" | "cannonReady" | "playerWake" | "projectileSplash";
 
 export interface VisualEffect {
   id: number;

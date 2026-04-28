@@ -15,6 +15,9 @@ const EFFECT_DURATION: Record<VisualEffectKind, number> = {
   telegraphRing: 1.2,
   damageNumber: 0.8,
   enemyDeath: 0.6,
+  enemyDeathSmall: 0.3,
+  enemyDeathHeavy: 1.0,
+  enemyDeathExplosive: 0.75,
   screenShake: 0.45,
   cannonReady: 999,
   playerWake: 999,
@@ -417,6 +420,119 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
             </mesh>
           );
         })}
+      </group>
+    );
+  }
+
+  if (effect.kind === "enemyDeathSmall") {
+    // Small quick pop for swarmer — 4 sparks, fast fade
+    const dist = 0.15 + t * 0.9;
+    return (
+      <group position={[effect.position.x, 0.15, effect.position.y]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.12 + t * 0.4, 0.18 + t * 0.55, 12]} />
+          <meshBasicMaterial color="#ffbd87" transparent opacity={0.8 * (1 - t)} depthWrite={false} />
+        </mesh>
+        <mesh scale={[1 + t * 1.4, 1 + t * 1.4, 1 + t * 1.4]}>
+          <sphereGeometry args={[0.18, 8, 8]} />
+          <meshBasicMaterial color="#ffdfb8" transparent opacity={0.7 * (1 - t)} depthWrite={false} />
+        </mesh>
+        {Array.from({ length: 4 }, (_, i) => {
+          const angle = (i / 4) * Math.PI * 2;
+          return (
+            <mesh key={i} position={[Math.cos(angle) * dist, 0.2 + t * 0.6, Math.sin(angle) * dist]} scale={[0.06, 0.06, 0.06]}>
+              <boxGeometry args={[1, 1, 1]} />
+              <meshBasicMaterial color="#ffd28b" transparent opacity={0.85 * (1 - t)} depthWrite={false} />
+            </mesh>
+          );
+        })}
+      </group>
+    );
+  }
+
+  if (effect.kind === "enemyDeathHeavy") {
+    // Large splash ring + debris for brute — slow fade
+    const scale = 1 + t * 7;
+    const debrisCount = Math.max(2, Math.round(16 * particleScale));
+    return (
+      <group position={[effect.position.x, 0.15, effect.position.y]}>
+        {/* big outer ring */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[scale * 0.35, scale * 0.58, 28]} />
+          <meshBasicMaterial color="#c8d8e8" transparent opacity={0.8 * (1 - t * 0.6)} depthWrite={false} />
+        </mesh>
+        {/* inner ring */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[scale * 0.55, scale * 0.72, 28]} />
+          <meshBasicMaterial color="#e0eeff" transparent opacity={0.55 * (1 - t * 0.7)} depthWrite={false} />
+        </mesh>
+        {/* heavy burst sphere */}
+        <mesh scale={[1 + t * 3, 1 + t * 3, 1 + t * 3]}>
+          <sphereGeometry args={[0.45, 14, 14]} />
+          <meshBasicMaterial color="#d8e8f8" transparent opacity={0.7 * (1 - t * 0.8)} depthWrite={false} />
+        </mesh>
+        {/* debris */}
+        {Array.from({ length: debrisCount }, (_, i) => {
+          const angle = (i / debrisCount) * Math.PI * 2 + t * 1.5;
+          const dist = 0.4 + t * 3.2;
+          return (
+            <mesh
+              key={i}
+              position={[Math.cos(angle) * dist, 0.25 + t * 1.5, Math.sin(angle) * dist]}
+              scale={[0.1 + t * 0.2, 0.1 + t * 0.2, 0.1 + t * 0.2]}
+            >
+              <boxGeometry args={[1, 1, 1]} />
+              <meshBasicMaterial color="#b8c8d8" transparent opacity={0.9 * (1 - t * 0.9)} depthWrite={false} />
+            </mesh>
+          );
+        })}
+        <pointLight color="#c8d8ff" intensity={2.5 * (1 - t)} distance={6} />
+      </group>
+    );
+  }
+
+  if (effect.kind === "enemyDeathExplosive") {
+    // Fiery explosion for bomber — orange particles + smoke
+    const scale = 1 + t * 5.5;
+    const sparkCount = Math.max(2, Math.round(8 * particleScale));
+    return (
+      <group position={[effect.position.x, 0.2, effect.position.y]}>
+        {/* fiery outer ring */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[scale * 0.38, scale * 0.62, 22]} />
+          <meshBasicMaterial color="#ff7020" transparent opacity={0.9 * (1 - t)} depthWrite={false} />
+        </mesh>
+        {/* inner orange ring */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[scale * 0.2, scale * 0.36, 22]} />
+          <meshBasicMaterial color="#ffaa40" transparent opacity={0.75 * (1 - t)} depthWrite={false} />
+        </mesh>
+        {/* fiery burst sphere */}
+        <mesh scale={[1 + t * 2.8, 1 + t * 2.8, 1 + t * 2.8]}>
+          <sphereGeometry args={[0.35, 12, 12]} />
+          <meshBasicMaterial color="#ff9030" transparent opacity={0.8 * (1 - t * 0.9)} depthWrite={false} />
+        </mesh>
+        {/* smoke puff */}
+        <mesh position={[0, 0.35 + t * 0.8, 0]} scale={[0.6 + t * 1.2, 0.6 + t * 1.2, 0.6 + t * 1.2]}>
+          <sphereGeometry args={[0.32, 8, 8]} />
+          <meshBasicMaterial color="#505050" transparent opacity={0.4 * (1 - t * 1.1)} depthWrite={false} />
+        </mesh>
+        {/* sparks */}
+        {Array.from({ length: sparkCount }, (_, i) => {
+          const angle = (i / sparkCount) * Math.PI * 2 + t * 4;
+          const dist = 0.35 + t * 2.8;
+          return (
+            <mesh
+              key={i}
+              position={[Math.cos(angle) * dist, 0.3 + t * 1.5, Math.sin(angle) * dist]}
+              scale={[0.08 + t * 0.18, 0.08 + t * 0.18, 0.08 + t * 0.18]}
+            >
+              <boxGeometry args={[1, 1, 1]} />
+              <meshBasicMaterial color="#ff8820" transparent opacity={0.9 * (1 - t)} depthWrite={false} />
+            </mesh>
+          );
+        })}
+        <pointLight color="#ff8020" intensity={3 * (1 - t)} distance={7} />
       </group>
     );
   }

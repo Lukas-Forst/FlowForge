@@ -286,7 +286,15 @@ export function resolveCollisions(
             eliteKillsGained += 1;
           }
           enemies.splice(enemyIdx, 1);
-          pushEffect(visualEffects, effectIdRef, "enemyDeath", enemy.position, 1.0);
+          const deathKind = (() => {
+            switch (enemy.type) {
+              case "swarmer": return "enemyDeathSmall";
+              case "brute": return "enemyDeathHeavy";
+              case "bomber": return "enemyDeathExplosive";
+              default: return "enemyDeath";
+            }
+          })();
+          pushEffect(visualEffects, effectIdRef, deathKind as VisualEffect["kind"], enemy.position, 1.0);
           if (audioEvents) {
             audioEvents.push({ id: effectIdRef.value++, sfx: "ship_destroyed" });
           }
@@ -384,7 +392,15 @@ export function resolveCollisions(
             eliteKillsGained += 1;
           }
           enemies.splice(enemyIdx, 1);
-          pushEffect(visualEffects, effectIdRef, "enemyDeath", enemy.position, 1.0);
+          const deathKind = (() => {
+            switch (enemy.type) {
+              case "swarmer": return "enemyDeathSmall";
+              case "brute": return "enemyDeathHeavy";
+              case "bomber": return "enemyDeathExplosive";
+              default: return "enemyDeath";
+            }
+          })();
+          pushEffect(visualEffects, effectIdRef, deathKind as VisualEffect["kind"], enemy.position, 1.0);
         }
       }
     }
