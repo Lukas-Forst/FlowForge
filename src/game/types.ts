@@ -116,6 +116,10 @@ export interface EnemyState {
   rangedCooldown: number;
   /** Flash timer for hit reaction — renders white briefly then decays to 0. */
   hitFlashTimer?: number;
+  /** Flanking timer — strafe laterally this many seconds before next ranged attack. */
+  flankTimer?: number;
+  /** Lateral strafe direction (±1) during flankTimer. */
+  flankDir?: number;
 }
 
 export type HarvestableType =

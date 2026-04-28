@@ -839,8 +839,9 @@ export function useGameState(): UseGameStateApi {
       state.visualEffects,
       effectIdRef.current,
       step,
+      state.cooldowns.cannonRemaining > 0,
     );
-    runEnemyRangedAttacks(state.enemies, state.player, projectileIdRef.current, state.projectiles, state.visualEffects, effectIdRef.current, step);
+    runEnemyRangedAttacks(state.enemies, state.player, projectileIdRef.current, state.projectiles, state.visualEffects, effectIdRef.current, step, state.cooldowns.cannonRemaining > 0);
     runBossAttacks(state.enemies, state.player, projectileIdRef.current, state.projectiles, state.visualEffects, effectIdRef.current, step);
     updateProjectileMotion(state.projectiles, state.player.position, step, state.visualEffects, effectIdRef.current);
     const delayedAoEResult = updateDelayedAoEs(
