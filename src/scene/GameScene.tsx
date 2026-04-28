@@ -11,7 +11,7 @@ import { PlayerShip } from "./entities/PlayerShip";
 import type { DelayedAoEState, GameSnapshot, MineState, MultiplayerPeerState, OilSlickState, PickupState } from "../game/types";
 import { getBlendedRunArcTheme } from "./biomeLerp";
 import { PostFX } from "./postfx/PostFX";
-import { pickFxQuality, type FxQuality } from "./postfx/qualityController";
+import { pickFxQuality, getParticleMultiplier, type FxQuality } from "./postfx/qualityController";
 import { isChromiumBased, getDefaultFxQuality } from "../utils/browserPerf";
 
 const ISO_OFFSET = 24;
@@ -504,7 +504,8 @@ function SeaMineVisual({ mine }: { mine: MineState }): ReactElement {
 export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = null }: GameSceneProps): ReactElement {
   const elapsed = snapshot.runClock.elapsedTotal;
   const theme = getBlendedRunArcTheme(elapsed);
-  const [fxQuality, setFxQuality] = useState<FxQuality>(getDefaultFxQuality);
+  const [fxQuality, setFxQuality] = useState<FxQuality>(getDefaultFxQuality());
+  const particleScale = useMemo(() => getParticleMultiplier(fxQuality), [fxQuality]);
   return (
     <Canvas shadows dpr={[1, 1.8]} gl={{ powerPreference: "high-performance" }} orthographic camera={{ position: [ISO_OFFSET, ISO_OFFSET, ISO_OFFSET], zoom: 22, near: 0.1, far: 600 }}>
       <color attach="background" args={[theme.backgroundColor]} />
@@ -583,7 +584,7 @@ export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = nul
         <SeaMineVisual key={`mine-${mine.id}`} mine={mine} />
       ))}
       <CombatProjectiles projectiles={snapshot.projectiles} />
-      <ArenaVisualEffects effects={snapshot.visualEffects} />
+      <ArenaVisualEffects effects={snapshot.visualEffects} particleScale={particleScale} />
 
       {snapshot.pickups.map((pickup) => (
         <PickupProp key={pickup.id} pickup={pickup} />

@@ -389,7 +389,7 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
 
   if (effect.kind === "enemyDeath") {
     const scale = 1 + t * 4.5;
-    const sparkCount = 12;
+    const sparkCount = Math.max(2, Math.round(12 * particleScale));
     return (
       <group position={[effect.position.x, 0.2, effect.position.y]}>
         {/* expanding ring */}
@@ -512,7 +512,7 @@ export function CombatProjectiles({ projectiles }: { projectiles: ProjectileStat
   );
 }
 
-export function ArenaVisualEffects({ effects }: { effects: VisualEffect[] }): ReactElement {
+export function ArenaVisualEffects({ effects, particleScale = 1 }: { effects: VisualEffect[]; particleScale?: number }): ReactElement {
   return (
     <>
       {effects.map((e) => (
