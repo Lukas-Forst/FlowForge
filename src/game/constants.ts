@@ -46,39 +46,8 @@ export const BASE_SPAWN_INTERVAL = 0.82;
 export const MIN_SPAWN_INTERVAL = 0.2;
 
 export const BOOST_COOLDOWN = 4.5;
-<<<<<<< HEAD
-export const BOOST_ACTIVE_TIME = 1.1;
-export const BOOST_SPEED_MULTIPLIER = 1.55;
-export const BOOST_COOLDOWN_CONSUME_FRACTION = 0.5;
-export const RING_BARRAGE_SHELL_COUNT = 10;
-export const RING_BARRAGE_IMPACT_DELAY = 0.7;
-export const RING_BARRAGE_DAMAGE = 55;
-export const RING_BARRAGE_RADIUS = 2.8;
-export const RING_BARRAGE_RING_DISTANCE = 7.5;
-export const SEA_MINE_DROP_COUNT = 3;
-export const SEA_MINE_ARMING_TIME = 0.4;
-export const SEA_MINE_LIFETIME = 8;
-export const SEA_MINE_RADIUS = 3.2;
-export const SEA_MINE_DAMAGE = 70;
-export const SEA_MINE_DRIFT_SPEED = 1.2;
-export const DEPTH_CHARGE_COOLDOWN = 14;
-export const DEPTH_CHARGE_DELAY = 1.5;
-export const DEPTH_CHARGE_DAMAGE = 110;
-export const DEPTH_CHARGE_RADIUS = 5.5;
-export const TORPEDO_COOLDOWN = 10;
-export const TORPEDO_DAMAGE = 85;
-export const TORPEDO_SPEED = 24;
-export const TORPEDO_TTL = 2.8;
-export const TORPEDO_RADIUS = 0.42;
-export const OIL_SLICK_COOLDOWN = 12;
-export const OIL_SLICK_DURATION = 6;
-export const OIL_SLICK_RADIUS = 3.5;
-export const OIL_SLICK_DOT_DAMAGE = 8;
-export const OIL_SLICK_DOT_INTERVAL = 0.5;
-=======
-export const BOOST_ACTIVE_TIME = 0.22;
-export const BOOST_SPEED_MULTIPLIER = 3.1;
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
+export const BOOST_ACTIVE_TIME = 0.7;
+export const BOOST_SPEED_MULTIPLIER = 1.8;
 
 export const COIN_PICKUP_RADIUS = 1.4;
 export const PLAYER_HIT_RADIUS = 1.15;
