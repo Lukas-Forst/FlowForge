@@ -233,7 +233,7 @@ export function resolveCollisions(
         pushEffect(visualEffects, effectIdRef, "hitBurst", projectile.position, 0.22);
         pushScreenShakeForDamage(visualEffects, effectIdRef, player.position, projectile.damage, 0.35);
         if (audioEvents) {
-          audioEvents.push({ id: effectIdRef.value++, sfx: "hit" });
+          audioEvents.push({ id: effectIdRef.value++, sfx: "hit", position: projectile.position });
         }
         projectiles.splice(projectileIdx, 1);
       }
@@ -263,7 +263,7 @@ export function resolveCollisions(
         enemy.position.y += knockDir.y * knockbackStrength;
         pushEffect(visualEffects, effectIdRef, "hitBurst", enemy.position, 0.26);
         if (audioEvents) {
-          audioEvents.push({ id: effectIdRef.value++, sfx: "hit" });
+          audioEvents.push({ id: effectIdRef.value++, sfx: "hit", position: enemy.position });
         }
         
         const isCrit = projectile.damage > 60;
@@ -331,7 +331,7 @@ export function resolveCollisions(
           projectileConsumed = true;
           pushEffect(visualEffects, effectIdRef, "hitBurst", h.position, 0.20);
           if (audioEvents) {
-            audioEvents.push({ id: effectIdRef.value++, sfx: "hit" });
+            audioEvents.push({ id: effectIdRef.value++, sfx: "hit", position: h.position });
           }
           
           visualEffects.push({

@@ -294,7 +294,7 @@ export default function App(): ReactElement {
       }
       const mgr = audioMgrRef.current;
       if (mgr) {
-        mgr.drain(consumeAudioEvents());
+        mgr.drain(consumeAudioEvents(), snap.player.position.x);
       }
 
       netSendTimerRef.current += delta;

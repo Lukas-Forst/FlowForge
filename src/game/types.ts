@@ -17,6 +17,8 @@ export interface AudioEvent {
   sfx: SfxId;
   volume?: number;
   pitch?: number;
+  /** World position for stereo panning */
+  position?: { x: number; y: number };
 }
 
 export type PostFxEffect = "chromaticAb" | "flash";

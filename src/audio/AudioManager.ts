@@ -1,5 +1,5 @@
 import type { AudioEvent } from "../game/types";
-import { playSynth } from "./devSynth";
+import { playSynth, computePan } from "./devSynth";
 
 export interface AudioManager {
   drain(queue: AudioEvent[]): void;
@@ -25,11 +25,15 @@ export function createAudioManager(ctx: AudioContext): AudioManager {
   let currentAmbient: AudioBufferSourceNode | null = null;
 
   return {
-    drain(queue) {
+    drain(queue, listenerX?: number) {
       while (queue.length > 0) {
         const ev = queue.shift();
         if (!ev) break;
-        playSynth(ctx, sfxBus, ev.sfx, ev.volume ?? 1, ev.pitch ?? 1);
+        let pan = 0;
+        if (ev.position !== undefined && listenerX !== undefined) {
+          pan = computePan(ev.position.x, listenerX);
+        }
+        playSynth(ctx, sfxBus, ev.sfx, ev.volume ?? 1, ev.pitch ?? 1, pan);
       }
     },
     setMasterVolume(v) {
