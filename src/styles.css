@@ -14,11 +14,7 @@ body {
   margin: 0;
   min-height: 100vh;
   overflow: hidden;
-<<<<<<< HEAD
-  background: radial-gradient(circle at top, #1a4a6e 0%, #0a2535 70%);
-=======
   background: radial-gradient(circle at top, #0f2f47 0%, #041521 70%);
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 }
 
 #root,
@@ -281,26 +277,7 @@ button:hover {
   margin-top: 0.35rem;
 }
 
-<<<<<<< HEAD
 .tutorial-skip-btn {
-  margin-top: 12px;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(0, 0, 0, 0.25);
-  color: #cfe9ff;
-  cursor: pointer;
-}
-
-.tutorial-skip-btn:hover {
-  border-color: #9edfff;
-  color: #fff;
-}
-
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 .tutorial-hint {
   margin-top: 0.6rem;
   font-size: 0.88rem;
@@ -445,7 +422,6 @@ button:hover {
   animation: pulse-glow 0.9s ease-in-out infinite alternate;
 }
 
-<<<<<<< HEAD
 .pulse-meter.special {
   border: 1px solid rgba(184, 162, 255, 0.45);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 14px rgba(143, 98, 255, 0.18);
@@ -459,22 +435,21 @@ button:hover {
   animation: pulse-glow 0.9s ease-in-out infinite alternate, special-ready-sweep 0.75s ease-in-out infinite;
 }
 
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
-@keyframes pulse-glow {
+@keyframes special-ready-sweep {
+  0% { transform: translateX(-3%); }
+  50% { transform: translateX(0); }
+  100% { transform: translateX(3%); }
+}@keyframes pulse-glow {
   from { filter: brightness(1); }
   to { filter: brightness(1.5); }
 }
 
-<<<<<<< HEAD
 @keyframes special-ready-sweep {
   0% { transform: translateX(-3%); }
   50% { transform: translateX(0); }
   100% { transform: translateX(3%); }
 }
 
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 .pulse-meter.damage-flash {
   animation: damage-flash 180ms ease-out;
 }
@@ -549,7 +524,6 @@ button:hover {
   z-index: 31;
 }
 
-<<<<<<< HEAD
 .hud-wave-clock {
   position: fixed;
   top: 14px;
@@ -673,8 +647,6 @@ button:hover {
   color: #cfe9ff;
 }
 
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 .level-pill.bump {
   animation: level-bump 360ms ease-out;
 }
@@ -926,7 +898,6 @@ button:hover {
   100% { color: #e2ecf0; transform: scale(1); }
 }
 
-<<<<<<< HEAD
 .hud-v2-row--extra-empty span:first-child {
   color: #ffd983;
   animation: hud-extra-lock-pulse 0.9s ease-in-out infinite alternate;
@@ -937,8 +908,6 @@ button:hover {
   to { filter: brightness(1.35); }
 }
 
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 .screen-flash {
   position: fixed;
   inset: 0;
@@ -1017,14 +986,11 @@ button:hover {
   font-family: system-ui, sans-serif;
 }
 
-<<<<<<< HEAD
 .upgrade-modal-panel--elite {
   border-color: rgba(255, 210, 110, 0.5);
   box-shadow: 0 0 28px rgba(255, 190, 80, 0.22);
 }
 
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 .upgrade-grid-v2 {
   display: flex;
   gap: 12px;
@@ -1307,4 +1273,157 @@ button:hover {
 @keyframes combat-log-in {
   from { opacity: 0; transform: translateY(6px) scale(0.9); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Captain Meta-Progression ─────────────────────────────────────── */
+.captain-meta-panel {
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 210, 80, 0.35);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 10px 0;
+}
+
+.captain-level-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.captain-title-label {
+  font-family: "Luckiest Guy", system-ui, sans-serif;
+  font-size: 1.1rem;
+  color: #ffd57a;
+  letter-spacing: 0.5px;
+}
+
+.captain-level-badge {
+  background: linear-gradient(135deg, #ff9a3c, #ff5577);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.9rem;
+  padding: 3px 10px;
+  border-radius: 14px;
+  letter-spacing: 0.5px;
+  font-family: "Luckiest Guy", system-ui, sans-serif;
+}
+
+.captain-xp-bar {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.captain-xp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffb83d 0%, #ff5577 100%);
+  border-radius: 4px;
+  transition: width 300ms ease-out;
+  box-shadow: 0 0 6px rgba(255, 150, 50, 0.5);
+}
+
+.captain-xp-label {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: #c8e6f5;
+  text-align: right;
+}
+
+/* ── Run Summary Panel ────────────────────────────────────────────── */
+.run-summary-panel {
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(120, 200, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 8px 0;
+}
+
+.run-summary-title {
+  font-family: "Luckiest Guy", system-ui, sans-serif;
+  font-size: 0.95rem;
+  color: #9edfff;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.run-summary-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.run-stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85em;
+  color: #c5dce8;
+}
+
+.run-stat-row.xp-earned {
+  color: #ffe066;
+  font-weight: 700;
+}
+
+/* ── Best Run Panel ────────────────────────────────────────────────── */
+.best-run-panel {
+  background: rgba(255, 200, 60, 0.06);
+  border: 1px solid rgba(255, 200, 60, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 8px 0;
+}
+
+.best-run-title {
+  font-family: "Luckiest Guy", system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: #ffd57a;
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+}
+
+/* ── Level-Up Flash Overlay ──────────────────────────────────────── */
+.levelup-flash-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 200;
+  animation: levelup-flash-fade 2.2s ease-out forwards;
+}
+
+.levelup-flash-text {
+  background: linear-gradient(135deg, #ff9a3c 0%, #ff5577 60%, #ffe066 100%);
+  color: #fff;
+  font-family: "Luckiest Guy", system-ui, sans-serif;
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  padding: 18px 36px;
+  border-radius: 16px;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 40px rgba(255, 100, 80, 0.5), 0 0 80px rgba(255, 150, 50, 0.3);
+  animation: levelup-flash-scale 2.2s ease-out forwards;
+  white-space: nowrap;
+}
+
+@keyframes levelup-flash-fade {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes levelup-flash-scale {
+  0% { transform: scale(0.4); filter: brightness(2); }
+  20% { transform: scale(1.08); filter: brightness(1.3); }
+  35% { transform: scale(1); filter: brightness(1); }
+  85% { transform: scale(1) translateY(0); }
+  100% { transform: scale(1.05) translateY(-8px); }
 }

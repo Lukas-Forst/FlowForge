@@ -3,6 +3,16 @@ import { useMemo, useState } from "react";
 import { EVOLUTION_UPGRADE_TYPES, UPGRADE_OPTIONS } from "../game/constants";
 import type { GameSnapshot, UpgradeType } from "../game/types";
 import { formatBiomeName } from "./BiomeBadge";
+import {
+  addXp,
+  calculateRunXp,
+  loadBestRun,
+  loadCaptainProgress,
+  saveBestRun,
+  saveCaptainProgress,
+  type BestRun,
+  type CaptainProgress,
+} from "../game/captainProgress";
 
 interface GameOverScreenProps {
   snapshot: GameSnapshot;
@@ -77,7 +87,7 @@ function createRunReportImage(
   ctx.font = "700 50px Inter, sans-serif";
   ctx.fillText("FlowForge - Legendary Run", 56, 88);
 
-  ctx.fillStyle = "#b4ddf6";
+  ctx.fillStyle = "#b4dcf6";
   ctx.font = "500 28px Inter, sans-serif";
   ctx.fillText("Vibe Report", 56, 126);
 
@@ -131,6 +141,43 @@ export function GameOverScreen({ snapshot, onRestart }: GameOverScreenProps): Re
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [copyHint, setCopyHint] = useState<string | null>(null);
 
+  // ── Captain progress ──────────────────────────────────────────────
+  const [captainProgress, setCaptainProgress] = useState<CaptainProgress>(() => loadCaptainProgress());
+  const [bestRun, setBestRun] = useState<BestRun | null>(() => loadBestRun());
+  const [levelUpFlash, setLevelUpFlash] = useState<number>(0); // count of levels gained this run
+  const [xpGainedThisRun, setXpGainedThisRun] = useState<number>(0);
+
+  // Compute XP and apply progression once on mount
+  useMemo(() => {
+    const xp = calculateRunXp({
+      score: snapshot.stats.score,
+      enemiesKilled: snapshot.stats.enemiesKilled,
+      timeSurvived: snapshot.stats.timeSurvived,
+    });
+    const prevProgress = loadCaptainProgress();
+    const { progress: updated, levelsGained } = addXp(prevProgress, xp);
+
+    saveCaptainProgress(updated);
+    saveBestRun(
+      {
+        score: snapshot.stats.score,
+        timeSurvived: snapshot.stats.timeSurvived,
+        enemiesKilled: snapshot.stats.enemiesKilled,
+        collectedCoins: snapshot.stats.collectedCoins,
+        evolutionsUnlocked: snapshot.stats.evolutionsUnlocked,
+      },
+      xp,
+      updated.captainLevel,
+    );
+
+    setCaptainProgress(updated);
+    setBestRun(loadBestRun());
+    setXpGainedThisRun(xp);
+    if (levelsGained > 0) {
+      setLevelUpFlash(levelsGained);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const topUpgrades = useMemo(() => getTopUpgrades(snapshot, 3), [snapshot]);
   const evolutions = useMemo(() => getEvolutions(snapshot), [snapshot]);
   const summaryText = useMemo(() => buildRunSummaryText(snapshot, topUpgrades, evolutions), [snapshot, topUpgrades, evolutions]);
@@ -164,26 +211,90 @@ export function GameOverScreen({ snapshot, onRestart }: GameOverScreenProps): Re
     }
   };
 
+  // XP progress within current level
+  const xpForNextLevel = captainProgress.captainLevel < 50
+    ? captainProgress.captainLevel * captainProgress.captainLevel * 100
+    : 1;
+  const xpProgress = captainProgress.captainLevel < 50
+    ? Math.min(1, captainProgress.captainXp / xpForNextLevel)
+    : 1;
+
   return (
     <div className="overlay center">
+      {/* Level-up flash */}
+      {levelUpFlash > 0 ? (
+        <div className="levelup-flash-overlay">
+          <div className="levelup-flash-text">
+            ⬆️ LEVEL UP! {captainProgress.title} — Level {captainProgress.captainLevel}
+          </div>
+        </div>
+      ) : null}
+
       <div className="panel" style={{ textAlign: "center", minWidth: "360px" }}>
         <h2>{isNewRecord ? "🎉 NEW RECORD! 🎉" : "Ship Sunk"}</h2>
-        <div style={{ background: "rgba(0,0,0,0.1)", padding: "12px", borderRadius: "8px", margin: "12px 0" }}>
-          <p style={{ margin: "4px 0" }}>Final Score: <strong style={{ fontSize: "1.2em" }}>{snapshot.stats.score}</strong></p>
-          <p style={{ margin: "4px 0", fontSize: "0.85em", color: "#ddd" }}>
-            floor(time×100 + kills×25 + coins×2 + evolutions×500)
-          </p>
+
+        {/* Captain meta-progression panel */}
+        <div className="captain-meta-panel">
+          <div className="captain-level-row">
+            <span className="captain-title-label">{captainProgress.title}</span>
+            <span className="captain-level-badge">Lv. {captainProgress.captainLevel}</span>
+          </div>
+          <div className="captain-xp-bar">
+            <div
+              className="captain-xp-bar-fill"
+              style={{ width: `${Math.round(xpProgress * 100)}%` }}
+            />
+          </div>
+          <div className="captain-xp-label">
+            {captainProgress.captainXp} / {xpForNextLevel} XP
+            {captainProgress.captainLevel >= 50 ? " — MAX LEVEL!" : ""}
+          </div>
         </div>
 
-        <div style={{ textAlign: "left", fontSize: "0.95em", margin: "16px 0", lineHeight: "1.6" }}>
-          <p style={{ margin: "4px 0" }}>⏱️ Time Survived: <strong>{snapshot.stats.timeSurvived.toFixed(1)}s</strong></p>
-          <p style={{ margin: "4px 0" }}>☠️ Enemies Sunk: <strong>{snapshot.stats.enemiesKilled}</strong></p>
-          <p style={{ margin: "4px 0" }}>💎 Loot Collected: <strong>{snapshot.stats.collectedCoins}</strong></p>
-          <p style={{ margin: "4px 0" }}>🧭 Last region: <strong>{formatBiomeName(snapshot.runBiome)}</strong></p>
-          <p style={{ margin: "4px 0" }}>🧬 Evolutions this run: <strong>{snapshot.stats.evolutionsUnlocked}</strong></p>
-          <p style={{ margin: "4px 0", color: "#fbbf24" }}>🛡️ Unscathed Streak: <strong>{snapshot.stats.longestUnscathedStreak.toFixed(1)}s</strong></p>
-          <p style={{ margin: "4px 0", color: "#ef4444" }}>💥 Biggest Hit Dealt: <strong>{snapshot.stats.biggestHit.toFixed(0)}</strong></p>
+        {/* Run summary */}
+        <div className="run-summary-panel">
+          <div className="run-summary-title">📋 Run Summary</div>
+          <div className="run-summary-stats">
+            <div className="run-stat-row">
+              <span>⏱️ Time</span>
+              <span>{snapshot.stats.timeSurvived.toFixed(1)}s</span>
+            </div>
+            <div className="run-stat-row">
+              <span>☠️ Kills</span>
+              <span>{snapshot.stats.enemiesKilled}</span>
+            </div>
+            <div className="run-stat-row">
+              <span>💎 Score</span>
+              <span>{snapshot.stats.score.toLocaleString()}</span>
+            </div>
+            <div className="run-stat-row xp-earned">
+              <span>⭐ XP Earned</span>
+              <span>+{xpGainedThisRun}</span>
+            </div>
+          </div>
         </div>
+
+        {/* vs Best run */}
+        {bestRun ? (
+          <div className="best-run-panel">
+            <div className="best-run-title">🏆 Best Run</div>
+            <div className="run-summary-stats">
+              <div className="run-stat-row">
+                <span>Score</span>
+                <span>{bestRun.score.toLocaleString()}</span>
+              </div>
+              <div className="run-stat-row">
+                <span>Time</span>
+                <span>{bestRun.timeSurvived.toFixed(1)}s</span>
+              </div>
+              <div className="run-stat-row">
+                <span>Kills</span>
+                <span>{bestRun.enemiesKilled}</span>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         <div className="gameover-actions">
           <button type="button" className="legendary-share-btn" onClick={openReport}>
             Share Your Legendary Run
