@@ -43,6 +43,7 @@ export function UpgradeModal({ options, onPick, title = "CHOOSE UPGRADE", stacks
               onClick={() => handlePick(option.type)}
               disabled={!!picked}
             >
+              {option.icon ? <span className="upgrade-icon">{option.icon}</span> : null}
               <span className="upgrade-rarity-pill">{option.rarity}</span>
               <strong>{option.label}</strong>
               <span>{option.description}</span>

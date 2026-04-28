@@ -261,6 +261,8 @@ export interface UpgradeOption {
   description: string;
   rarity: "common" | "uncommon" | "rare" | "epic";
   maxStacks: number;
+  /** Emoji icon displayed on the upgrade card */
+  icon?: string;
 }
 
 export interface InputState {

@@ -1072,7 +1072,6 @@ button:hover {
   100% { transform: scale(1); opacity: 0; filter: brightness(2.5); }
 }
 
-<<<<<<< HEAD
 .upgrade-rarity-pill {
   display: inline-block;
   font-size: 10px;
@@ -1102,6 +1101,43 @@ button:hover {
   background: linear-gradient(90deg, #7a3cff, #ff3c9a);
 }
 
+/* Rarity glow borders */
+.upgrade-card--common {
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+}
+.upgrade-card--common:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 14px 2px rgba(255, 255, 255, 0.12);
+}
+
+.upgrade-card--uncommon {
+  border-color: rgba(76, 255, 76, 0.4);
+  box-shadow: 0 0 0 0 rgba(76, 255, 76, 0);
+}
+.upgrade-card--uncommon:hover {
+  border-color: #4cff4c;
+  box-shadow: 0 0 14px 3px rgba(76, 255, 76, 0.28);
+}
+
+.upgrade-card--rare {
+  border-color: rgba(76, 168, 255, 0.5);
+  box-shadow: 0 0 0 0 rgba(76, 168, 255, 0);
+}
+.upgrade-card--rare:hover {
+  border-color: #4ca8ff;
+  box-shadow: 0 0 14px 3px rgba(76, 168, 255, 0.35);
+}
+
+.upgrade-card--epic {
+  border-color: rgba(255, 192, 64, 0.55);
+  box-shadow: 0 0 0 0 rgba(255, 192, 64, 0);
+}
+.upgrade-card--epic:hover {
+  border-color: #ffc040;
+  box-shadow: 0 0 18px 4px rgba(255, 192, 64, 0.45);
+}
+
 .upgrade-owned {
   display: block;
   margin-top: 6px;
@@ -1118,8 +1154,6 @@ button:hover {
   color: #9edfff;
 }
 
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 .upgrade-card strong {
   display: block;
   font-size: 18px;
@@ -1132,6 +1166,14 @@ button:hover {
   font-size: 13px;
   line-height: 1.4;
   opacity: 0.85;
+}
+
+.upgrade-icon {
+  font-size: 28px;
+  line-height: 1;
+  display: block;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
 }
 
 .gameover-actions {
