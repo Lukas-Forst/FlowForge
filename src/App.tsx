@@ -295,6 +295,7 @@ export default function App(): ReactElement {
       const mgr = audioMgrRef.current;
       if (mgr) {
         mgr.drain(consumeAudioEvents(), snap.player.position.x);
+        mgr.updateMusic(snap);
       }
 
       netSendTimerRef.current += delta;
@@ -388,6 +389,17 @@ export default function App(): ReactElement {
       }
     };
   }, []);
+
+  // Start/stop procedural music with run phase
+  useEffect(() => {
+    const mgr = audioMgrRef.current;
+    if (!mgr) return;
+    if (snapshot.phase === "playing" || snapshot.phase === "upgrade" || snapshot.phase === "paused") {
+      mgr.startMusic();
+    } else {
+      mgr.stopMusic();
+    }
+  }, [snapshot.phase]);
 
   const finishTutorial = (): void => {
     try {

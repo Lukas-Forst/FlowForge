@@ -1,5 +1,6 @@
 import type { AudioEvent } from "../game/types";
 import { playSynth, computePan } from "./devSynth";
+import { createMusicSystem, type MusicSystem } from "./MusicSystem";
 
 export interface AudioManager {
   drain(queue: AudioEvent[]): void;
@@ -7,6 +8,12 @@ export interface AudioManager {
   getMasterVolume(): number;
   ambient(id: "sea_bed" | "boss_bed", fadeMs?: number): void;
   stopAmbient(fadeMs?: number): void;
+  /** Start procedural music (called when run begins). */
+  startMusic(): void;
+  /** Stop procedural music (called on game over / quit). */
+  stopMusic(): void;
+  /** Update music layers from game state. Call every tick. */
+  updateMusic(state: { enemies: unknown[]; megaBoss: { spawned: boolean } | null; phase: string }): void;
 }
 
 export function createAudioManager(ctx: AudioContext): AudioManager {
@@ -23,6 +30,9 @@ export function createAudioManager(ctx: AudioContext): AudioManager {
   musicBus.connect(master);
 
   let currentAmbient: AudioBufferSourceNode | null = null;
+
+  // Procedural layered music system
+  const music: MusicSystem = createMusicSystem(ctx, musicBus);
 
   return {
     drain(queue, listenerX?: number) {
@@ -56,6 +66,15 @@ export function createAudioManager(ctx: AudioContext): AudioManager {
         }
         currentAmbient = null;
       }
+    },
+    startMusic() {
+      music.start();
+    },
+    stopMusic() {
+      music.stop();
+    },
+    updateMusic(state) {
+      music.update(state);
     },
   };
 }
