@@ -16,6 +16,7 @@ const EFFECT_DURATION: Record<VisualEffectKind, number> = {
 =======
 >>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   muzzleFlash: 0.1,
+  broadsideCharge: 0.3,
   waterRippleSmall: 0.28,
   telegraphRing: 1.2,
   damageNumber: 0.8,
@@ -360,6 +361,28 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
           <octahedronGeometry args={[0.24, 0]} />
           <meshBasicMaterial color="#ff9c3a" transparent opacity={0.7 * (1 - t)} depthWrite={false} />
 =======
+  EFFECT_DURATION[effect.kind];
+  if (effect.kind === "broadsideCharge") {
+    const pulseT = t * Math.PI * 2;
+    const glow = 0.6 + Math.sin(pulseT) * 0.35;
+    return (
+      <group position={[effect.position.x, 0.55, effect.position.y]}>
+        {/* pulsing glow sphere */}
+        <mesh scale={[glow * 1.1, glow * 1.1, glow * 1.1]}>
+          <sphereGeometry args={[0.22, 8, 8]} />
+          <meshBasicMaterial color="#ffc87a" transparent opacity={0.55 * (1 - t * 0.6)} depthWrite={false} />
+        </mesh>
+        {/* inner core */}
+        <mesh scale={[glow * 0.7, glow * 0.7, glow * 0.7]}>
+          <sphereGeometry args={[0.22, 8, 8]} />
+          <meshBasicMaterial color="#ffe4b0" transparent opacity={0.75 * (1 - t * 0.5)} depthWrite={false} />
+        </mesh>
+        {/* small point light */}
+        <pointLight color="#ffaa40" intensity={1.4 * (1 - t)} distance={3.5} />
+      </group>
+    );
+  }
+
   if (effect.kind === "muzzleFlash") {
     const flashScale = 0.34 + t * 0.46;
     return (

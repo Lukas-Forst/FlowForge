@@ -41,23 +41,31 @@ export function runPassiveBroadside(
   const shotsPerSide = 1 + extraPerSide;
   const spread = 0.24;
 
-  const fireSide = (side: { x: number; y: number }, sideAngle: number): void => {
-    const start = -spread / 2;
-    const step = spread / Math.max(1, shotsPerSide - 1);
-    for (let i = 0; i < shotsPerSide; i += 1) {
-      const localOffset = start + step * i;
-      const angle = sideAngle + localOffset;
-      const dir = directionFromAngle(angle);
-      const originX = player.position.x + side.x * CANNON_SIDE_ORIGIN_OFFSET;
-      const originY = player.position.y + side.y * CANNON_SIDE_ORIGIN_OFFSET;
+  // Compute port origins before any scheduling so charge and fire share positions
+  const leftOrigins = computeSideOrigins(right, rightAngle, shotsPerSide, spread, player, CANNON_SIDE_ORIGIN_OFFSET);
+  const rightOrigins = computeSideOrigins(port, portAngle, shotsPerSide, spread, player, CANNON_SIDE_ORIGIN_OFFSET);
 
+  // Telegraph: push charge glow ~0.3s before actual fire so players can anticipate
+  const allOrigins = [...leftOrigins, ...rightOrigins];
+  for (const origin of allOrigins) {
+    visualEffects.push({
+      id: effectIdRef.value++,
+      kind: "broadsideCharge",
+      position: { x: origin.x, y: origin.y },
+      remaining: 0.3,
+    });
+  }
+
+  // Fire the broadside with a short delay so the charge has time to display
+  setTimeout(() => {
+    for (const origin of allOrigins) {
       projectiles.push({
         id: projectileIdRef.value++,
         kind: "playerCannon",
-        position: { x: originX, y: originY },
+        position: { x: origin.x, y: origin.y },
         velocity: {
-          x: dir.x * CANNON_PROJECTILE_SPEED,
-          y: dir.y * CANNON_PROJECTILE_SPEED,
+          x: directionFromAngle(origin.angle).x * CANNON_PROJECTILE_SPEED,
+          y: directionFromAngle(origin.angle).y * CANNON_PROJECTILE_SPEED,
         },
         ttl: 1.45,
         damage: CANNON_PROJECTILE_DAMAGE * 0.58,
@@ -66,12 +74,33 @@ export function runPassiveBroadside(
       visualEffects.push({
         id: effectIdRef.value++,
         kind: "muzzleFlash",
-        position: { x: originX, y: originY },
+        position: { x: origin.x, y: origin.y },
         remaining: 0.08,
       });
     }
-  };
+  }, 300);
+}
 
-  fireSide(right, rightAngle);
-  fireSide(port, portAngle);
+function computeSideOrigins(
+  side: { x: number; y: number },
+  sideAngle: number,
+  shotsPerSide: number,
+  spread: number,
+  player: PlayerState,
+  offset: number,
+): Array<{ x: number; y: number; angle: number }> {
+  const origins: Array<{ x: number; y: number; angle: number }> = [];
+  const start = -spread / 2;
+  const step = spread / Math.max(1, shotsPerSide - 1);
+  for (let i = 0; i < shotsPerSide; i += 1) {
+    const localOffset = start + step * i;
+    const angle = sideAngle + localOffset;
+    const dir = directionFromAngle(angle);
+    origins.push({
+      x: player.position.x + side.x * offset,
+      y: player.position.y + side.y * offset,
+      angle,
+    });
+  }
+  return origins;
 }

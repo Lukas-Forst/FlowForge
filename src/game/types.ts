@@ -190,7 +190,7 @@ export interface OilSlickState {
   dotTimer: number;
 }
 
-export type VisualEffectKind = "waterSplash" | "hitBurst" | "depthBurst" | "muzzleFlash" | "waterRippleSmall" | "telegraphRing" | "damageNumber" | "enemyDeath" | "screenShake";
+export type VisualEffectKind = "waterSplash" | "hitBurst" | "depthBurst" | "muzzleFlash" | "waterRippleSmall" | "telegraphRing" | "damageNumber" | "enemyDeath" | "screenShake" | "broadsideCharge";
 =======
 export type VisualEffectKind = "waterSplash" | "hitBurst" | "muzzleFlash" | "waterRippleSmall" | "telegraphRing" | "damageNumber" | "enemyDeath" | "screenShake";
 >>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
