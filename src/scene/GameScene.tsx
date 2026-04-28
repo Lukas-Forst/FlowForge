@@ -134,12 +134,12 @@ function CameraFollow({ snapshot }: { snapshot: GameSnapshot }): null {
     );
 
     // Exponential decay: closes ~89% of gap per frame at 60fps (near-snap follow).
-    const alpha = 1 - Math.pow(0.001, delta);
+    const alpha = 1 - Math.pow(0.0005, delta);
     camera.position.lerp(desired, alpha);
 
     if (shakeOffset > 0) {
-      camera.position.x += (Math.random() - 0.5) * shakeOffset;
-      camera.position.z += (Math.random() - 0.5) * shakeOffset;
+      camera.position.x += (Math.random() - 0.5) * shakeOffset * 1.2;
+      camera.position.z += (Math.random() - 0.5) * shakeOffset * 1.2;
     }
 
     camera.lookAt(target.x, target.y, target.z);

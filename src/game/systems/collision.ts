@@ -218,7 +218,7 @@ export function resolveCollisions(
       if (distance(enemy.position, projectile.position) <= projectile.radius + 0.65) {
         enemy.hp -= projectile.damage;
         maxHitDealt = Math.max(maxHitDealt, projectile.damage);
-        if (projectile.kind === "playerCannon") cannonHits += 1;
+        if (projectile.kind === "playerCannon" || projectile.kind === "playerAuto") cannonHits += 1;
         const canPierce = (projectile.pierceRemaining ?? 0) > 0;
         projectileConsumed = !canPierce;
         if (canPierce) {
@@ -229,13 +229,14 @@ export function resolveCollisions(
           audioEvents.push({ id: effectIdRef.value++, sfx: "hit" });
         }
         
+        const isCrit = projectile.damage > 60;
         visualEffects.push({
           id: effectIdRef.value++,
           kind: "damageNumber",
           position: { ...enemy.position },
-          remaining: 0.8,
+          remaining: 0.9,
           text: projectile.damage.toString(),
-          color: projectile.kind === "playerCannon" ? "#fff2a8" : "#ffffff",
+          color: isCrit ? "#ff8c00" : "#ffffff",
           scale: projectile.damage > 80 ? 1.5 : projectile.damage > 40 ? 1.2 : 1.0,
         });
 
@@ -286,7 +287,7 @@ export function resolveCollisions(
         if (distance(h.position, projectile.position) <= projectile.radius + h.radius) {
           h.hp -= projectile.damage;
           maxHitDealt = Math.max(maxHitDealt, projectile.damage);
-          if (projectile.kind === "playerCannon") cannonHits += 1;
+          if (projectile.kind === "playerCannon" || projectile.kind === "playerAuto") cannonHits += 1;
           projectileConsumed = true;
           pushEffect(visualEffects, effectIdRef, "hitBurst", h.position, 0.20);
           if (audioEvents) {

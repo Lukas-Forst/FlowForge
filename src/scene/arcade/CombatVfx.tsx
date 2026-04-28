@@ -361,7 +361,7 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
 
   if (effect.kind === "enemyDeath") {
     const scale = 1 + t * 4.5;
-    const sparkCount = 6;
+    const sparkCount = 12;
     return (
       <group position={[effect.position.x, 0.2, effect.position.y]}>
         {/* expanding ring */}
