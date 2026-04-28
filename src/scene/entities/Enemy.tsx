@@ -11,6 +11,7 @@ import type { ShipModelConfig } from "../models/ShipModelVisual";
 type EnemyShipProps = ThreeElements["group"] & {
   type: EnemyType;
   isElite?: boolean;
+  hitFlashTimer?: number;
 };
 
 const ENEMY_MODEL_CONFIGS: Record<EnemyType, ShipModelConfig> = {
@@ -264,7 +265,7 @@ function EliteAura({ isBoss }: { isBoss: boolean }): ReactElement {
   );
 }
 
-export function EnemyShip({ type, isElite = false, ...props }: EnemyShipProps): ReactElement {
+export function EnemyShip({ type, isElite = false, hitFlashTimer, ...props }: EnemyShipProps): ReactElement {
   let variant: ReactElement = <CorsairMesh />;
   if (type === "bomber" || type === "swarmer") {
     variant = <BomberMesh />;
@@ -288,6 +289,9 @@ export function EnemyShip({ type, isElite = false, ...props }: EnemyShipProps): 
   const showAura = isElite || isBoss;
   const scale = isElite ? (isBoss ? 1.0 : 1.45) : isBoss ? 1.16 : 1;
 
+  // Hit flash: white overlay fades as timer approaches 0
+  const flashOpacity = hitFlashTimer != null ? Math.max(0, hitFlashTimer / 0.1) * 0.6 : 0;
+
   return (
     <group scale={scale} {...props}>
       {showAura ? <EliteAura isBoss={isBoss} /> : null}
@@ -297,6 +301,13 @@ export function EnemyShip({ type, isElite = false, ...props }: EnemyShipProps): 
         eliteTint={isElite}
       />
       <ShipSmoke stackPositions={smokeStacks} intensity={isElite ? smokeIntensity * 1.4 : smokeIntensity} />
+      {/* White hit-flash overlay */}
+      {flashOpacity > 0 && (
+        <mesh position={[0, 0.85, 0]} scale={[2.0, 1.5, 3.5]}>
+          <sphereGeometry args={[1, 10, 8]} />
+          <meshBasicMaterial color="#ffffff" transparent opacity={flashOpacity} depthWrite={false} side={THREE.BackSide} />
+        </mesh>
+      )}
     </group>
   );
 }

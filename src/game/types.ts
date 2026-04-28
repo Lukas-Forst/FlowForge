@@ -112,6 +112,8 @@ export interface EnemyState {
   touchDamage: number;
   touchTimer: number;
   rangedCooldown: number;
+  /** Flash timer for hit reaction — renders white briefly then decays to 0. */
+  hitFlashTimer?: number;
 }
 
 export type HarvestableType =

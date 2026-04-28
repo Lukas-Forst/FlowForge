@@ -559,6 +559,7 @@ export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = nul
           <EnemyShip
             type={enemy.type}
             isElite={enemy.isElite}
+            hitFlashTimer={enemy.hitFlashTimer}
             position={[enemy.position.x, 0, enemy.position.y]}
             rotation={[0, enemy.facing, 0]}
           />

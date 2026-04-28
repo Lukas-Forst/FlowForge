@@ -188,6 +188,9 @@ export function updateEnemyMovement(enemies: EnemyState[], player: PlayerState, 
     }
     
     enemy.touchTimer -= delta;
+    if (enemy.hitFlashTimer != null && enemy.hitFlashTimer > 0) {
+      enemy.hitFlashTimer = Math.max(0, enemy.hitFlashTimer - delta);
+    }
   }
 }
 
@@ -249,6 +252,15 @@ export function resolveCollisions(
         if (canPierce) {
           projectile.pierceRemaining = (projectile.pierceRemaining ?? 0) - 1;
         }
+        // Hit flash + knockback
+        enemy.hitFlashTimer = 0.1;
+        const knockDir = normalize({
+          x: enemy.position.x - projectile.position.x,
+          y: enemy.position.y - projectile.position.y,
+        });
+        const knockbackStrength = projectile.kind === "playerCannon" ? 0.9 : 0.45;
+        enemy.position.x += knockDir.x * knockbackStrength;
+        enemy.position.y += knockDir.y * knockbackStrength;
         pushEffect(visualEffects, effectIdRef, "hitBurst", enemy.position, 0.26);
         if (audioEvents) {
           audioEvents.push({ id: effectIdRef.value++, sfx: "hit" });
