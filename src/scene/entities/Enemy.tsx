@@ -249,12 +249,17 @@ function EliteAura({ isBoss }: { isBoss: boolean }): ReactElement {
           <meshBasicMaterial color={isBoss ? "#ff6622" : "#ffee55"} transparent opacity={0.7} depthWrite={false} />
         </mesh>
       ))}
-      {/* Point light */}
-      <pointLight
-        color={isBoss ? "#ff4400" : "#ffcc33"}
-        intensity={isBoss ? 3.5 : 2.2}
-        distance={isBoss ? 8.0 : 5.5}
-      />
+      {/* Emissive glow instead of pointLight for performance */}
+      <mesh scale={[isBoss ? 2.5 : 2.0, 1, isBoss ? 2.5 : 2.0]}>
+        <sphereGeometry args={[0.8, 12, 12]} />
+        <meshBasicMaterial
+          color={isBoss ? "#ff4400" : "#ffcc33"}
+          transparent
+          opacity={0.15}
+          depthWrite={false}
+          side={THREE.BackSide}
+        />
+      </mesh>
     </>
   );
 }

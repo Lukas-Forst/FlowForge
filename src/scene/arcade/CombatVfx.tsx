@@ -243,11 +243,12 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
 
   if (effect.kind === "waterSplash") {
     const ring = 0.45 + t * 4.4;
+    const opacity = 0.35 * (1 - t * t);
     return (
       <group position={[effect.position.x, 0.055, effect.position.y]}>
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[ring * 0.35, ring * 0.55, 20]} />
-          <meshBasicMaterial color="#f5fdff" transparent opacity={0.35 * (1 - t)} depthWrite={false} />
+        <mesh rotation={[-Math.PI / 2, 0, 0]} scale={[ring, ring, 1]}>
+          <circleGeometry args={[0.5, 20]} />
+          <meshBasicMaterial color="#f5fdff" transparent opacity={opacity} depthWrite={false} />
         </mesh>
         <mesh position={[0, 0.04, 0]}>
           <sphereGeometry args={[0.12 + t * 0.2, 8, 8]} />

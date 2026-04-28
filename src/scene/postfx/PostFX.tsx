@@ -23,7 +23,7 @@ export function PostFX({ pulse, quality = "full" }: PostFXProps): ReactElement {
           <ChromaticAberration blendFunction={BlendFunction.NORMAL} offset={chromaOffset} />
         </>
       ) : (
-        <></>
+        <Vignette eskil={false} offset={0.2} darkness={0.25} />
       )}
     </EffectComposer>
   );
