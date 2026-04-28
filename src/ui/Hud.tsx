@@ -4,6 +4,7 @@ import type { GameSnapshot } from "../game/types";
 import { AnimatedNumber } from "./AnimatedNumber";
 import { BiomeBadge } from "./BiomeBadge";
 import { BossFrame } from "./BossFrame";
+import { KillStreakHud } from "./KillStreakHud";
 import { LevelPill } from "./LevelPill";
 import { PulseMeter } from "./PulseMeter";
 import { getRunPhaseHudLabels } from "./runPhaseHud";
@@ -102,6 +103,7 @@ export function Hud({ snapshot }: HudProps): ReactElement {
       </div>
 
       {boss ? <BossFrame boss={boss} /> : null}
+      <KillStreakHud snapshot={snapshot} />
       {snapshot.vibePortal.visible && snapshot.vibePortal.near ? (
         <div className="portal-tooltip">Sail through to visit another Vibe Jam game 🌊</div>
       ) : null}

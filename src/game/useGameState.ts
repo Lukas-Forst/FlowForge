@@ -140,6 +140,9 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "loading"): GameSn
       currentUnscathedStreak: 0,
       biggestHit: 0,
       evolutionsUnlocked: 0,
+      killStreak: 0,
+      killStreakBest: 0,
+      killStreakFlash: false,
     },
     pendingUpgradeOptions: [],
     pendingUpgradeContext: "levelup",
@@ -250,6 +253,8 @@ export function useGameState(): UseGameStateApi {
   const phantomFleetAttackTimerRef = useRef({ value: 0.24 });
   const droneSwarmRemainingRef = useRef({ value: 0 });
   const droneSwarmAttackTimerRef = useRef({ value: 0.2 });
+  const killStreakRef = useRef({ value: 0 });
+  const killStreakFlashRef = useRef({ value: false });
   const lastPlayerPosRef = useRef({ x: 0, y: 0 });
   const playerWakeTimerRef = useRef({ value: 0 });
 
@@ -604,6 +609,9 @@ export function useGameState(): UseGameStateApi {
     state.cooldowns.extraRemaining = Math.max(0, (state.cooldowns.extraRemaining ?? 0) - step);
     state.cooldowns.invulnRemaining = Math.max(0, state.cooldowns.invulnRemaining - step);
     state.cooldowns.frenzyRemaining = Math.max(0, state.cooldowns.frenzyRemaining - step);
+
+    // Kill streak tracking — snapshot kills before this tick's damage sources so we can detect actual kills.
+    const killsBefore = state.stats.enemiesKilled;
 
     // Cannon ready glow effect
     const cannonIsReady = state.cooldowns.cannonRemaining === 0;
@@ -986,6 +994,7 @@ export function useGameState(): UseGameStateApi {
     if (collisionResult.spawnedPickups) {
       state.pickups.push(...collisionResult.spawnedPickups);
     }
+    const prevEnemyCount = state.enemies.length;
     state.stats.enemiesKilled += collisionResult.killsGained;
     if (collisionResult.eliteKillsGained > 0) {
       const eliteChoices = buildEliteExtraAbilityChoices(state.upgrades);
@@ -1019,6 +1028,24 @@ export function useGameState(): UseGameStateApi {
       } else {
         state.stats.currentUnscathedStreak += step;
         state.stats.longestUnscathedStreak = Math.max(state.stats.longestUnscathedStreak, state.stats.currentUnscathedStreak);
+      }
+
+      // Kill streak: if player took no damage this tick, count kills gained and grow streak.
+      const killsGainedThisTick = state.stats.enemiesKilled - killsBefore;
+      if (killsGainedThisTick > 0 && mitigatedDamage === 0) {
+        killStreakRef.current.value += killsGainedThisTick;
+        state.stats.killStreak = killStreakRef.current.value;
+        state.stats.killStreakBest = Math.max(state.stats.killStreakBest, killStreakRef.current.value);
+        killStreakFlashRef.current.value = false;
+        state.stats.killStreakFlash = false;
+      } else if (mitigatedDamage > 0) {
+        // Streak broken — flash if it was a real streak.
+        if (killStreakRef.current.value >= 2) {
+          killStreakFlashRef.current.value = true;
+          state.stats.killStreakFlash = true;
+        }
+        killStreakRef.current.value = 0;
+        state.stats.killStreak = 0;
       }
     }
 

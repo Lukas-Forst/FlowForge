@@ -247,6 +247,12 @@ export interface GameStats {
   biggestHit: number;
   /** Count of evolution upgrades taken (stacks ≥ 1). */
   evolutionsUnlocked: number;
+  /** Enemies killed consecutively without the player taking damage this run. */
+  killStreak: number;
+  /** Best killStreak achieved this run. */
+  killStreakBest: number;
+  /** Set to true briefly when the kill streak breaks; HUD reads and resets it. */
+  killStreakFlash: boolean;
 }
 
 export interface UpgradeOption {

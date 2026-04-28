@@ -764,6 +764,57 @@ button:hover {
 .hud-v2-hp-bar { width: 180px; }
 .hud-v2-ability-bar { width: 140px; }
 
+/* Kill Streak HUD — top-right, below score */
+.kill-streak-hud {
+  position: fixed;
+  top: 108px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  pointer-events: none;
+  z-index: 40;
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2ecf0;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.55);
+  transition: color 0.1s ease;
+}
+
+.kill-streak-hud__line {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.kill-streak-hud__icon {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.kill-streak-hud__label {
+  opacity: 0.65;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  min-width: 32px;
+}
+
+.kill-streak-hud__value {
+  min-width: 24px;
+  text-align: right;
+}
+
+.kill-streak-hud--flash {
+  animation: kill-streak-flash 0.35s ease-out forwards;
+}
+
+@keyframes kill-streak-flash {
+  0%   { color: #ff4444; transform: scale(1.15); }
+  60%  { color: #ff4444; }
+  100% { color: #e2ecf0; transform: scale(1); }
+}
+
 <<<<<<< HEAD
 .hud-v2-row--extra-empty span:first-child {
   color: #ffd983;
