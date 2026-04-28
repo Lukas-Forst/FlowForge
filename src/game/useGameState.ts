@@ -16,6 +16,7 @@ import { updateDelayedAoEs } from "./systems/delayedAoE";
 import { runEliteAbilities } from "./systems/eliteAbilities";
 import { processPickups } from "./systems/pickups";
 import { updateSeaMines } from "./systems/seaMines";
+import { updateOilSlicks } from "./systems/oilSlick";
 import { runEnemyRangedAttacks } from "./systems/enemyRanged";
 import { getRunArcEnemyCap, computeRunSpawnIntensity, getRunRegionBiome } from "./systems/runArc";
 import { spawnEnemiesToCap, updateEnemySpawning } from "./systems/enemySpawner";
@@ -102,6 +103,7 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "loading"): GameSn
     projectiles: [],
     delayedAoEs: [],
     mines: [],
+    oilSlicks: [],
     visualEffects: [],
     audioEvents: [],
     postFxPulse: null,
@@ -179,6 +181,7 @@ function copySnapshot(snapshot: GameSnapshot): GameSnapshot {
       position: { ...mine.position },
       velocity: { ...mine.velocity },
     })),
+    oilSlicks: snapshot.oilSlicks.map((slick) => ({ ...slick, position: { ...slick.position } })),
     visualEffects: snapshot.visualEffects.map((effect) => ({
       ...effect,
       position: { ...effect.position },
@@ -229,6 +232,7 @@ export function useGameState(): UseGameStateApi {
   const effectIdRef = useRef({ value: 1 });
   const delayedAoEIdRef = useRef({ value: 1 });
   const mineIdRef = useRef({ value: 1 });
+  const oilSlickIdRef = useRef({ value: 1 });
   const spawnTimerRef = useRef({ value: 0.2 });
   const autoAttackTimerRef = useRef({ value: BASE_AUTO_ATTACK_INTERVAL });
   const passiveBroadsideTimerRef = useRef({ value: BASE_PASSIVE_BROADSIDE_INTERVAL });
@@ -264,6 +268,7 @@ export function useGameState(): UseGameStateApi {
     effectIdRef.current.value = 1;
     delayedAoEIdRef.current.value = 1;
     mineIdRef.current.value = 1;
+    oilSlickIdRef.current.value = 1;
     spawnTimerRef.current.value = 0.2;
     autoAttackTimerRef.current.value = BASE_AUTO_ATTACK_INTERVAL;
     passiveBroadsideTimerRef.current.value = BASE_PASSIVE_BROADSIDE_INTERVAL;
@@ -478,7 +483,7 @@ export function useGameState(): UseGameStateApi {
     if (state.phase !== "playing") {
       return;
     }
-    triggerExtraAbility(state, projectileIdRef.current, delayedAoEIdRef.current, setMessage);
+    triggerExtraAbility(state, projectileIdRef.current, delayedAoEIdRef.current, oilSlickIdRef.current, setMessage);
     syncState();
   }, [setMessage, syncState]);
 
@@ -772,6 +777,14 @@ export function useGameState(): UseGameStateApi {
       step,
     );
     state.stats.enemiesKilled += seaMineResult.enemyKills;
+    const oilSlickResult = updateOilSlicks(
+      state.oilSlicks,
+      state.enemies,
+      state.visualEffects,
+      effectIdRef.current,
+      step,
+    );
+    state.stats.enemiesKilled += oilSlickResult.enemyKills;
 
     bilgePumpTimerRef.current.value += step;
     if (bilgePumpTimerRef.current.value >= 1) {

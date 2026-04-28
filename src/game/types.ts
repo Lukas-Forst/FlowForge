@@ -170,7 +170,15 @@ export interface MineState {
   damage: number;
 }
 
-export type VisualEffectKind = "waterSplash" | "hitBurst" | "muzzleFlash" | "waterRippleSmall" | "telegraphRing" | "damageNumber" | "enemyDeath" | "screenShake";
+export interface OilSlickState {
+  id: number;
+  position: Vec2;
+  radius: number;
+  remaining: number;
+  dotTimer: number;
+}
+
+export type VisualEffectKind = "waterSplash" | "hitBurst" | "depthBurst" | "muzzleFlash" | "waterRippleSmall" | "telegraphRing" | "damageNumber" | "enemyDeath" | "screenShake";
 
 export interface VisualEffect {
   id: number;
@@ -301,6 +309,7 @@ export interface GameSnapshot {
   projectiles: ProjectileState[];
   delayedAoEs: DelayedAoEState[];
   mines: MineState[];
+  oilSlicks: OilSlickState[];
   visualEffects: VisualEffect[];
   audioEvents: AudioEvent[];
   postFxPulse: PostFxPulse | null;

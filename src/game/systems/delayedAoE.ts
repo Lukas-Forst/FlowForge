@@ -33,19 +33,34 @@ export function updateDelayedAoEs(
       continue;
     }
 
-    visualEffects.push({
-      id: effectIdRef.value++,
-      kind: "hitBurst",
-      position: { ...aoe.position },
-      remaining: 0.35,
-      color: aoe.source === "player" ? "#7bd3ff" : "#ff7a66",
-    });
-    visualEffects.push({
-      id: effectIdRef.value++,
-      kind: "screenShake",
-      position: { ...aoe.position },
-      remaining: 0.14,
-    });
+    if (aoe.visualType === "depthCharge") {
+      visualEffects.push({
+        id: effectIdRef.value++,
+        kind: "depthBurst",
+        position: { ...aoe.position },
+        remaining: 0.65,
+      });
+      visualEffects.push({
+        id: effectIdRef.value++,
+        kind: "screenShake",
+        position: { ...aoe.position },
+        remaining: 0.28,
+      });
+    } else {
+      visualEffects.push({
+        id: effectIdRef.value++,
+        kind: "hitBurst",
+        position: { ...aoe.position },
+        remaining: 0.35,
+        color: aoe.source === "player" ? "#7bd3ff" : "#ff7a66",
+      });
+      visualEffects.push({
+        id: effectIdRef.value++,
+        kind: "screenShake",
+        position: { ...aoe.position },
+        remaining: 0.14,
+      });
+    }
 
     if (aoe.source === "player") {
       for (let e = enemies.length - 1; e >= 0; e -= 1) {

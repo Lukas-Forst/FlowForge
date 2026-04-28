@@ -5,6 +5,10 @@ import {
   DEPTH_CHARGE_DAMAGE,
   DEPTH_CHARGE_DELAY,
   DEPTH_CHARGE_RADIUS,
+  OIL_SLICK_COOLDOWN,
+  OIL_SLICK_DURATION,
+  OIL_SLICK_RADIUS,
+  OIL_SLICK_DOT_INTERVAL,
   RING_BARRAGE_DAMAGE,
   RING_BARRAGE_IMPACT_DELAY,
   RING_BARRAGE_RADIUS,
@@ -117,11 +121,13 @@ export function triggerExtraAbility(
   state: GameSnapshot,
   projectileIdRef: NumberRef,
   delayedAoEIdRef: NumberRef,
+  oilSlickIdRef: NumberRef,
   setMessage: SetMessage,
 ): void {
   const hasTorpedo = (state.upgrades.stacks.extraTorpedo ?? 0) > 0;
   const hasDepthCharge = (state.upgrades.stacks.extraDepthCharge ?? 0) > 0;
-  if (!hasTorpedo && !hasDepthCharge) {
+  const hasOilSlick = (state.upgrades.stacks.extraOilSlick ?? 0) > 0;
+  if (!hasTorpedo && !hasDepthCharge && !hasOilSlick) {
     setMessage({
       text: "No special ability equipped.",
       remaining: 0.75,
@@ -163,21 +169,38 @@ export function triggerExtraAbility(
     return;
   }
 
-  state.cooldowns.extraDuration = DEPTH_CHARGE_COOLDOWN * state.upgrades.cooldownMult;
-  state.cooldowns.extraRemaining = state.cooldowns.extraDuration;
+  if (hasDepthCharge) {
+    state.cooldowns.extraDuration = DEPTH_CHARGE_COOLDOWN * state.upgrades.cooldownMult;
+    state.cooldowns.extraRemaining = state.cooldowns.extraDuration;
+    const backward = { x: -Math.cos(state.player.facing), y: -Math.sin(state.player.facing) };
+    state.delayedAoEs.push({
+      id: delayedAoEIdRef.value++,
+      position: {
+        x: state.player.position.x + backward.x * 0.9,
+        y: state.player.position.y + backward.y * 0.9,
+      },
+      remaining: DEPTH_CHARGE_DELAY,
+      radius: DEPTH_CHARGE_RADIUS,
+      damage: DEPTH_CHARGE_DAMAGE,
+      source: "player",
+      visualType: "depthCharge",
+    });
+    setMessage(null);
+    return;
+  }
 
+  state.cooldowns.extraDuration = OIL_SLICK_COOLDOWN * state.upgrades.cooldownMult;
+  state.cooldowns.extraRemaining = state.cooldowns.extraDuration;
   const backward = { x: -Math.cos(state.player.facing), y: -Math.sin(state.player.facing) };
-  state.delayedAoEs.push({
-    id: delayedAoEIdRef.value++,
+  state.oilSlicks.push({
+    id: oilSlickIdRef.value++,
     position: {
-      x: state.player.position.x + backward.x * 0.9,
-      y: state.player.position.y + backward.y * 0.9,
+      x: state.player.position.x + backward.x * 1.0,
+      y: state.player.position.y + backward.y * 1.0,
     },
-    remaining: DEPTH_CHARGE_DELAY,
-    radius: DEPTH_CHARGE_RADIUS,
-    damage: DEPTH_CHARGE_DAMAGE,
-    source: "player",
-    visualType: "depthCharge",
+    radius: OIL_SLICK_RADIUS,
+    remaining: OIL_SLICK_DURATION,
+    dotTimer: OIL_SLICK_DOT_INTERVAL,
   });
   setMessage(null);
 }

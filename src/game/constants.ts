@@ -69,6 +69,11 @@ export const TORPEDO_DAMAGE = 85;
 export const TORPEDO_SPEED = 24;
 export const TORPEDO_TTL = 2.8;
 export const TORPEDO_RADIUS = 0.42;
+export const OIL_SLICK_COOLDOWN = 12;
+export const OIL_SLICK_DURATION = 6;
+export const OIL_SLICK_RADIUS = 3.5;
+export const OIL_SLICK_DOT_DAMAGE = 8;
+export const OIL_SLICK_DOT_INTERVAL = 0.5;
 
 export const COIN_PICKUP_RADIUS = 1.4;
 export const PLAYER_HIT_RADIUS = 1.15;

@@ -1,5 +1,8 @@
 import type { ReactElement } from "react";
+import { useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 import type { ThreeElements } from "@react-three/fiber";
+import * as THREE from "three";
 import type { EnemyType } from "../../game/types";
 import { ShipSmoke } from "../effects/ShipSmoke";
 import { ShipModelVisual } from "../models/ShipModelVisual";
@@ -175,6 +178,87 @@ function BruteMesh(): ReactElement {
   );
 }
 
+function EliteAura({ isBoss }: { isBoss: boolean }): ReactElement {
+  const ring1Ref = useRef<THREE.Mesh>(null);
+  const ring2Ref = useRef<THREE.Mesh>(null);
+  const ring3Ref = useRef<THREE.Mesh>(null);
+  const auraRef = useRef<THREE.Mesh>(null);
+  const crownRefs = useRef<(THREE.Mesh | null)[]>([]);
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    const pulse = 0.8 + Math.sin(t * 2.8) * 0.2;
+
+    if (ring1Ref.current) ring1Ref.current.rotation.z = t * 1.1;
+    if (ring2Ref.current) ring2Ref.current.rotation.z = -t * 0.7;
+    if (ring3Ref.current) {
+      ring3Ref.current.rotation.z = t * 1.6;
+      ring3Ref.current.rotation.x = Math.PI / 2 + Math.sin(t * 0.5) * 0.35;
+    }
+    if (auraRef.current) {
+      const mat = auraRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.1 + Math.sin(t * 2.2) * 0.06;
+      const s = pulse * (isBoss ? 1.55 : 1.2);
+      auraRef.current.scale.set(s, s * 0.55, s);
+    }
+    for (let i = 0; i < crownRefs.current.length; i += 1) {
+      const mesh = crownRefs.current[i];
+      if (!mesh) continue;
+      const angle = t * 1.35 + (i / crownRefs.current.length) * Math.PI * 2;
+      const r = isBoss ? 1.9 : 1.45;
+      mesh.position.set(Math.cos(angle) * r, 0.55 + Math.sin(t * 1.8 + i) * 0.18, Math.sin(angle) * r);
+      const mat = mesh.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.55 + Math.sin(t * 2.4 + i * 1.1) * 0.25;
+    }
+  });
+
+  const orbitCount = isBoss ? 8 : 5;
+  const ringInner = isBoss ? 1.65 : 1.2;
+  const ringOuter = isBoss ? 2.05 : 1.55;
+
+  return (
+    <>
+      {/* Flat ground ring - always visible marker */}
+      <mesh ref={ring1Ref} position={[0, 0.06, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[ringInner, ringOuter, 36]} />
+        <meshBasicMaterial color={isBoss ? "#ff4400" : "#ffcc00"} transparent opacity={0.55} depthWrite={false} />
+      </mesh>
+      {/* Second ring slightly tilted */}
+      <mesh ref={ring2Ref} position={[0, 0.22, 0]} rotation={[-Math.PI / 2 + 0.42, 0, 0]}>
+        <ringGeometry args={[ringInner * 0.75, ringOuter * 0.85, 28]} />
+        <meshBasicMaterial color={isBoss ? "#ff7722" : "#ffe066"} transparent opacity={0.35} depthWrite={false} />
+      </mesh>
+      {/* Vertical spinning ring */}
+      <mesh ref={ring3Ref} position={[0, 0.8, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[ringInner * 0.9, 0.055, 8, 32]} />
+        <meshStandardMaterial color={isBoss ? "#ff5500" : "#ffd835"} emissive={isBoss ? "#ff2200" : "#ffb300"} emissiveIntensity={isBoss ? 2.0 : 1.4} />
+      </mesh>
+      {/* Pulsing aura sphere */}
+      <mesh ref={auraRef} position={[0, 0.8, 0]}>
+        <sphereGeometry args={[1, 14, 10]} />
+        <meshBasicMaterial color={isBoss ? "#ff3300" : "#ffcc44"} transparent opacity={0.12} depthWrite={false} side={THREE.BackSide} />
+      </mesh>
+      {/* Orbiting energy sparks */}
+      {Array.from({ length: orbitCount }, (_, i) => (
+        <mesh
+          key={i}
+          ref={(m) => { crownRefs.current[i] = m; }}
+          position={[Math.cos((i / orbitCount) * Math.PI * 2) * (isBoss ? 1.9 : 1.45), 0.55, Math.sin((i / orbitCount) * Math.PI * 2) * (isBoss ? 1.9 : 1.45)]}
+        >
+          <sphereGeometry args={[isBoss ? 0.1 : 0.07, 6, 6]} />
+          <meshBasicMaterial color={isBoss ? "#ff6622" : "#ffee55"} transparent opacity={0.7} depthWrite={false} />
+        </mesh>
+      ))}
+      {/* Point light */}
+      <pointLight
+        color={isBoss ? "#ff4400" : "#ffcc33"}
+        intensity={isBoss ? 3.5 : 2.2}
+        distance={isBoss ? 8.0 : 5.5}
+      />
+    </>
+  );
+}
+
 export function EnemyShip({ type, isElite = false, ...props }: EnemyShipProps): ReactElement {
   let variant: ReactElement = <CorsairMesh />;
   if (type === "bomber" || type === "swarmer") {
@@ -195,23 +279,18 @@ export function EnemyShip({ type, isElite = false, ...props }: EnemyShipProps): 
     smokeIntensity = 1.35;
   }
 
+  const isBoss = type === "boss";
+  const eliteScale = isBoss ? 1.0 : 1.45;
+
   return (
-    <group scale={isElite ? 1.3 : 1} {...props}>
-      {isElite ? (
-        <>
-          <mesh position={[0, 0.1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[1.25, 1.6, 32]} />
-            <meshBasicMaterial color="#ffd35f" transparent opacity={0.4} />
-          </mesh>
-          <pointLight color="#ffcf66" intensity={1.4} distance={4.8} />
-        </>
-      ) : null}
+    <group scale={isElite ? eliteScale : 1} {...props}>
+      {isElite ? <EliteAura isBoss={isBoss} /> : null}
       <ShipModelVisual
         config={ENEMY_MODEL_CONFIGS[type]}
         fallback={variant}
         eliteTint={isElite}
       />
-      <ShipSmoke stackPositions={smokeStacks} intensity={smokeIntensity} />
+      <ShipSmoke stackPositions={smokeStacks} intensity={isElite ? smokeIntensity * 1.4 : smokeIntensity} />
     </group>
   );
 }

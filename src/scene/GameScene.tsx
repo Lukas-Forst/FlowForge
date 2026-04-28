@@ -8,7 +8,7 @@ import { WaterArena } from "./arcade/WaterArena";
 import { EnemyShip } from "./entities/Enemy";
 import { HarvestableEntity } from "./entities/HarvestableEntity";
 import { PlayerShip } from "./entities/PlayerShip";
-import type { PickupState, GameSnapshot, MultiplayerPeerState } from "../game/types";
+import type { DelayedAoEState, OilSlickState, PickupState, GameSnapshot, MultiplayerPeerState } from "../game/types";
 import { getBlendedRunArcTheme } from "./biomeLerp";
 import { PostFX } from "./postfx/PostFX";
 import { pickFxQuality, type FxQuality } from "./postfx/qualityController";
@@ -302,6 +302,112 @@ function VibePortal({
   );
 }
 
+function DepthChargeBarrel({ aoe }: { aoe: DelayedAoEState }): ReactElement {
+  const groupRef = useRef<THREE.Group>(null);
+  const bubbleRefs = useRef<(THREE.Mesh | null)[]>([]);
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    if (groupRef.current) {
+      groupRef.current.position.y = 0.08 + Math.sin(t * 3.4 + aoe.id) * 0.06;
+      groupRef.current.rotation.y = t * 0.8;
+    }
+    for (let i = 0; i < 4; i += 1) {
+      const mesh = bubbleRefs.current[i];
+      if (!mesh) continue;
+      const phase = (t * 1.4 + i * 1.57) % (Math.PI * 2);
+      const rise = (phase / (Math.PI * 2)) * 0.9;
+      mesh.position.set(
+        Math.cos(i * 1.57) * 0.18,
+        rise,
+        Math.sin(i * 1.57) * 0.18,
+      );
+      const mat = mesh.material as THREE.MeshBasicMaterial;
+      mat.opacity = Math.max(0, 0.55 - rise * 0.6);
+    }
+  });
+
+  return (
+    <group position={[aoe.position.x, 0.08, aoe.position.y]}>
+      <group ref={groupRef}>
+        {/* Barrel body */}
+        <mesh castShadow position={[0, 0, 0]}>
+          <cylinderGeometry args={[0.22, 0.22, 0.46, 12]} />
+          <meshStandardMaterial color="#4a3520" roughness={0.75} metalness={0.18} />
+        </mesh>
+        {/* Metal bands */}
+        <mesh position={[0, 0.12, 0]}>
+          <torusGeometry args={[0.225, 0.028, 6, 14]} />
+          <meshStandardMaterial color="#2a2a2a" roughness={0.5} metalness={0.6} />
+        </mesh>
+        <mesh position={[0, -0.12, 0]}>
+          <torusGeometry args={[0.225, 0.028, 6, 14]} />
+          <meshStandardMaterial color="#2a2a2a" roughness={0.5} metalness={0.6} />
+        </mesh>
+        {/* Warning light on top */}
+        <mesh position={[0, 0.28, 0]}>
+          <sphereGeometry args={[0.065, 8, 8]} />
+          <meshStandardMaterial color="#ffaa00" emissive="#ff6600" emissiveIntensity={2.5} />
+        </mesh>
+        <pointLight color="#ff8800" intensity={1.2} distance={2.8} position={[0, 0.28, 0]} />
+        {/* Rising bubbles */}
+        {[0, 1, 2, 3].map((i) => (
+          <mesh key={i} ref={(m) => { bubbleRefs.current[i] = m; }} position={[0, 0, 0]}>
+            <sphereGeometry args={[0.04 + i * 0.012, 6, 6]} />
+            <meshBasicMaterial color="#b9eeff" transparent opacity={0.5} depthWrite={false} />
+          </mesh>
+        ))}
+      </group>
+      {/* Water surface ripple */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.06, 0]}>
+        <ringGeometry args={[0.24, 0.42, 16]} />
+        <meshBasicMaterial color="#c8f0ff" transparent opacity={0.35} depthWrite={false} />
+      </mesh>
+    </group>
+  );
+}
+
+function OilSlickOverlay({ slick }: { slick: OilSlickState }): ReactElement {
+  const innerRef = useRef<THREE.Mesh>(null);
+  const outerRef = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    const fade = Math.min(1, slick.remaining * 0.4);
+    if (innerRef.current) {
+      innerRef.current.rotation.z = t * 0.18;
+      const mat = innerRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.62 * fade;
+    }
+    if (outerRef.current) {
+      outerRef.current.rotation.z = -t * 0.1;
+      const mat = outerRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.38 * fade;
+    }
+  });
+
+  const r = slick.radius;
+  return (
+    <group position={[slick.position.x, 0.04, slick.position.y]}>
+      {/* Dark base pool */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} scale={[r, r * 0.72, 1]}>
+        <circleGeometry args={[1, 28]} />
+        <meshBasicMaterial color="#0d0a06" transparent opacity={0.68} depthWrite={false} />
+      </mesh>
+      {/* Iridescent shimmer inner */}
+      <mesh ref={innerRef} rotation={[-Math.PI / 2, 0, 0]} scale={[r * 0.78, r * 0.56, 1]}>
+        <circleGeometry args={[1, 20]} />
+        <meshBasicMaterial color="#5533aa" transparent opacity={0.62} depthWrite={false} />
+      </mesh>
+      {/* Iridescent shimmer outer ring */}
+      <mesh ref={outerRef} rotation={[-Math.PI / 2, 0, 0]} scale={[r, r * 0.72, 1]}>
+        <ringGeometry args={[0.55, 1, 24]} />
+        <meshBasicMaterial color="#22aa66" transparent opacity={0.38} depthWrite={false} />
+      </mesh>
+    </group>
+  );
+}
+
 function PlayerNameTag({
   name,
   emoji,
@@ -397,6 +503,12 @@ export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = nul
         </group>
       ))}
 
+      {snapshot.delayedAoEs.filter((a) => a.visualType === "depthCharge").map((aoe) => (
+        <DepthChargeBarrel key={`dc-${aoe.id}`} aoe={aoe} />
+      ))}
+      {snapshot.oilSlicks.map((slick) => (
+        <OilSlickOverlay key={`oil-${slick.id}`} slick={slick} />
+      ))}
       <CombatProjectiles projectiles={snapshot.projectiles} />
       <ArenaVisualEffects effects={snapshot.visualEffects} />
 

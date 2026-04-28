@@ -5,6 +5,7 @@ import type { ProjectileKind, ProjectileState, VisualEffect, VisualEffectKind } 
 const EFFECT_DURATION: Record<VisualEffectKind, number> = {
   waterSplash: 0.32,
   hitBurst: 0.26,
+  depthBurst: 0.65,
   muzzleFlash: 0.1,
   waterRippleSmall: 0.28,
   telegraphRing: 1.2,
@@ -88,19 +89,79 @@ function projectileCore(kind: ProjectileKind): {
   }
 }
 
+function TorpedoVisual({ p }: { p: ProjectileState }): ReactElement {
+  const vx = p.velocity.x;
+  const vz = p.velocity.y;
+  const speed = Math.hypot(vx, vz);
+  const yaw = speed > 0.05 ? Math.atan2(vx, vz) : 0;
+  return (
+    <group position={[p.position.x, 0.18, p.position.y]} rotation={[0, yaw, 0]}>
+      {/* Water surface wake (circle scaled to oval) */}
+      <mesh position={[0, -0.14, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.32, 0.95, 1]}>
+        <circleGeometry args={[1, 12]} />
+        <meshBasicMaterial color="#cef5ff" transparent opacity={0.45} depthWrite={false} />
+      </mesh>
+      {/* Main elongated body */}
+      <mesh scale={[0.48, 0.48, 1.9]} castShadow>
+        <sphereGeometry args={[0.3, 12, 8]} />
+        <meshStandardMaterial color="#c5f2ff" emissive="#35d4ff" emissiveIntensity={2.4} metalness={0.5} roughness={0.18} />
+      </mesh>
+      {/* Nose cone */}
+      <mesh position={[0, 0, 0.52]} scale={[0.3, 0.3, 0.22]}>
+        <coneGeometry args={[0.3, 1, 8]} />
+        <meshStandardMaterial color="#e8fbff" emissive="#80eeff" emissiveIntensity={1.6} metalness={0.4} roughness={0.2} />
+      </mesh>
+      {/* Side fins */}
+      <mesh position={[0.22, 0, -0.44]}>
+        <boxGeometry args={[0.08, 0.18, 0.26]} />
+        <meshStandardMaterial color="#8cd8e8" emissive="#35d4ff" emissiveIntensity={0.9} metalness={0.5} roughness={0.2} />
+      </mesh>
+      <mesh position={[-0.22, 0, -0.44]}>
+        <boxGeometry args={[0.08, 0.18, 0.26]} />
+        <meshStandardMaterial color="#8cd8e8" emissive="#35d4ff" emissiveIntensity={0.9} metalness={0.5} roughness={0.2} />
+      </mesh>
+      <mesh position={[0, 0.22, -0.44]}>
+        <boxGeometry args={[0.18, 0.08, 0.26]} />
+        <meshStandardMaterial color="#8cd8e8" emissive="#35d4ff" emissiveIntensity={0.9} metalness={0.5} roughness={0.2} />
+      </mesh>
+      <mesh position={[0, -0.22, -0.44]}>
+        <boxGeometry args={[0.18, 0.08, 0.26]} />
+        <meshStandardMaterial color="#8cd8e8" emissive="#35d4ff" emissiveIntensity={0.9} metalness={0.5} roughness={0.2} />
+      </mesh>
+      {/* Bubble trail */}
+      <mesh position={[0, 0, -0.85]} rotation={[Math.PI / 2, 0, 0]}>
+        <coneGeometry args={[0.16, 1.1, 8]} />
+        <meshStandardMaterial color="#b9f0ff" emissive="#35d4ff" emissiveIntensity={1.5} transparent opacity={0.88} depthWrite={false} />
+      </mesh>
+      <mesh position={[0, 0, -0.92]} rotation={[Math.PI / 2, 0, 0]} scale={[1.3, 1.15, 1.3]}>
+        <coneGeometry args={[0.16, 1.1, 8]} />
+        <meshBasicMaterial color="#dff8ff" transparent opacity={0.28} depthWrite={false} />
+      </mesh>
+      {/* Glow */}
+      <mesh scale={[0.6, 0.6, 2.1]}>
+        <sphereGeometry args={[0.3, 10, 8]} />
+        <meshBasicMaterial color="#e8fbff" transparent opacity={0.18} depthWrite={false} />
+      </mesh>
+      <pointLight color="#35d4ff" intensity={2.2} distance={4.0} />
+    </group>
+  );
+}
+
 function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): ReactElement {
+  if (p.kind === "playerTorpedo") return <TorpedoVisual p={p} />;
+
   const vx = p.velocity.x;
   const vz = p.velocity.y;
   const speed = Math.hypot(vx, vz);
   const yaw = speed > 0.05 ? Math.atan2(vx, vz) : 0;
   const core = projectileCore(p.kind);
   const trail =
-    p.kind === "playerAuto" || p.kind === "playerCannon" || p.kind === "playerTorpedo" || p.kind === "enemyBrute" || p.kind === "enemyBomber";
+    p.kind === "playerAuto" || p.kind === "playerCannon" || p.kind === "enemyBrute" || p.kind === "enemyBomber";
 
   const trailLen =
-    p.kind === "enemyBomber" ? 0.72 : p.kind === "enemyBrute" ? 0.66 : p.kind === "playerCannon" ? 0.62 : p.kind === "playerTorpedo" ? 0.9 : 0.58;
+    p.kind === "enemyBomber" ? 0.72 : p.kind === "enemyBrute" ? 0.66 : p.kind === "playerCannon" ? 0.62 : 0.58;
   const trailRad =
-    p.kind === "enemyBomber" ? 0.035 : p.kind === "enemyBrute" ? 0.12 : p.kind === "playerCannon" ? 0.11 : p.kind === "playerTorpedo" ? 0.14 : 0.05;
+    p.kind === "enemyBomber" ? 0.035 : p.kind === "enemyBrute" ? 0.12 : p.kind === "playerCannon" ? 0.11 : 0.05;
 
   return (
     <group position={[p.position.x, 0.56, p.position.y]} rotation={[0, yaw, 0]}>
@@ -119,9 +180,9 @@ function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): R
           <mesh position={[0, 0, -trailLen * 0.48]} rotation={[Math.PI / 2, 0, 0]}>
             <coneGeometry args={[trailRad, trailLen, 6]} />
             <meshStandardMaterial
-              color={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? "#d5aaff" : "#808892") : p.kind === "playerTorpedo" ? "#b9f0ff" : "#ffd698"}
-              emissive={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? "#7c2fca" : "#2f3640") : p.kind === "playerTorpedo" ? "#35d4ff" : "#ff8c22"}
-              emissiveIntensity={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? 1.8 : 1.2) : p.kind === "playerTorpedo" ? 1.3 : 0.68}
+              color={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? "#d5aaff" : "#808892") : "#ffd698"}
+              emissive={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? "#7c2fca" : "#2f3640") : "#ff8c22"}
+              emissiveIntensity={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? 1.8 : 1.2) : 0.68}
               transparent
               opacity={0.9}
               depthWrite={false}
@@ -130,19 +191,13 @@ function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): R
           <mesh position={[0, 0, -trailLen * 0.52]} rotation={[Math.PI / 2, 0, 0]} scale={[1.25, 1.1, 1.25]}>
             <coneGeometry args={[trailRad, trailLen, 6]} />
             <meshBasicMaterial
-              color={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? "#d7c3ec" : "#8e949e") : p.kind === "playerTorpedo" ? "#dff8ff" : "#fff2d1"}
+              color={p.kind.startsWith("enemy") ? (p.kind === "enemyBomber" ? "#d7c3ec" : "#8e949e") : "#fff2d1"}
               transparent
-              opacity={p.kind.startsWith("enemy") ? 0.16 : p.kind === "playerTorpedo" ? 0.34 : 0.26}
+              opacity={p.kind.startsWith("enemy") ? 0.16 : 0.26}
               depthWrite={false}
             />
           </mesh>
         </>
-      ) : null}
-      {p.kind === "playerTorpedo" ? (
-        <mesh scale={[1.35, 0.85, 1.75]}>
-          <sphereGeometry args={[core.radius, 10, 10]} />
-          <meshBasicMaterial color="#e8fbff" transparent opacity={0.22} depthWrite={false} />
-        </mesh>
       ) : null}
       {p.kind === "playerAuto" || p.kind === "playerCannon" ? (
         <mesh scale={[1.18, 1.18, 1.18]}>
@@ -186,6 +241,35 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
           <ringGeometry args={[ring * 0.58, ring * 0.76, 18]} />
           <meshBasicMaterial color="#f8fdff" transparent opacity={0.18 * (1 - t)} depthWrite={false} />
         </mesh>
+      </group>
+    );
+  }
+
+  if (effect.kind === "depthBurst") {
+    const geyserH = 0.4 + t * 3.5;
+    const outerRing = 0.5 + t * 5.5;
+    return (
+      <group position={[effect.position.x, 0.05, effect.position.y]}>
+        {/* Expanding water ring */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[outerRing * 0.7, outerRing, 28]} />
+          <meshBasicMaterial color="#7bd3ff" transparent opacity={0.7 * (1 - t)} depthWrite={false} />
+        </mesh>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[outerRing * 0.3, outerRing * 0.65, 28]} />
+          <meshBasicMaterial color="#c8f0ff" transparent opacity={0.45 * (1 - t)} depthWrite={false} />
+        </mesh>
+        {/* Water geyser pillar */}
+        <mesh position={[0, geyserH * 0.5, 0]} scale={[1 - t * 0.5, 1, 1 - t * 0.5]}>
+          <cylinderGeometry args={[0.28 + t * 0.4, 0.55 + t * 0.8, geyserH, 12]} />
+          <meshBasicMaterial color="#d8f6ff" transparent opacity={0.72 * (1 - t * 0.8)} depthWrite={false} />
+        </mesh>
+        {/* Spray crown */}
+        <mesh position={[0, geyserH, 0]} scale={[1 + t * 1.5, 1, 1 + t * 1.5]}>
+          <sphereGeometry args={[0.5 + t * 0.6, 12, 8]} />
+          <meshBasicMaterial color="#e8fbff" transparent opacity={0.6 * (1 - t)} depthWrite={false} />
+        </mesh>
+        <pointLight color="#7bd3ff" intensity={3.5 * (1 - t)} distance={8} />
       </group>
     );
   }
