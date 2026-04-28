@@ -188,6 +188,7 @@ export interface VisualEffect {
   text?: string;
   color?: string;
   scale?: number; // for damage numbers: bigger damage = bigger text
+  intensity?: number; // for screenShake: scales shake magnitude (1.0 = baseline)
 }
 
 export type PickupKind =

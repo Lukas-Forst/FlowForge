@@ -121,10 +121,11 @@ function CameraFollow({ snapshot }: { snapshot: GameSnapshot }): null {
     for (const effect of snapshot.visualEffects) {
       if (effect.kind === "screenShake") {
         const remaining = Math.max(0, effect.remaining);
-        shakeOffset += remaining * remaining * 5; // quadratic for punchier big shakes
+        const intensity = effect.intensity ?? 1.0;
+        shakeOffset += remaining * remaining * 5 * intensity; // quadratic for punchier big shakes, scaled by intensity
       }
     }
-    shakeOffset = Math.min(shakeOffset, 0.8); // cap so it never gets ridiculous
+    shakeOffset = Math.min(shakeOffset, 2.0); // cap so it never gets ridiculous (raised from 0.8 to 2.0 to accommodate high-intensity shakes)
 
     target.set(snapshot.player.position.x, 0, snapshot.player.position.y);
     desired.set(

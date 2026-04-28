@@ -1,4 +1,4 @@
-import { ENEMY_TOUCH_COOLDOWN, PLAYER_HIT_RADIUS, PROJECTILE_DESPAWN_DISTANCE_FROM_PLAYER } from "../constants";
+import { BASE_AUTO_ATTACK_DAMAGE, ENEMY_TOUCH_COOLDOWN, PLAYER_HIT_RADIUS, PROJECTILE_DESPAWN_DISTANCE_FROM_PLAYER } from "../constants";
 import { angleFromDirection, distance, normalize } from "../utils";
 import { isEnemyProjectileKind, type AudioEvent, type EnemyState, type PickupState, type PlayerState, type ProjectileState, type VisualEffect, type HarvestableState } from "../types";
 
@@ -86,13 +86,37 @@ function pushEffect(
   kind: VisualEffect["kind"],
   position: { x: number; y: number },
   duration: number,
+  intensity?: number,
 ): void {
   effects.push({
     id: effectIdRef.value++,
     kind,
     position: { ...position },
     remaining: duration,
+    ...(intensity !== undefined ? { intensity } : {}),
   });
+}
+
+function pushScreenShakeForDamage(
+  effects: VisualEffect[],
+  effectIdRef: { value: number },
+  position: { x: number; y: number },
+  damage: number,
+  baseDuration = 0.3,
+): void {
+  // Scale shake intensity with damage relative to base auto attack damage
+  const ratio = damage / BASE_AUTO_ATTACK_DAMAGE;
+  let intensity = ratio;
+
+  // Crits (>60 damage) get an extra 1.5x punch
+  if (damage > 60) {
+    intensity *= 1.5;
+  }
+
+  // Cap at 2.5x so big nukes don't tear the screen off
+  intensity = Math.min(intensity, 2.5);
+
+  pushEffect(effects, effectIdRef, "screenShake", position, baseDuration, intensity);
 }
 
 export function updateProjectileMotion(
@@ -204,7 +228,7 @@ export function resolveCollisions(
       if (distance(player.position, projectile.position) <= PLAYER_HIT_RADIUS + projectile.radius) {
         playerDamageTaken += projectile.damage;
         pushEffect(visualEffects, effectIdRef, "hitBurst", projectile.position, 0.22);
-        pushEffect(visualEffects, effectIdRef, "screenShake", player.position, 0.35);
+        pushScreenShakeForDamage(visualEffects, effectIdRef, player.position, projectile.damage, 0.35);
         if (audioEvents) {
           audioEvents.push({ id: effectIdRef.value++, sfx: "hit" });
         }
@@ -240,6 +264,9 @@ export function resolveCollisions(
           color: isCrit ? "#ff8c00" : "#ffffff",
           scale: projectile.damage > 80 ? 1.5 : projectile.damage > 40 ? 1.2 : 1.0,
         });
+
+        // Screen shake scales with damage — big hits shake the camera harder
+        pushScreenShakeForDamage(visualEffects, effectIdRef, player.position, projectile.damage, 0.25);
 
         if (enemy.hp <= 0) {
           killsGained += 1;
