@@ -355,11 +355,13 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
 
   if (effect.kind === "telegraphRing") {
     const radius = Math.max(0.1, effect.remaining * 2.5);
+    // Flicker between 0.3 and 0.7 for an alarming, threatening pulse
+    const flicker = Math.sin(effect.remaining * 14) > 0 ? 0.7 : 0.3;
     return (
       <group position={[effect.position.x, 0.08, effect.position.y]}>
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[radius * 0.85, radius, 32]} />
-          <meshBasicMaterial color="#ff5050" transparent opacity={0.6} depthWrite={false} />
+          <meshBasicMaterial color="#ff5050" transparent opacity={flicker} depthWrite={false} />
         </mesh>
       </group>
     );
