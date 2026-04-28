@@ -182,7 +182,7 @@ export interface OilSlickState {
   dotTimer: number;
 }
 
-export type VisualEffectKind = "waterSplash" | "hitBurst" | "depthBurst" | "muzzleFlash" | "waterRippleSmall" | "telegraphRing" | "damageNumber" | "enemyDeath" | "enemyDeathSmall" | "enemyDeathHeavy" | "enemyDeathExplosive" | "screenShake" | "broadsideCharge" | "cannonReady" | "playerWake" | "projectileSplash";
+export type VisualEffectKind = "waterSplash" | "hitBurst" | "depthBurst" | "muzzleFlash" | "waterRippleSmall" | "telegraphRing" | "damageNumber" | "enemyDeath" | "enemyDeathSmall" | "enemyDeathHeavy" | "enemyDeathExplosive" | "screenShake" | "broadsideCharge" | "cannonReady" | "playerWake" | "projectileSplash" | "afterimage";
 
 export interface VisualEffect {
   id: number;
@@ -193,6 +193,7 @@ export interface VisualEffect {
   color?: string;
   scale?: number; // for damage numbers: bigger damage = bigger text
   intensity?: number; // for screenShake: scales shake magnitude (1.0 = baseline)
+  facing?: number; // for afterimage: the direction the ship was facing when ghost was spawned
 }
 
 export type PickupKind =

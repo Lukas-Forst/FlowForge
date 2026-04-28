@@ -466,6 +466,17 @@ export function useGameState(): UseGameStateApi {
         remaining: 0.65,
       });
     } else {
+      // Spawn boost afterimages — 3 ghost sprites at decreasing opacity
+      const afterimageOpacities = [0.4, 0.3, 0.2];
+      for (let i = 0; i < afterimageOpacities.length; i++) {
+        state.visualEffects.push({
+          id: effectIdRef.current.value++,
+          kind: "afterimage",
+          position: { x: state.player.position.x, y: state.player.position.y },
+          remaining: 0.4 - i * 0.1,
+          facing: state.player.facing,
+        });
+      }
       if ((state.upgrades.stacks.boostRepeat ?? 0) > 0) {
         state.cooldowns.boostActiveRemaining = Math.max(
           state.cooldowns.boostActiveRemaining,

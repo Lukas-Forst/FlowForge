@@ -22,6 +22,7 @@ const EFFECT_DURATION: Record<VisualEffectKind, number> = {
   cannonReady: 999,
   playerWake: 999,
   projectileSplash: 0.38,
+  afterimage: 0.4,
 };
 
 function projectileCore(kind: ProjectileKind): {
@@ -589,6 +590,54 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
         <mesh position={[0, 0.03, 0]}>
           <sphereGeometry args={[0.06 + t * 0.08, 6, 6]} />
           <meshBasicMaterial color="#e0f8ff" transparent opacity={0.25 * (1 - t)} depthWrite={false} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (effect.kind === "afterimage") {
+    // Ghost ship sprite facing the stored direction, fading out as remaining decays
+    const opacity = (effect.remaining / 0.4) * 0.55;
+    const yaw = effect.facing ?? 0;
+    return (
+      <group position={[effect.position.x, 0, effect.position.y]} rotation={[0, yaw, 0]}>
+        {/* Hull */}
+        <mesh position={[0, 0.35, 0]}>
+          <capsuleGeometry args={[0.72, 1.7, 6, 12]} />
+          <meshStandardMaterial color="#3f2a1b" transparent opacity={opacity} roughness={0.76} depthWrite={false} />
+        </mesh>
+        {/* Deck */}
+        <mesh position={[0, 0.84, 0]}>
+          <boxGeometry args={[1.4, 0.55, 1.8]} />
+          <meshStandardMaterial color="#b48a62" transparent opacity={opacity} roughness={0.62} depthWrite={false} />
+        </mesh>
+        {/* Left cannon */}
+        <mesh position={[-0.26, 1.05, -0.08]}>
+          <cylinderGeometry args={[0.17, 0.2, 0.3, 8]} />
+          <meshStandardMaterial color="#2e2520" transparent opacity={opacity} depthWrite={false} />
+        </mesh>
+        <mesh position={[-0.26, 1.77, -0.08]}>
+          <cylinderGeometry args={[0.12, 0.15, 1.15, 8]} />
+          <meshStandardMaterial color="#2e2520" transparent opacity={opacity} depthWrite={false} />
+        </mesh>
+        {/* Right cannon */}
+        <mesh position={[0.26, 1.05, -0.08]}>
+          <cylinderGeometry args={[0.17, 0.2, 0.3, 8]} />
+          <meshStandardMaterial color="#2e2520" transparent opacity={opacity} depthWrite={false} />
+        </mesh>
+        <mesh position={[0.26, 1.77, -0.08]}>
+          <cylinderGeometry args={[0.12, 0.15, 1.15, 8]} />
+          <meshStandardMaterial color="#2e2520" transparent opacity={opacity} depthWrite={false} />
+        </mesh>
+        {/* Left hull */}
+        <mesh position={[-1.08, 0.38, 0.05]}>
+          <boxGeometry args={[0.28, 0.55, 1.1]} />
+          <meshStandardMaterial color="#5c3d20" transparent opacity={opacity} roughness={0.75} depthWrite={false} />
+        </mesh>
+        {/* Right hull */}
+        <mesh position={[1.08, 0.38, 0.05]}>
+          <boxGeometry args={[0.28, 0.55, 1.1]} />
+          <meshStandardMaterial color="#5c3d20" transparent opacity={opacity} roughness={0.75} depthWrite={false} />
         </mesh>
       </group>
     );
