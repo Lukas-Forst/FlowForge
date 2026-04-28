@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import type { PlayerState, ProjectileState, UpgradeStats, VisualEffect } from "../types";
+import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
+import type { EnemyState, PlayerState, ProjectileState, UpgradeStats, VisualEffect } from "../types";
 import { getPassiveBroadsideInterval, runPassiveBroadside } from "./passiveBroadside";
 
 function createPlayer(): PlayerState {
@@ -37,6 +37,14 @@ describe("getPassiveBroadsideInterval", () => {
 });
 
 describe("runPassiveBroadside", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("fires one shot per side at baseline", () => {
     const projectiles: ProjectileState[] = [];
     const effects: VisualEffect[] = [];
@@ -50,7 +58,9 @@ describe("runPassiveBroadside", () => {
       effects,
       { value: 1 },
       0.016,
+      [],
     );
+    vi.advanceTimersByTime(400);
     expect(projectiles).toHaveLength(2);
   });
 
@@ -70,7 +80,31 @@ describe("runPassiveBroadside", () => {
       effects,
       { value: 1 },
       0.016,
+      [],
     );
+    vi.advanceTimersByTime(400);
     expect(projectiles).toHaveLength(6);
+  });
+
+  it("applies pierce upgrade to projectiles", () => {
+    const projectiles: ProjectileState[] = [];
+    const effects: VisualEffect[] = [];
+    const timer = { value: 0 };
+    const upgrades = createUpgrades();
+    upgrades.stacks.pierce = 2;
+
+    runPassiveBroadside(
+      createPlayer(),
+      upgrades,
+      timer,
+      { value: 1 },
+      projectiles,
+      effects,
+      { value: 1 },
+      0.016,
+      [],
+    );
+    vi.advanceTimersByTime(400);
+    expect(projectiles.every((p) => p.pierceRemaining === 2)).toBe(true);
   });
 });

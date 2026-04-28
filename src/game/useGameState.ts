@@ -784,6 +784,7 @@ export function useGameState(): UseGameStateApi {
       state.visualEffects,
       effectIdRef.current,
       step,
+      state.enemies,
     );
     const spawnInt = computeRunSpawnIntensity(rc.elapsedTotal);
     state.spawnIntensity = Math.max(
