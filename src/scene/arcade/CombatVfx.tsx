@@ -308,8 +308,30 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
   if (effect.kind === "muzzleFlash") {
     const flashScale = 0.4 + t * 0.55;
     const glowScale = 0.6 + t * 0.8;
+    const heatRingScale = 0.15 + t * 2.5;
+    const smokeDrift = t * 0.4;
+    const smokeOpacity = 0.22 * (1 - t * 1.1);
     return (
       <group position={[effect.position.x, 0.62, effect.position.y]}>
+        {/* heat-shimmer ring — expands rapidly outward */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} scale={[heatRingScale, heatRingScale, heatRingScale]}>
+          <ringGeometry args={[0.6, 1.0, 24]} />
+          <meshBasicMaterial color="#ff8833" transparent opacity={0.65 * (1 - t * 1.2)} depthWrite={false} />
+        </mesh>
+        {/* secondary heat shimmer — thinner, brighter inner ring */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} scale={[heatRingScale * 0.7, heatRingScale * 0.7, heatRingScale * 0.7]}>
+          <ringGeometry args={[0.7, 0.85, 24]} />
+          <meshBasicMaterial color="#ffcc88" transparent opacity={0.4 * (1 - t)} depthWrite={false} />
+        </mesh>
+        {/* smoke puff cone — drifts up and fades */}
+        <mesh
+          position={[smokeDrift * 0.3, 0.3 + smokeDrift * 1.2, smokeDrift * 0.2]}
+          rotation={[0.15, smokeDrift * 2, 0.1]}
+          scale={[0.8 + t * 0.6, 0.6 + t * 0.8, 0.8 + t * 0.6]}
+        >
+          <coneGeometry args={[0.35, 0.9, 10]} />
+          <meshBasicMaterial color="#b0b0b0" transparent opacity={smokeOpacity} depthWrite={false} />
+        </mesh>
         {/* outer glow */}
         <mesh scale={[glowScale, glowScale, glowScale]}>
           <sphereGeometry args={[0.28, 8, 8]} />
