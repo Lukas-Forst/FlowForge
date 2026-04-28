@@ -6,10 +6,7 @@ import { BiomeBadge } from "./BiomeBadge";
 import { BossFrame } from "./BossFrame";
 import { LevelPill } from "./LevelPill";
 import { PulseMeter } from "./PulseMeter";
-<<<<<<< HEAD
 import { getRunPhaseHudLabels } from "./runPhaseHud";
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 import { XPBar } from "./XPBar";
 
 interface HudProps {
@@ -30,7 +27,6 @@ export function Hud({ snapshot }: HudProps): ReactElement {
   const hpRatio = snapshot.player.maxHp > 0 ? Math.max(0, Math.min(1, snapshot.player.hp / snapshot.player.maxHp)) : 0;
   const cannonReady = snapshot.cooldowns.cannonRemaining <= 0;
   const boostReady = snapshot.cooldowns.boostRemaining <= 0;
-<<<<<<< HEAD
   const extraReady = snapshot.cooldowns.extraRemaining <= 0;
   const extraLabel =
     (snapshot.upgrades.stacks.extraTorpedo ?? 0) > 0
@@ -49,24 +45,15 @@ export function Hud({ snapshot }: HudProps): ReactElement {
       ? snapshot.enemies.reduce((n, e) => n + (e.isElite ? 1 : 0), 0)
       : undefined;
   const runPhase = getRunPhaseHudLabels(snapshot.runClock, eliteOnField);
-=======
-  const extraReady = (snapshot.cooldowns.extraRemaining ?? 0) <= 0;
-  const safeTime = Math.max(0, snapshot.stats.timeSurvived);
-  const xpProgress = snapshot.upgrades.nextThreshold > 0 ? Math.min(1, Math.max(0, snapshot.stats.collectedCoins / snapshot.upgrades.nextThreshold)) : 0;
-  const boss = snapshot.enemies.find((e) => e.type === "boss");
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 
   return (
     <>
       <XPBar progress={xpProgress} level={snapshot.upgrades.level} />
       <LevelPill level={snapshot.upgrades.level} />
-<<<<<<< HEAD
       <div className={`hud-wave-clock hud-wave-clock--${snapshot.runClock.phase}`} aria-live="polite">
         <span className="hud-wave-phase">{runPhase.phase}</span>
         <span className="hud-wave-detail">{runPhase.detail}</span>
       </div>
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 
       <div className="hud-v2">
         <div className="hud-v2-corner top-right">
@@ -100,7 +87,6 @@ export function Hud({ snapshot }: HudProps): ReactElement {
               <PulseMeter value={cooldownPercent(snapshot.cooldowns.boostRemaining, snapshot.cooldowns.boostDuration)} color="#88ddff" ready={boostReady} />
             </div>
           </div>
-<<<<<<< HEAD
           <div className={`hud-v2-row ${extraNeedsUnlock ? "hud-v2-row--extra-empty" : ""}`}>
             <span>{extraNeedsUnlock ? "E SPECIAL (LOCKED)" : extraLabel}</span>
             <div className="hud-v2-ability-bar">
@@ -110,12 +96,6 @@ export function Hud({ snapshot }: HudProps): ReactElement {
                 ready={extraReady}
                 variant="special"
               />
-=======
-          <div className="hud-v2-row">
-            <span>E EXTRA</span>
-            <div className="hud-v2-ability-bar">
-              <PulseMeter value={cooldownPercent(snapshot.cooldowns.extraRemaining ?? 0, snapshot.cooldowns.extraDuration ?? 1)} color="#d28cff" ready={extraReady} />
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
             </div>
           </div>
         </div>

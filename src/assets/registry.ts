@@ -19,11 +19,7 @@ let sharedLoader: GLTFLoader | null = null;
 function getLoader(): GLTFLoader {
   if (sharedLoader) return sharedLoader;
   const draco = new DRACOLoader();
-<<<<<<< HEAD
   draco.setDecoderPath("/draco/");
-=======
-  draco.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/");
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   const loader = new GLTFLoader();
   loader.setDRACOLoader(draco);
   sharedLoader = loader;

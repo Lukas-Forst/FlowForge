@@ -1,31 +1,22 @@
 import { Text } from "@react-three/drei";
 import type { ReactElement } from "react";
-<<<<<<< HEAD
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 import type { ProjectileKind, ProjectileState, VisualEffect, VisualEffectKind } from "../../game/types";
 
 const EFFECT_DURATION: Record<VisualEffectKind, number> = {
   waterSplash: 0.32,
   hitBurst: 0.26,
-<<<<<<< HEAD
   depthBurst: 0.65,
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   muzzleFlash: 0.1,
   broadsideCharge: 0.3,
   waterRippleSmall: 0.28,
   telegraphRing: 1.2,
   damageNumber: 0.8,
-<<<<<<< HEAD
   enemyDeath: 0.6,
-=======
-  enemyDeath: 1.0,
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   screenShake: 0.45,
+  cannonReady: 999,
 };
 
 function projectileCore(kind: ProjectileKind): {
@@ -55,7 +46,6 @@ function projectileCore(kind: ProjectileKind): {
         metalness: 0.4,
         roughness: 0.24,
       };
-<<<<<<< HEAD
     case "playerTorpedo":
       return {
         radius: 0.3,
@@ -65,8 +55,6 @@ function projectileCore(kind: ProjectileKind): {
         metalness: 0.46,
         roughness: 0.2,
       };
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     case "enemyCorsair":
       return {
         radius: 0.2,
@@ -106,7 +94,6 @@ function projectileCore(kind: ProjectileKind): {
   }
 }
 
-<<<<<<< HEAD
 function TorpedoVisual({ p }: { p: ProjectileState }): ReactElement {
   const vx = p.velocity.x;
   const vz = p.velocity.y;
@@ -171,9 +158,6 @@ function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): R
   const groupRef = useRef<THREE.Group>(null);
   const exhaustRef = useRef<THREE.Mesh>(null);
   const phase = useMemo(() => (p.id % 23) * 0.35, [p.id]);
-=======
-function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): ReactElement {
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   const vx = p.velocity.x;
   const vz = p.velocity.y;
   const speed = Math.hypot(vx, vz);
@@ -182,7 +166,6 @@ function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): R
   const trail =
     p.kind === "playerAuto" || p.kind === "playerCannon" || p.kind === "enemyBrute" || p.kind === "enemyBomber";
 
-<<<<<<< HEAD
   const trailLen =
     p.kind === "enemyBomber" ? 0.72 : p.kind === "enemyBrute" ? 0.66 : p.kind === "playerCannon" ? 0.62 : 0.58;
   const trailRad =
@@ -206,13 +189,6 @@ function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): R
 
   return (
     <group ref={groupRef} position={[p.position.x, 0.56, p.position.y]} rotation={[0, yaw, 0]}>
-=======
-  const trailLen = p.kind === "enemyBomber" ? 0.72 : p.kind === "enemyBrute" ? 0.66 : p.kind === "playerCannon" ? 0.62 : 0.58;
-  const trailRad = p.kind === "enemyBomber" ? 0.035 : p.kind === "enemyBrute" ? 0.12 : p.kind === "playerCannon" ? 0.11 : 0.05;
-
-  return (
-    <group position={[p.position.x, 0.56, p.position.y]} rotation={[0, yaw, 0]}>
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       <mesh castShadow>
         <sphereGeometry args={[core.radius, 14, 14]} />
         <meshStandardMaterial
@@ -247,15 +223,12 @@ function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): R
           </mesh>
         </>
       ) : null}
-<<<<<<< HEAD
       {trail ? (
         <mesh ref={exhaustRef} position={[0, 0.01, -trailLen * 0.9]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[trailRad * 0.5, trailRad * 1.24, 12]} />
           <meshBasicMaterial color={p.kind.startsWith("enemy") ? "#ffd7c2" : "#fff7da"} transparent opacity={0.25} depthWrite={false} />
         </mesh>
       ) : null}
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       {p.kind === "playerAuto" || p.kind === "playerCannon" ? (
         <mesh scale={[1.18, 1.18, 1.18]}>
           <sphereGeometry args={[core.radius, 10, 10]} />
@@ -272,20 +245,12 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
 
   if (effect.kind === "waterSplash") {
     const ring = 0.45 + t * 4.4;
-<<<<<<< HEAD
     const opacity = 0.35 * (1 - t * t);
     return (
       <group position={[effect.position.x, 0.055, effect.position.y]}>
         <mesh rotation={[-Math.PI / 2, 0, 0]} scale={[ring, ring, 1]}>
           <circleGeometry args={[0.5, 20]} />
           <meshBasicMaterial color="#f5fdff" transparent opacity={opacity} depthWrite={false} />
-=======
-    return (
-      <group position={[effect.position.x, 0.055, effect.position.y]}>
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[ring * 0.35, ring * 0.55, 20]} />
-          <meshBasicMaterial color="#f5fdff" transparent opacity={0.35 * (1 - t)} depthWrite={false} />
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
         </mesh>
         <mesh position={[0, 0.04, 0]}>
           <sphereGeometry args={[0.12 + t * 0.2, 8, 8]} />
@@ -311,7 +276,6 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
     );
   }
 
-<<<<<<< HEAD
   if (effect.kind === "depthBurst") {
     const geyserH = 0.4 + t * 3.5;
     const outerRing = 0.5 + t * 5.5;
@@ -360,41 +324,6 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
         <mesh rotation={[0.2, t * 7, 0]} scale={[flashScale * 1.4, flashScale * 0.9, flashScale * 1.4]}>
           <octahedronGeometry args={[0.24, 0]} />
           <meshBasicMaterial color="#ff9c3a" transparent opacity={0.7 * (1 - t)} depthWrite={false} />
-=======
-  EFFECT_DURATION[effect.kind];
-  if (effect.kind === "broadsideCharge") {
-    const pulseT = t * Math.PI * 2;
-    const glow = 0.6 + Math.sin(pulseT) * 0.35;
-    return (
-      <group position={[effect.position.x, 0.55, effect.position.y]}>
-        {/* pulsing glow sphere */}
-        <mesh scale={[glow * 1.1, glow * 1.1, glow * 1.1]}>
-          <sphereGeometry args={[0.22, 8, 8]} />
-          <meshBasicMaterial color="#ffc87a" transparent opacity={0.55 * (1 - t * 0.6)} depthWrite={false} />
-        </mesh>
-        {/* inner core */}
-        <mesh scale={[glow * 0.7, glow * 0.7, glow * 0.7]}>
-          <sphereGeometry args={[0.22, 8, 8]} />
-          <meshBasicMaterial color="#ffe4b0" transparent opacity={0.75 * (1 - t * 0.5)} depthWrite={false} />
-        </mesh>
-        {/* small point light */}
-        <pointLight color="#ffaa40" intensity={1.4 * (1 - t)} distance={3.5} />
-      </group>
-    );
-  }
-
-  if (effect.kind === "muzzleFlash") {
-    const flashScale = 0.34 + t * 0.46;
-    return (
-      <group position={[effect.position.x, 0.62, effect.position.y]}>
-        <mesh scale={[flashScale, flashScale, flashScale]}>
-          <sphereGeometry args={[0.28, 8, 8]} />
-          <meshBasicMaterial color="#ffe7b8" transparent opacity={0.75 * (1 - t)} depthWrite={false} />
-        </mesh>
-        <mesh rotation={[0.2, t * 5, 0]} scale={[flashScale * 1.2, flashScale * 0.8, flashScale * 1.2]}>
-          <octahedronGeometry args={[0.22, 0]} />
-          <meshBasicMaterial color="#ff9c3a" transparent opacity={0.62 * (1 - t)} depthWrite={false} />
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
         </mesh>
       </group>
     );
@@ -413,22 +342,14 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
   }
 
   if (effect.kind === "damageNumber") {
-<<<<<<< HEAD
     const baseSize = 0.4;
     const scaleMult = effect.scale ?? 1.0;
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     return (
       <group position={[effect.position.x, 0.8 + t * 1.5, effect.position.y]}>
         <Text
           color={effect.color || "#ffffff"}
-<<<<<<< HEAD
           fontSize={baseSize * scaleMult}
           outlineWidth={0.04 * scaleMult}
-=======
-          fontSize={0.4}
-          outlineWidth={0.04}
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
           outlineColor="#000000"
           anchorX="center"
           anchorY="middle"
@@ -441,7 +362,6 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
   }
 
   if (effect.kind === "enemyDeath") {
-<<<<<<< HEAD
     const scale = 1 + t * 4.5;
     const sparkCount = 12;
     return (
@@ -471,24 +391,28 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
             </mesh>
           );
         })}
-=======
-    const scale = 1 + t * 4;
-    return (
-      <group position={[effect.position.x, 0.2, effect.position.y]}>
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[scale * 0.4, scale * 0.6, 24]} />
-          <meshBasicMaterial color="#ffbd87" transparent opacity={0.8 * (1 - t)} depthWrite={false} />
-        </mesh>
-        <mesh scale={[1 + t * 2, 1 + t * 2, 1 + t * 2]}>
-          <sphereGeometry args={[0.3, 12, 12]} />
-          <meshBasicMaterial color="#ffdfb8" transparent opacity={0.7 * (1 - t)} depthWrite={false} />
-        </mesh>
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       </group>
     );
   }
 
   if (effect.kind === "screenShake") return null;
+
+  if (effect.kind === "cannonReady") {
+    const pulse = 0.65 + Math.sin(effect.remaining * Math.PI * 2.2) * 0.35;
+    return (
+      <group position={[effect.position.x, 0.08, effect.position.y]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.9 * pulse, 1.25 * pulse, 32]} />
+          <meshBasicMaterial color="#ffc040" transparent opacity={0.38 * pulse} depthWrite={false} />
+        </mesh>
+        <mesh scale={[pulse * 1.2, pulse * 1.2, pulse * 1.2]}>
+          <sphereGeometry args={[0.22, 10, 10]} />
+          <meshBasicMaterial color="#ffe080" transparent opacity={0.25 * pulse} depthWrite={false} />
+        </mesh>
+        <pointLight color="#ffb030" intensity={pulse * 1.2} distance={4} />
+      </group>
+    );
+  }
 
   return (
     <group position={[effect.position.x, 0.62, effect.position.y]}>
@@ -506,13 +430,10 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
         <octahedronGeometry args={[0.18 + t * 0.25, 0]} />
         <meshStandardMaterial color="#fff0cc" emissive="#ffb020" emissiveIntensity={1.2 * (1 - t)} />
       </mesh>
-<<<<<<< HEAD
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.52, 0]}>
         <ringGeometry args={[0.26 + t * 0.48, 0.36 + t * 0.68, 16]} />
         <meshBasicMaterial color="#ffd28b" transparent opacity={0.4 * (1 - t)} depthWrite={false} />
       </mesh>
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     </group>
   );
 }

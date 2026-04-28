@@ -132,7 +132,6 @@ export function buildUpgradeChoices(upgrades: UpgradeStats): UpgradeOption[] {
   return choices;
 }
 
-<<<<<<< HEAD
 const ELITE_EXTRA_ABILITY_TYPES: UpgradeType[] = ["extraTorpedo", "extraDepthCharge", "extraOilSlick"];
 
 export function buildEliteExtraAbilityChoices(upgrades: UpgradeStats): UpgradeOption[] {
@@ -148,8 +147,6 @@ export function buildEliteExtraAbilityChoices(upgrades: UpgradeStats): UpgradeOp
   return choices.length > 0 ? choices : ELITE_EXTRA_ABILITY_TYPES.map((type) => UPGRADE_OPTIONS[type]);
 }
 
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 export function applyUpgrade(upgrades: UpgradeStats, type: UpgradeType): void {
   upgrades.level += 1;
   upgrades.nextThreshold += upgrades.level + 4;
@@ -162,7 +159,6 @@ export function applyUpgrade(upgrades: UpgradeStats, type: UpgradeType): void {
   if (type === "boostRepeat") upgrades.cooldownMult *= 0.6;
 }
 
-<<<<<<< HEAD
 export function applyEliteExtraAbilitySelection(upgrades: UpgradeStats, type: UpgradeType): void {
   if (!ELITE_EXTRA_ABILITY_TYPES.includes(type)) {
     return;
@@ -171,8 +167,6 @@ export function applyEliteExtraAbilitySelection(upgrades: UpgradeStats, type: Up
   applyAbilityUpgrade(upgrades, type);
 }
 
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 export function applyDamageMitigation(rawDamage: number, upgrades: UpgradeStats): number {
   if (rawDamage <= 0) {
     return 0;

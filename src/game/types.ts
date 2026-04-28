@@ -43,24 +43,17 @@ export type UpgradeType =
   | "coinMagnet"
   | "armor"
   | "boostRepeat"
-<<<<<<< HEAD
   | "ringBarrage"
   | "cannonSpread"
   | "extraTorpedo"
   | "extraDepthCharge"
-=======
-  | "cannonSpread"
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   | "fullSteam"
   | "grapeshot"
   | "sternChaser"
   | "explosiveRounds"
   | "ramProw"
   | "ghostHull"
-<<<<<<< HEAD
   | "boostMines"
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   | "afterburner"
   | "bilgePump"
   | "scavenger"
@@ -140,11 +133,7 @@ export interface HarvestableState {
   rotation: number;
 }
 
-<<<<<<< HEAD
 export type ProjectileKind = "playerAuto" | "playerCannon" | "playerTorpedo" | "enemyCorsair" | "enemyBomber" | "enemyBrute" | "enemySniper" | "enemyBoss" | "enemyBattery";
-=======
-export type ProjectileKind = "playerAuto" | "playerCannon" | "enemyCorsair" | "enemyBomber" | "enemyBrute" | "enemySniper" | "enemyBoss" | "enemyBattery";
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 
 export function isEnemyProjectileKind(kind: ProjectileKind): boolean {
   return kind === "enemyCorsair" || kind === "enemyBomber" || kind === "enemyBrute" || kind === "enemySniper" || kind === "enemyBoss" || kind === "enemyBattery";
@@ -161,7 +150,6 @@ export interface ProjectileState {
   pierceRemaining?: number;
 }
 
-<<<<<<< HEAD
 export interface DelayedAoEState {
   id: number;
   position: Vec2;
@@ -190,10 +178,7 @@ export interface OilSlickState {
   dotTimer: number;
 }
 
-export type VisualEffectKind = "waterSplash" | "hitBurst" | "depthBurst" | "muzzleFlash" | "waterRippleSmall" | "telegraphRing" | "damageNumber" | "enemyDeath" | "screenShake" | "broadsideCharge";
-=======
-export type VisualEffectKind = "waterSplash" | "hitBurst" | "muzzleFlash" | "waterRippleSmall" | "telegraphRing" | "damageNumber" | "enemyDeath" | "screenShake";
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
+export type VisualEffectKind = "waterSplash" | "hitBurst" | "depthBurst" | "muzzleFlash" | "waterRippleSmall" | "telegraphRing" | "damageNumber" | "enemyDeath" | "screenShake" | "broadsideCharge" | "cannonReady";
 
 export interface VisualEffect {
   id: number;
@@ -202,10 +187,7 @@ export interface VisualEffect {
   remaining: number;
   text?: string;
   color?: string;
-<<<<<<< HEAD
   scale?: number; // for damage numbers: bigger damage = bigger text
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 }
 
 export type PickupKind =
@@ -242,17 +224,10 @@ export interface Cooldowns {
   cannonDuration: number;
   boostRemaining: number;
   boostDuration: number;
-<<<<<<< HEAD
   extraRemaining: number;
   extraDuration: number;
   boostActiveRemaining: number;
   boostActiveDuration: number;
-=======
-  boostActiveRemaining: number;
-  boostActiveDuration: number;
-  extraRemaining?: number;
-  extraDuration?: number;
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   invulnRemaining: number;
   frenzyRemaining: number;
 }
@@ -333,12 +308,9 @@ export interface GameSnapshot {
   enemies: EnemyState[];
   harvestables: HarvestableState[];
   projectiles: ProjectileState[];
-<<<<<<< HEAD
   delayedAoEs: DelayedAoEState[];
   mines: MineState[];
   oilSlicks: OilSlickState[];
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   visualEffects: VisualEffect[];
   audioEvents: AudioEvent[];
   postFxPulse: PostFxPulse | null;
@@ -347,10 +319,7 @@ export interface GameSnapshot {
   cooldowns: Cooldowns;
   stats: GameStats;
   pendingUpgradeOptions: UpgradeOption[];
-<<<<<<< HEAD
   pendingUpgradeContext: "levelup" | "eliteExtra";
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   message: FlashMessage | null;
   vibePortal: VibePortalState;
   spawnIntensity: number;

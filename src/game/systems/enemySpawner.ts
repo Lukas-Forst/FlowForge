@@ -10,12 +10,8 @@ import {
   SPAWN_OUTSIDE_VIEW_MIN_DIST,
 } from "../constants";
 import { angleFromDirection, distance } from "../utils";
-<<<<<<< HEAD
 import type { EnemyState, EnemyType, GameSnapshot } from "../types";
 import { getEliteSpawnChance } from "./runArc";
-=======
-import type { EnemyState, EnemyType } from "../types";
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 
 function pickEnemyType(elapsedTimeSec: number): EnemyType {
   const roll = Math.random();
@@ -42,7 +38,6 @@ function pickEnemyType(elapsedTimeSec: number): EnemyType {
   return "brute";
 }
 
-<<<<<<< HEAD
 export type RunSpawnPhase = GameSnapshot["runClock"]["phase"];
 
 /** Whether a newly spawned ship should be an elite (stronger + gold tint). */
@@ -52,8 +47,6 @@ export function rollSpawnIsElite(elapsedRunSeconds: number, phase: RunSpawnPhase
   return Math.random() < getEliteSpawnChance(elapsedRunSeconds);
 }
 
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 function getEnemyCap(elapsedTimeSec: number, phase: "wave" | "elite" | "lull" | "boss"): number {
   if (phase === "boss") return 0;
   if (phase === "lull") return 2;
@@ -71,10 +64,7 @@ function spawnEnemyOutsideCamera(
   enemyIdRef: { value: number },
   playerPosition: { x: number; y: number },
   elapsedTime: number,
-<<<<<<< HEAD
   runPhase: RunSpawnPhase,
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 ): boolean {
   const minDistFromPlayer = Math.max(SPAWN_OUTSIDE_VIEW_MIN_DIST, CAMERA_VIEW_HALF + 20);
   const spawnRadiusMin = minDistFromPlayer;
@@ -100,17 +90,11 @@ function spawnEnemyOutsideCamera(
     }
     if (tooClose) continue;
 
-<<<<<<< HEAD
     const isElite = rollSpawnIsElite(elapsedTime, runPhase);
     const hpScale = (1 + Math.min(0.55, elapsedTime * 0.004)) * (isElite ? 1.65 : 1);
     const speedAdd = Math.min(1.6, elapsedTime * 0.008) + (isElite ? 0.45 : 0);
     const speed = BASE_ENEMY_SPEED + speedAdd;
     const touchDamage = Math.floor((BASE_ENEMY_DAMAGE + Math.floor(elapsedTime / 60)) * (isElite ? 1.22 : 1));
-=======
-    const hpScale = 1 + Math.min(0.55, elapsedTime * 0.004);
-    const speedScale = Math.min(1.6, elapsedTime * 0.008);
-    const touchDamage = BASE_ENEMY_DAMAGE + Math.floor(elapsedTime / 60);
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     const toPlayer = {
       x: playerPosition.x - x,
       y: playerPosition.y - y,
@@ -119,26 +103,15 @@ function spawnEnemyOutsideCamera(
     enemies.push({
       id: enemyIdRef.value++,
       type: pickEnemyType(elapsedTime),
-<<<<<<< HEAD
       isElite,
-=======
-      isElite: false,
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       position: { x, y },
       facing: angleFromDirection(toPlayer),
       hp: BASE_ENEMY_HP * hpScale,
       maxHp: BASE_ENEMY_HP * hpScale,
-<<<<<<< HEAD
       speed,
       touchDamage,
       touchTimer: ENEMY_TOUCH_COOLDOWN,
       rangedCooldown: (0.35 + Math.random() * 1.1) * (isElite ? 0.88 : 1),
-=======
-      speed: BASE_ENEMY_SPEED + speedScale,
-      touchDamage,
-      touchTimer: ENEMY_TOUCH_COOLDOWN,
-      rangedCooldown: 0.35 + Math.random() * 1.1,
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     });
     return true;
   }
@@ -154,7 +127,6 @@ function spawnEnemyOutsideCamera(
       x: playerPosition.x - x,
       y: playerPosition.y - y,
     };
-<<<<<<< HEAD
     const isElite = rollSpawnIsElite(elapsedTime, runPhase);
     const hpMul = (isElite ? 1.65 : 1) * (1 + Math.min(0.55, elapsedTime * 0.004));
     const speedAdd = Math.min(1.6, elapsedTime * 0.008) + (isElite ? 0.45 : 0);
@@ -170,20 +142,6 @@ function spawnEnemyOutsideCamera(
       touchDamage: Math.floor((BASE_ENEMY_DAMAGE + Math.floor(elapsedTime / 60)) * (isElite ? 1.22 : 1)),
       touchTimer: ENEMY_TOUCH_COOLDOWN,
       rangedCooldown: (0.4 + Math.random() * 0.9) * (isElite ? 0.88 : 1),
-=======
-    enemies.push({
-      id: enemyIdRef.value++,
-      type: pickEnemyType(elapsedTime),
-      isElite: false,
-      position: { x, y },
-      facing: angleFromDirection(toPlayer),
-      hp: BASE_ENEMY_HP,
-      maxHp: BASE_ENEMY_HP,
-      speed: BASE_ENEMY_SPEED,
-      touchDamage: BASE_ENEMY_DAMAGE,
-      touchTimer: ENEMY_TOUCH_COOLDOWN,
-      rangedCooldown: 0.4 + Math.random() * 0.9,
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     });
     return true;
   }
@@ -197,18 +155,11 @@ export function spawnEnemiesToCap(
   playerPosition: { x: number; y: number },
   elapsedTime: number,
   desiredCap: number,
-<<<<<<< HEAD
   runPhase: RunSpawnPhase = "wave",
 ): void {
   let guard = 64;
   while (enemies.length < desiredCap && guard-- > 0) {
     spawnEnemyOutsideCamera(enemies, enemyIdRef, playerPosition, elapsedTime, runPhase);
-=======
-): void {
-  let guard = 64;
-  while (enemies.length < desiredCap && guard-- > 0) {
-    spawnEnemyOutsideCamera(enemies, enemyIdRef, playerPosition, elapsedTime);
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   }
 }
 
@@ -231,11 +182,7 @@ export function updateEnemySpawning(
 
   while (spawnTimerRef.value <= 0 && enemies.length < cap) {
     spawnTimerRef.value += spawnInterval;
-<<<<<<< HEAD
     spawnEnemyOutsideCamera(enemies, enemyIdRef, playerPosition, elapsedTime, phase);
-=======
-    spawnEnemyOutsideCamera(enemies, enemyIdRef, playerPosition, elapsedTime);
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   }
 
   return 1 / spawnInterval;

@@ -10,7 +10,6 @@ import {
 import { runAutoAttack } from "./systems/autoAttack";
 import { getBoostSpeedMultiplier, tryActivateBoost } from "./systems/boostAbility";
 import { tryFireCannon } from "./systems/cannonAbility";
-<<<<<<< HEAD
 import { triggerExtraAbility } from "./systems/abilityExecution";
 import { resolveCollisions, updateEnemyMovement, updateProjectileMotion } from "./systems/collision";
 import { updateDelayedAoEs } from "./systems/delayedAoE";
@@ -18,10 +17,6 @@ import { runEliteAbilities } from "./systems/eliteAbilities";
 import { processPickups } from "./systems/pickups";
 import { updateSeaMines } from "./systems/seaMines";
 import { updateOilSlicks } from "./systems/oilSlick";
-=======
-import { resolveCollisions, updateEnemyMovement, updateProjectileMotion } from "./systems/collision";
-import { processPickups } from "./systems/pickups";
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 import { runEnemyRangedAttacks } from "./systems/enemyRanged";
 import { getRunArcEnemyCap, computeRunSpawnIntensity, getRunRegionBiome } from "./systems/runArc";
 import { spawnEnemiesToCap, updateEnemySpawning } from "./systems/enemySpawner";
@@ -30,13 +25,9 @@ import { updateHarvestableSpawning } from "./systems/harvestableSpawner";
 import { updatePlayerMovement } from "./systems/playerController";
 import {
   applyDamageMitigation,
-<<<<<<< HEAD
   applyEliteExtraAbilitySelection,
   applyUpgrade,
   buildEliteExtraAbilityChoices,
-=======
-  applyUpgrade,
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   buildUpgradeChoices,
   countEvolutionStacks,
   emitLevelUpEvents,
@@ -110,12 +101,9 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "loading"): GameSn
     enemies: [],
     harvestables: [],
     projectiles: [],
-<<<<<<< HEAD
     delayedAoEs: [],
     mines: [],
     oilSlicks: [],
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     visualEffects: [],
     audioEvents: [],
     postFxPulse: null,
@@ -154,10 +142,7 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "loading"): GameSn
       evolutionsUnlocked: 0,
     },
     pendingUpgradeOptions: [],
-<<<<<<< HEAD
     pendingUpgradeContext: "levelup",
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     message: null,
     vibePortal: {
       position: { x: VIBE_PORTAL_POSITION.x, y: VIBE_PORTAL_POSITION.y },
@@ -187,7 +172,6 @@ function copySnapshot(snapshot: GameSnapshot): GameSnapshot {
       position: { ...projectile.position },
       velocity: { ...projectile.velocity },
     })),
-<<<<<<< HEAD
     delayedAoEs: snapshot.delayedAoEs.map((aoe) => ({
       ...aoe,
       position: { ...aoe.position },
@@ -198,8 +182,6 @@ function copySnapshot(snapshot: GameSnapshot): GameSnapshot {
       velocity: { ...mine.velocity },
     })),
     oilSlicks: snapshot.oilSlicks.map((slick) => ({ ...slick, position: { ...slick.position } })),
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     visualEffects: snapshot.visualEffects.map((effect) => ({
       ...effect,
       position: { ...effect.position },
@@ -211,10 +193,7 @@ function copySnapshot(snapshot: GameSnapshot): GameSnapshot {
     cooldowns: { ...snapshot.cooldowns },
     stats: { ...snapshot.stats },
     pendingUpgradeOptions: snapshot.pendingUpgradeOptions.map((option) => ({ ...option })),
-<<<<<<< HEAD
     pendingUpgradeContext: snapshot.pendingUpgradeContext,
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     message: snapshot.message ? { ...snapshot.message } : null,
     vibePortal: {
       ...snapshot.vibePortal,
@@ -251,12 +230,10 @@ export function useGameState(): UseGameStateApi {
   const projectileIdRef = useRef({ value: 1 });
   const pickupIdRef = useRef({ value: 1 });
   const effectIdRef = useRef({ value: 1 });
-<<<<<<< HEAD
   const delayedAoEIdRef = useRef({ value: 1 });
   const mineIdRef = useRef({ value: 1 });
   const oilSlickIdRef = useRef({ value: 1 });
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
+  const cannonReadyRef = useRef({ value: false });
   const spawnTimerRef = useRef({ value: 0.2 });
   const autoAttackTimerRef = useRef({ value: BASE_AUTO_ATTACK_INTERVAL });
   const passiveBroadsideTimerRef = useRef({ value: BASE_PASSIVE_BROADSIDE_INTERVAL });
@@ -290,12 +267,9 @@ export function useGameState(): UseGameStateApi {
     projectileIdRef.current.value = 1;
     pickupIdRef.current.value = 1;
     effectIdRef.current.value = 1;
-<<<<<<< HEAD
     delayedAoEIdRef.current.value = 1;
     mineIdRef.current.value = 1;
     oilSlickIdRef.current.value = 1;
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     spawnTimerRef.current.value = 0.2;
     autoAttackTimerRef.current.value = BASE_AUTO_ATTACK_INTERVAL;
     passiveBroadsideTimerRef.current.value = BASE_PASSIVE_BROADSIDE_INTERVAL;
@@ -319,11 +293,7 @@ export function useGameState(): UseGameStateApi {
     resetForRun("playing");
     const state = stateRef.current;
     const cap = getRunArcEnemyCap(0, { hasMegaBoss: false, legacyBossPhase: false });
-<<<<<<< HEAD
     spawnEnemiesToCap(state.enemies, enemyIdRef.current, state.player.position, 0, cap, state.runClock.phase);
-=======
-    spawnEnemiesToCap(state.enemies, enemyIdRef.current, state.player.position, 0, cap);
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     syncState();
   }, [resetForRun]);
 
@@ -331,11 +301,7 @@ export function useGameState(): UseGameStateApi {
     resetForRun("playing");
     const state = stateRef.current;
     const cap = getRunArcEnemyCap(0, { hasMegaBoss: false, legacyBossPhase: false });
-<<<<<<< HEAD
     spawnEnemiesToCap(state.enemies, enemyIdRef.current, state.player.position, 0, cap, state.runClock.phase);
-=======
-    spawnEnemiesToCap(state.enemies, enemyIdRef.current, state.player.position, 0, cap);
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     syncState();
   }, [resetForRun]);
 
@@ -515,55 +481,10 @@ export function useGameState(): UseGameStateApi {
 
   const triggerExtra = useCallback(() => {
     const state = stateRef.current;
-<<<<<<< HEAD
     if (state.phase !== "playing") {
       return;
     }
     triggerExtraAbility(state, projectileIdRef.current, delayedAoEIdRef.current, oilSlickIdRef.current, setMessage);
-=======
-    if (state.phase !== "playing") return;
-    if (!state.upgrades.activeExtraAbility) {
-      setMessage({ text: "No extra ability equipped yet", remaining: 0.8 });
-      syncState();
-      return;
-    }
-    if ((state.cooldowns.extraRemaining ?? 0) > 0) {
-      setMessage({ text: "Extra ability recharging...", remaining: 0.7 });
-      syncState();
-      return;
-    }
-    const ability = state.upgrades.activeExtraAbility;
-    const forward = directionFromAngle(state.player.facing);
-    if (ability === "torpedo") {
-      state.projectiles.push({
-        id: projectileIdRef.current.value++,
-        kind: "playerCannon",
-        position: { x: state.player.position.x + forward.x * 1.2, y: state.player.position.y + forward.y * 1.2 },
-        velocity: { x: forward.x * 8, y: forward.y * 8 },
-        ttl: 2.8,
-        damage: 80,
-        radius: 0.65,
-        pierceRemaining: 99,
-      });
-      state.cooldowns.extraDuration = Math.max(6, 12 * state.upgrades.cooldownMult);
-    } else if (ability === "depthCharge") {
-      state.projectiles.push({
-        id: projectileIdRef.current.value++,
-        kind: "playerCannon",
-        position: { x: state.player.position.x, y: state.player.position.y },
-        velocity: { x: 0, y: 0 },
-        ttl: 1.5,
-        damage: 100,
-        radius: 0.95,
-      });
-      state.cooldowns.extraDuration = Math.max(7, 14 * state.upgrades.cooldownMult);
-    } else {
-      spawnRadialBarrage(6, 6, 18, 1.6, projectileIdRef.current, state.projectiles, state.player.position);
-      state.cooldowns.extraDuration = Math.max(5.5, 11 * state.upgrades.cooldownMult);
-    }
-    state.cooldowns.extraRemaining = state.cooldowns.extraDuration;
-    setMessage(null);
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     syncState();
   }, [setMessage, syncState]);
 
@@ -572,7 +493,6 @@ export function useGameState(): UseGameStateApi {
     if (state.phase !== "upgrade") {
       return;
     }
-<<<<<<< HEAD
     if (state.pendingUpgradeContext === "eliteExtra") {
       applyEliteExtraAbilitySelection(state.upgrades, type);
       setMessage({ text: "Elite spoils claimed: E ability equipped!", remaining: 1.1 });
@@ -599,28 +519,6 @@ export function useGameState(): UseGameStateApi {
     state.phase = "playing";
     state.pendingUpgradeOptions = [];
     state.pendingUpgradeContext = "levelup";
-=======
-    applyUpgrade(state.upgrades, type);
-    if (type === "maxHp") {
-      state.player.maxHp += 25;
-      state.player.hp = state.player.maxHp;
-    }
-    retargetNextUpgradeThreshold(state.upgrades, state.stats.collectedCoins);
-    if (type === "krakenCall" && !krakenUsedRef.current.value) {
-      krakenUsedRef.current.value = true;
-      krakenRemainingRef.current.value = KRAKEN_ACTIVE_TIME;
-      krakenAttackTimerRef.current.value = 0.12;
-    }
-    state.phase = "playing";
-    state.pendingUpgradeOptions = [];
-    state.postFxPulse = emitLevelUpEvents(
-      state.player.position,
-      state.audioEvents,
-      state.visualEffects,
-      effectIdRef.current,
-    );
-    setMessage({ text: `${type} upgraded!`, remaining: 0.8 });
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     syncState();
   }, [setMessage, syncState]);
 
@@ -699,14 +597,37 @@ export function useGameState(): UseGameStateApi {
     );
     state.cooldowns.cannonRemaining = Math.max(0, state.cooldowns.cannonRemaining - step);
     state.cooldowns.boostRemaining = Math.max(0, state.cooldowns.boostRemaining - step);
-<<<<<<< HEAD
-    state.cooldowns.extraRemaining = Math.max(0, state.cooldowns.extraRemaining - step);
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
+
     state.cooldowns.boostActiveRemaining = Math.max(0, state.cooldowns.boostActiveRemaining - step);
     state.cooldowns.extraRemaining = Math.max(0, (state.cooldowns.extraRemaining ?? 0) - step);
     state.cooldowns.invulnRemaining = Math.max(0, state.cooldowns.invulnRemaining - step);
     state.cooldowns.frenzyRemaining = Math.max(0, state.cooldowns.frenzyRemaining - step);
+
+    // Cannon ready glow effect
+    const cannonIsReady = state.cooldowns.cannonRemaining === 0;
+    if (cannonIsReady && !cannonReadyRef.current.value) {
+      cannonReadyRef.current.value = true;
+      state.visualEffects.push({
+        id: effectIdRef.current.value++,
+        kind: "cannonReady",
+        position: { x: state.player.position.x, y: state.player.position.y },
+        remaining: 999,
+      });
+    } else if (!cannonIsReady && cannonReadyRef.current.value) {
+      cannonReadyRef.current.value = false;
+      for (let i = state.visualEffects.length - 1; i >= 0; i--) {
+        if (state.visualEffects[i].kind === "cannonReady") {
+          state.visualEffects.splice(i, 1);
+        }
+      }
+    } else if (cannonIsReady) {
+      for (const fx of state.visualEffects) {
+        if (fx.kind === "cannonReady") {
+          fx.position.x = state.player.position.x;
+          fx.position.y = state.player.position.y;
+        }
+      }
+    }
 
     const rc = state.runClock;
     rc.elapsedTotal += step;
@@ -731,10 +652,7 @@ export function useGameState(): UseGameStateApi {
     if (rc.phase === "wave" && rc.phaseTime >= 60) {
       rc.phase = "elite";
       rc.phaseTime = 0;
-<<<<<<< HEAD
       setMessage({ text: "Elite surge — chest nearby, expect gold-flag ships!", remaining: 2.6 });
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       // Spawn chest reward
       const a1 = Math.random() * Math.PI * 2;
       state.pickups.push({
@@ -746,10 +664,7 @@ export function useGameState(): UseGameStateApi {
     } else if (rc.phase === "elite" && rc.phaseTime >= 10) {
       rc.phase = "lull";
       rc.phaseTime = 0;
-<<<<<<< HEAD
       setMessage({ text: "Lull — few foes, supply drop incoming.", remaining: 2.2 });
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       // Spawn supply drop reward
       const a2 = Math.random() * Math.PI * 2;
       const supplyKind = Math.random() < 0.34 ? "supply_heal" : Math.random() < 0.5 ? "supply_frenzy" : "supply_invuln";
@@ -762,10 +677,7 @@ export function useGameState(): UseGameStateApi {
     } else if (rc.phase === "lull" && rc.phaseTime >= 15) {
       rc.phase = "wave";
       rc.phaseTime = 0;
-<<<<<<< HEAD
       setMessage({ text: "Wave resuming — full pressure returns.", remaining: 1.8 });
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     }
 
     state.runBiome = getRunRegionBiome(rc.elapsedTotal);
@@ -861,7 +773,6 @@ export function useGameState(): UseGameStateApi {
       step,
     );
     updateEnemyMovement(state.enemies, state.player, step);
-<<<<<<< HEAD
     runEliteAbilities(
       state.enemies,
       state.player,
@@ -901,11 +812,6 @@ export function useGameState(): UseGameStateApi {
       step,
     );
     state.stats.enemiesKilled += oilSlickResult.enemyKills;
-=======
-    runEnemyRangedAttacks(state.enemies, state.player, projectileIdRef.current, state.projectiles, state.visualEffects, effectIdRef.current, step);
-    runBossAttacks(state.enemies, state.player, projectileIdRef.current, state.projectiles, state.visualEffects, effectIdRef.current, step);
-    updateProjectileMotion(state.projectiles, state.player.position, step, state.visualEffects, effectIdRef.current);
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 
     bilgePumpTimerRef.current.value += step;
     if (bilgePumpTimerRef.current.value >= 1) {
@@ -1056,7 +962,6 @@ export function useGameState(): UseGameStateApi {
       state.pickups.push(...collisionResult.spawnedPickups);
     }
     state.stats.enemiesKilled += collisionResult.killsGained;
-<<<<<<< HEAD
     if (collisionResult.eliteKillsGained > 0) {
       const eliteChoices = buildEliteExtraAbilityChoices(state.upgrades);
       if (state.phase === "playing" && eliteChoices.length > 0) {
@@ -1068,8 +973,6 @@ export function useGameState(): UseGameStateApi {
         return;
       }
     }
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     if ((state.upgrades.stacks.pressGang ?? 0) > 0) {
       while (state.stats.enemiesKilled >= pressGangNextKillRef.current.value) {
         pressGangNextKillRef.current.value += 20;
@@ -1111,11 +1014,7 @@ export function useGameState(): UseGameStateApi {
     }
 
     if ((collisionResult.playerDamageTaken > 0 && state.cooldowns.invulnRemaining <= 0) || collisionResult.cannonHits > 0) {
-<<<<<<< HEAD
       hitPauseTimerRef.current.value = 0.1;
-=======
-      hitPauseTimerRef.current.value = 0.06;
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     }
 
     for (let i = state.visualEffects.length - 1; i >= 0; i -= 1) {
@@ -1128,10 +1027,7 @@ export function useGameState(): UseGameStateApi {
     if (state.player.hp <= 0) {
       state.phase = "gameover";
       state.pendingUpgradeOptions = [];
-<<<<<<< HEAD
       state.pendingUpgradeContext = "levelup";
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       state.stats.evolutionsUnlocked = countEvolutionStacks(state.upgrades);
       state.stats.score = Math.floor(
         state.stats.timeSurvived * 100 + state.stats.enemiesKilled * 25 + state.stats.collectedCoins * 2 + state.stats.evolutionsUnlocked * 500
@@ -1183,10 +1079,7 @@ export function useGameState(): UseGameStateApi {
         return;
       }
       state.phase = "upgrade";
-<<<<<<< HEAD
       state.pendingUpgradeContext = "levelup";
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       state.pendingUpgradeOptions = choices;
       setMessage({ text: "Choose your upgrade", remaining: 99 });
       syncState();

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import type { AudioEvent, UpgradeStats, VisualEffect } from "../types";
-<<<<<<< HEAD
 import {
   applyDamageMitigation,
   applyEliteExtraAbilitySelection,
@@ -9,9 +8,6 @@ import {
   emitLevelUpEvents,
   retargetNextUpgradeThreshold,
 } from "./upgrades";
-=======
-import { applyDamageMitigation, buildUpgradeChoices, emitLevelUpEvents, retargetNextUpgradeThreshold } from "./upgrades";
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 import { UPGRADE_OPTIONS } from "../constants";
 
 describe("emitLevelUpEvents", () => {
@@ -152,7 +148,6 @@ describe("buildUpgradeChoices", () => {
     expect(choiceTypes).toContain("phantomFleet");
   });
 });
-<<<<<<< HEAD
 
 describe("elite extra ability rewards", () => {
   it("returns unowned E-ability cards first", () => {
@@ -212,5 +207,3 @@ describe("elite extra ability rewards", () => {
     expect(upgrades.level).toBe(5);
   });
 });
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo

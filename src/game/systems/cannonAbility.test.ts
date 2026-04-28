@@ -18,11 +18,8 @@ function createCooldowns(): Cooldowns {
     cannonDuration: 5,
     boostRemaining: 0,
     boostDuration: 4.5,
-<<<<<<< HEAD
     extraRemaining: 0,
     extraDuration: 0,
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     boostActiveRemaining: 0,
     boostActiveDuration: 0.22,
     invulnRemaining: 0,
