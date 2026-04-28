@@ -12,6 +12,7 @@ function makeSnapshot(): GameSnapshot {
     projectiles: [],
     delayedAoEs: [],
     mines: [],
+    oilSlicks: [],
     visualEffects: [],
     audioEvents: [],
     postFxPulse: null,
@@ -132,7 +133,7 @@ describe("triggerExtraAbility", () => {
   it("spawns delayed depth charge and starts cooldown", () => {
     const snapshot = makeSnapshot();
     snapshot.upgrades.stacks.extraDepthCharge = 1;
-    triggerExtraAbility(snapshot, { value: 1 }, { value: 1 }, () => {});
+    triggerExtraAbility(snapshot, { value: 1 }, { value: 1 }, { value: 1 }, () => {});
     expect(snapshot.delayedAoEs).toHaveLength(1);
     expect(snapshot.delayedAoEs[0]?.visualType).toBe("depthCharge");
     expect(snapshot.cooldowns.extraRemaining).toBeGreaterThan(0);
@@ -141,9 +142,19 @@ describe("triggerExtraAbility", () => {
   it("fires torpedo projectile when extraTorpedo is unlocked", () => {
     const snapshot = makeSnapshot();
     snapshot.upgrades.stacks.extraTorpedo = 1;
-    triggerExtraAbility(snapshot, { value: 1 }, { value: 1 }, () => {});
+    triggerExtraAbility(snapshot, { value: 1 }, { value: 1 }, { value: 1 }, () => {});
     expect(snapshot.projectiles).toHaveLength(1);
     expect(snapshot.projectiles[0]?.kind).toBe("playerTorpedo");
     expect(snapshot.delayedAoEs).toHaveLength(0);
+  });
+
+  it("drops a persistent oil slick when extraOilSlick is unlocked", () => {
+    const snapshot = makeSnapshot();
+    snapshot.upgrades.stacks.extraOilSlick = 1;
+    triggerExtraAbility(snapshot, { value: 1 }, { value: 1 }, { value: 1 }, () => {});
+    expect(snapshot.projectiles).toHaveLength(0);
+    expect(snapshot.delayedAoEs).toHaveLength(0);
+    expect(snapshot.oilSlicks).toHaveLength(1);
+    expect(snapshot.cooldowns.extraRemaining).toBeGreaterThan(0);
   });
 });

@@ -279,12 +279,13 @@ export function EnemyShip({ type, isElite = false, ...props }: EnemyShipProps): 
     smokeIntensity = 1.35;
   }
 
-  const isBoss = type === "boss";
-  const eliteScale = isBoss ? 1.0 : 1.45;
+  const isBoss = type === "boss" || type === "shore_battery";
+  const showAura = isElite || isBoss;
+  const scale = isElite ? (isBoss ? 1.0 : 1.45) : isBoss ? 1.16 : 1;
 
   return (
-    <group scale={isElite ? eliteScale : 1} {...props}>
-      {isElite ? <EliteAura isBoss={isBoss} /> : null}
+    <group scale={scale} {...props}>
+      {showAura ? <EliteAura isBoss={isBoss} /> : null}
       <ShipModelVisual
         config={ENEMY_MODEL_CONFIGS[type]}
         fallback={variant}

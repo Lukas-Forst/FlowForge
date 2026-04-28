@@ -1,5 +1,8 @@
 import { Text } from "@react-three/drei";
 import type { ReactElement } from "react";
+import { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
 import type { ProjectileKind, ProjectileState, VisualEffect, VisualEffectKind } from "../../game/types";
 
 const EFFECT_DURATION: Record<VisualEffectKind, number> = {
@@ -150,6 +153,9 @@ function TorpedoVisual({ p }: { p: ProjectileState }): ReactElement {
 function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): ReactElement {
   if (p.kind === "playerTorpedo") return <TorpedoVisual p={p} />;
 
+  const groupRef = useRef<THREE.Group>(null);
+  const exhaustRef = useRef<THREE.Mesh>(null);
+  const phase = useMemo(() => (p.id % 23) * 0.35, [p.id]);
   const vx = p.velocity.x;
   const vz = p.velocity.y;
   const speed = Math.hypot(vx, vz);
@@ -163,8 +169,24 @@ function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): R
   const trailRad =
     p.kind === "enemyBomber" ? 0.035 : p.kind === "enemyBrute" ? 0.12 : p.kind === "playerCannon" ? 0.11 : 0.05;
 
+  useFrame((state) => {
+    const t = state.clock.elapsedTime + phase;
+    if (groupRef.current) {
+      groupRef.current.position.y = 0.56 + Math.sin(t * 9) * 0.024;
+      if (p.kind === "enemyBomber") {
+        groupRef.current.rotation.z = Math.sin(t * 16) * 0.05;
+      }
+    }
+    if (exhaustRef.current) {
+      const scale = 0.8 + (Math.sin(t * 24) + 1) * 0.22;
+      exhaustRef.current.scale.set(scale, scale, scale);
+      const mat = exhaustRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.22 + Math.sin(t * 14) * 0.06;
+    }
+  });
+
   return (
-    <group position={[p.position.x, 0.56, p.position.y]} rotation={[0, yaw, 0]}>
+    <group ref={groupRef} position={[p.position.x, 0.56, p.position.y]} rotation={[0, yaw, 0]}>
       <mesh castShadow>
         <sphereGeometry args={[core.radius, 14, 14]} />
         <meshStandardMaterial
@@ -198,6 +220,12 @@ function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): R
             />
           </mesh>
         </>
+      ) : null}
+      {trail ? (
+        <mesh ref={exhaustRef} position={[0, 0.01, -trailLen * 0.9]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[trailRad * 0.5, trailRad * 1.24, 12]} />
+          <meshBasicMaterial color={p.kind.startsWith("enemy") ? "#ffd7c2" : "#fff7da"} transparent opacity={0.25} depthWrite={false} />
+        </mesh>
       ) : null}
       {p.kind === "playerAuto" || p.kind === "playerCannon" ? (
         <mesh scale={[1.18, 1.18, 1.18]}>
@@ -353,6 +381,10 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
       <mesh rotation={[0.3, t * 4, 0]}>
         <octahedronGeometry args={[0.18 + t * 0.25, 0]} />
         <meshStandardMaterial color="#fff0cc" emissive="#ffb020" emissiveIntensity={1.2 * (1 - t)} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.52, 0]}>
+        <ringGeometry args={[0.26 + t * 0.48, 0.36 + t * 0.68, 16]} />
+        <meshBasicMaterial color="#ffd28b" transparent opacity={0.4 * (1 - t)} depthWrite={false} />
       </mesh>
     </group>
   );
