@@ -4,7 +4,8 @@
 // Usage:
 //   MESHY_API_KEY=your_key node scripts/meshy/generate-props.mjs
 //   MESHY_API_KEY=your_key node scripts/meshy/generate-props.mjs --dry-run
-//   MESHY_API_KEY=your_key node scripts/meshy/generate-props.mjs --only propBarrel,propBuoy
+//   MESHY_API_KEY=your_key node scripts/meshy/generate-props.mjs --only=propBarrel,propBuoy
+//   MESHY_API_KEY=your_key node scripts/meshy/generate-props.mjs --only=propRock --variants=readability,hazard --iterations=2
 //
 // Output: assets-sources/props/<filename>.glb
 // Then run: npm run assets:optimize
@@ -23,6 +24,10 @@ const API_KEY = process.env.MESHY_API_KEY;
 const DRY_RUN = process.argv.includes("--dry-run");
 const ONLY_ARG = process.argv.find((a) => a.startsWith("--only="));
 const ONLY = ONLY_ARG ? new Set(ONLY_ARG.slice(7).split(",")) : null;
+const VARIANTS_ARG = process.argv.find((a) => a.startsWith("--variants="));
+const VARIANTS = VARIANTS_ARG ? new Set(VARIANTS_ARG.slice(11).split(",").filter(Boolean)) : null;
+const ITERATIONS_ARG = process.argv.find((a) => a.startsWith("--iterations="));
+const ITERATIONS = Math.max(1, Number.parseInt(ITERATIONS_ARG?.slice(13) ?? "1", 10) || 1);
 
 // ---------------------------------------------------------------------------
 // Prop definitions
@@ -93,6 +98,77 @@ const PROPS = [
     artStyle: "realistic",
   },
 ];
+
+const PROMPT_VARIANTS = {
+  default: {
+    label: "Balanced baseline",
+    promptAdd:
+      "clean shape language, readable medium silhouette, game-ready prop",
+    negativeAdd:
+      "tiny thin details, noisy micro detail, chaotic silhouette",
+  },
+  readability: {
+    label: "High readability",
+    promptAdd:
+      "bold silhouette, strong primary forms, reduced clutter, high in-game readability",
+    negativeAdd:
+      "busy details, thin protrusions, fragmented silhouette, visual noise",
+  },
+  cover: {
+    label: "Gameplay cover clarity",
+    promptAdd:
+      "chunkier structure, stable base volume, clear collision-friendly shape, easy to read from top-down view",
+    negativeAdd:
+      "spindly parts, fragile overhangs, ambiguous footprint",
+  },
+  hazard: {
+    label: "Hazard signposting",
+    promptAdd:
+      "slightly dangerous look, sharper contour accents, stronger contrast zones for fast threat recognition",
+    negativeAdd:
+      "soft ambiguous profile, low contrast surfaces",
+  },
+};
+
+const KNOWN_VARIANTS = new Set(Object.keys(PROMPT_VARIANTS));
+
+function withVariantText(base, add) {
+  if (!add) return base;
+  return `${base}, ${add}`;
+}
+
+function withIterationFilename(filename, variantId, iteration) {
+  if (variantId === "default" && iteration === 1) return filename;
+  const dot = filename.lastIndexOf(".");
+  const stem = dot > -1 ? filename.slice(0, dot) : filename;
+  const ext = dot > -1 ? filename.slice(dot) : "";
+  return `${stem}_${variantId}_i${iteration}${ext}`;
+}
+
+function buildJobs(activeProps) {
+  const selectedVariants = VARIANTS
+    ? [...VARIANTS].filter((v) => KNOWN_VARIANTS.has(v))
+    : ["default"];
+  const jobs = [];
+  for (const prop of activeProps) {
+    for (const variantId of selectedVariants) {
+      const variant = PROMPT_VARIANTS[variantId];
+      if (!variant) continue;
+      for (let iteration = 1; iteration <= ITERATIONS; iteration += 1) {
+        jobs.push({
+          ...prop,
+          jobId: `${prop.id}:${variantId}:i${iteration}`,
+          filename: withIterationFilename(prop.filename, variantId, iteration),
+          prompt: withVariantText(prop.prompt, variant.promptAdd),
+          negativePrompt: withVariantText(prop.negativePrompt, variant.negativeAdd),
+          variantId,
+          iteration,
+        });
+      }
+    }
+  }
+  return jobs;
+}
 
 // ---------------------------------------------------------------------------
 // Meshy API helpers
@@ -197,15 +273,23 @@ async function generateProp(prop) {
 
 async function main() {
   const activeProps = ONLY ? PROPS.filter((p) => ONLY.has(p.id)) : PROPS;
+  const jobs = buildJobs(activeProps);
+  const selectedVariants = VARIANTS ? [...VARIANTS] : ["default"];
+  const unknownVariants = selectedVariants.filter((v) => !KNOWN_VARIANTS.has(v));
 
   if (DRY_RUN) {
     console.log("=== DRY RUN (no API calls) ===");
-    for (const p of activeProps) {
-      console.log(`  ${p.id}`);
-      console.log(`    prompt:   ${p.prompt.slice(0, 80)}...`);
+    if (unknownVariants.length > 0) {
+      console.log(`Unknown variants ignored: ${unknownVariants.join(", ")}`);
+    }
+    console.log(`Variants: ${selectedVariants.filter((v) => KNOWN_VARIANTS.has(v)).join(", ")}`);
+    console.log(`Iterations per variant: ${ITERATIONS}`);
+    for (const p of jobs) {
+      console.log(`  ${p.jobId}`);
+      console.log(`    prompt:   ${p.prompt.slice(0, 96)}...`);
       console.log(`    output:   assets-sources/props/${p.filename}`);
     }
-    console.log(`\n${activeProps.length} prop(s) would be generated.`);
+    console.log(`\n${jobs.length} asset(s) would be generated.`);
     return;
   }
 
@@ -215,16 +299,19 @@ async function main() {
   }
 
   await mkdir(OUT_DIR, { recursive: true });
-  console.log(`Generating ${activeProps.length} prop(s)…\n`);
+  if (unknownVariants.length > 0) {
+    console.log(`Unknown variants ignored: ${unknownVariants.join(", ")}`);
+  }
+  console.log(`Generating ${jobs.length} asset(s)…\n`);
 
   const results = [];
-  for (const prop of activeProps) {
+  for (const prop of jobs) {
     try {
       const filename = await generateProp(prop);
-      results.push({ id: prop.id, filename, ok: true });
+      results.push({ id: prop.jobId, filename, ok: true });
     } catch (err) {
-      console.error(`\n[${prop.id}] FAILED: ${err.message}`);
-      results.push({ id: prop.id, filename: null, ok: false });
+      console.error(`\n[${prop.jobId}] FAILED: ${err.message}`);
+      results.push({ id: prop.jobId, filename: null, ok: false });
     }
   }
 
