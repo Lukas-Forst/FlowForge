@@ -370,19 +370,27 @@ function DepthChargeBarrel({ aoe }: { aoe: DelayedAoEState }): ReactElement {
 function OilSlickOverlay({ slick }: { slick: OilSlickState }): ReactElement {
   const innerRef = useRef<THREE.Mesh>(null);
   const outerRef = useRef<THREE.Mesh>(null);
+  const sheenRef = useRef<THREE.Mesh>(null);
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     const fade = Math.min(1, slick.remaining * 0.4);
     if (innerRef.current) {
-      innerRef.current.rotation.z = t * 0.18;
+      innerRef.current.rotation.z = t * 0.1;
       const mat = innerRef.current.material as THREE.MeshBasicMaterial;
-      mat.opacity = 0.62 * fade;
+      mat.opacity = 0.28 * fade;
     }
     if (outerRef.current) {
-      outerRef.current.rotation.z = -t * 0.1;
+      outerRef.current.rotation.z = -t * 0.08;
       const mat = outerRef.current.material as THREE.MeshBasicMaterial;
-      mat.opacity = 0.38 * fade;
+      mat.opacity = 0.2 * fade;
+    }
+    if (sheenRef.current) {
+      sheenRef.current.rotation.z = t * 0.14;
+      const wobble = 0.94 + Math.sin(t * 1.9 + slick.id) * 0.03;
+      sheenRef.current.scale.set(wobble, wobble * 0.84, 1);
+      const mat = sheenRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.15 * fade;
     }
   });
 
@@ -392,17 +400,22 @@ function OilSlickOverlay({ slick }: { slick: OilSlickState }): ReactElement {
       {/* Dark base pool */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} scale={[r, r * 0.72, 1]}>
         <circleGeometry args={[1, 28]} />
-        <meshBasicMaterial color="#0d0a06" transparent opacity={0.68} depthWrite={false} />
+        <meshBasicMaterial color="#100d0a" transparent opacity={0.52} depthWrite={false} />
       </mesh>
-      {/* Iridescent shimmer inner */}
-      <mesh ref={innerRef} rotation={[-Math.PI / 2, 0, 0]} scale={[r * 0.78, r * 0.56, 1]}>
+      {/* Mid-tone core to avoid a flat black blob */}
+      <mesh ref={innerRef} rotation={[-Math.PI / 2, 0, 0]} scale={[r * 0.76, r * 0.54, 1]}>
         <circleGeometry args={[1, 20]} />
-        <meshBasicMaterial color="#5533aa" transparent opacity={0.62} depthWrite={false} />
+        <meshBasicMaterial color="#2a1f16" transparent opacity={0.28} depthWrite={false} />
       </mesh>
-      {/* Iridescent shimmer outer ring */}
+      {/* Warm slick sheen to blend with the arena's lighting */}
+      <mesh ref={sheenRef} rotation={[-Math.PI / 2, 0, 0]} scale={[r * 0.64, r * 0.46, 1]}>
+        <ringGeometry args={[0.34, 0.78, 20]} />
+        <meshBasicMaterial color="#9b6a2d" transparent opacity={0.15} depthWrite={false} />
+      </mesh>
+      {/* Soft outer halo */}
       <mesh ref={outerRef} rotation={[-Math.PI / 2, 0, 0]} scale={[r, r * 0.72, 1]}>
         <ringGeometry args={[0.55, 1, 24]} />
-        <meshBasicMaterial color="#22aa66" transparent opacity={0.38} depthWrite={false} />
+        <meshBasicMaterial color="#433125" transparent opacity={0.2} depthWrite={false} />
       </mesh>
     </group>
   );
@@ -453,7 +466,7 @@ function DelayedAoEIndicator({ aoe }: { aoe: DelayedAoEState }): ReactElement {
           </mesh>
           <mesh rotation={[-Math.PI / 2, aoe.remaining * 0.45, 0]}>
             <ringGeometry args={[aoe.radius * 0.38, aoe.radius * 0.7, 36]} />
-            <meshBasicMaterial color="#ff7a2e" transparent opacity={0.28 + (1 - pulse) * 0.35} depthWrite={false} />
+            <meshBasicMaterial color="#b77838" transparent opacity={0.2 + (1 - pulse) * 0.28} depthWrite={false} />
           </mesh>
         </>
       ) : null}
