@@ -111,7 +111,8 @@ export function updateProjectileMotion(
     const farFromPlayer = distance(projectile.position, playerPosition) > PROJECTILE_DESPAWN_DISTANCE_FROM_PLAYER;
 
     if (projectile.ttl <= 0 || farFromPlayer) {
-      pushEffect(visualEffects, effectIdRef, "waterSplash", projectile.position, 0.32);
+      const splashKind = isEnemyProjectileKind(projectile.kind) ? "waterSplash" : "projectileSplash";
+      pushEffect(visualEffects, effectIdRef, splashKind, projectile.position, 0.38);
       if (projectile.kind === "playerCannon" || projectile.kind === "enemyBrute") {
         pushEffect(visualEffects, effectIdRef, "waterRippleSmall", projectile.position, 0.38);
       }

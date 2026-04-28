@@ -17,6 +17,8 @@ const EFFECT_DURATION: Record<VisualEffectKind, number> = {
   enemyDeath: 0.6,
   screenShake: 0.45,
   cannonReady: 999,
+  playerWake: 999,
+  projectileSplash: 0.38,
 };
 
 function projectileCore(kind: ProjectileKind): {
@@ -432,6 +434,44 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
           <meshBasicMaterial color="#ffe080" transparent opacity={0.25 * pulse} depthWrite={false} />
         </mesh>
         <pointLight color="#ffb030" intensity={pulse * 1.2} distance={4} />
+      </group>
+    );
+  }
+
+  if (effect.kind === "playerWake") {
+    const ring = 0.38 + (1 - Math.min(1, effect.remaining / 1.8)) * 0.72;
+    const opacity = 0.28 * Math.min(1, effect.remaining / 0.4);
+    return (
+      <group position={[effect.position.x, 0.04, effect.position.y]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[ring * 0.4, ring * 0.62, 16]} />
+          <meshBasicMaterial color="#c8eeff" transparent opacity={opacity} depthWrite={false} />
+        </mesh>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[ring * 0.62, ring * 0.8, 16]} />
+          <meshBasicMaterial color="#e8f8ff" transparent opacity={opacity * 0.55} depthWrite={false} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (effect.kind === "projectileSplash") {
+    const ring = 0.3 + t * 1.8;
+    const opacity = 0.32 * (1 - t);
+    return (
+      <group position={[effect.position.x, 0.055, effect.position.y]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[ring * 0.3, ring * 0.5, 16]} />
+          <meshBasicMaterial color="#dff6ff" transparent opacity={opacity} depthWrite={false} />
+        </mesh>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[ring * 0.5, ring * 0.68, 16]} />
+          <meshBasicMaterial color="#f0fbff" transparent opacity={opacity * 0.6} depthWrite={false} />
+        </mesh>
+        <mesh position={[0, 0.03, 0]}>
+          <sphereGeometry args={[0.06 + t * 0.08, 6, 6]} />
+          <meshBasicMaterial color="#e0f8ff" transparent opacity={0.25 * (1 - t)} depthWrite={false} />
+        </mesh>
       </group>
     );
   }

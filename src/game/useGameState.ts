@@ -250,6 +250,8 @@ export function useGameState(): UseGameStateApi {
   const phantomFleetAttackTimerRef = useRef({ value: 0.24 });
   const droneSwarmRemainingRef = useRef({ value: 0 });
   const droneSwarmAttackTimerRef = useRef({ value: 0.2 });
+  const lastPlayerPosRef = useRef({ x: 0, y: 0 });
+  const playerWakeTimerRef = useRef({ value: 0 });
 
   const syncState = useCallback(() => {
     setSnapshot(copySnapshot(stateRef.current));
@@ -689,6 +691,29 @@ export function useGameState(): UseGameStateApi {
       step,
       state.upgrades.speedMult * ghostTideSpeedBoost * getBoostSpeedMultiplier(state.cooldowns),
     );
+
+    // Player wake effect — ripples trailing behind moving ship
+    const dx = state.player.position.x - lastPlayerPosRef.current.x;
+    const dy = state.player.position.y - lastPlayerPosRef.current.y;
+    const isMoving = Math.hypot(dx, dy) > 0.01;
+    lastPlayerPosRef.current.x = state.player.position.x;
+    lastPlayerPosRef.current.y = state.player.position.y;
+    if (isMoving) {
+      playerWakeTimerRef.current.value -= step;
+      if (playerWakeTimerRef.current.value <= 0) {
+        playerWakeTimerRef.current.value = 0.22;
+        // Spawn wake slightly behind the player based on facing
+        const behindX = state.player.position.x - Math.sin(state.player.facing) * 0.9;
+        const behindY = state.player.position.y - Math.cos(state.player.facing) * 0.9;
+        state.visualEffects.push({
+          id: effectIdRef.current.value++,
+          kind: "playerWake",
+          position: { x: behindX, y: behindY },
+          remaining: 1.8,
+        });
+      }
+    }
+
     const fullSteamActive = (state.upgrades.stacks.fullSteam ?? 0) > 0 && state.cooldowns.boostActiveRemaining > 0;
     runAutoAttack(
       state.enemies,
