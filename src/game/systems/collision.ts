@@ -1,6 +1,28 @@
 import { BASE_AUTO_ATTACK_DAMAGE, ENEMY_TOUCH_COOLDOWN, PLAYER_HIT_RADIUS, PROJECTILE_DESPAWN_DISTANCE_FROM_PLAYER } from "../constants";
 import { angleFromDirection, distance, normalize } from "../utils";
-import { isEnemyProjectileKind, type AudioEvent, type EnemyState, type PickupState, type PlayerState, type ProjectileState, type VisualEffect, type HarvestableState } from "../types";
+import { isEnemyProjectileKind, type AudioEvent, type EnemyState, type PickupState, type PlayerState, type ProjectileState, type VisualEffect, type HarvestableState, type VisualEffectKind } from "../types";
+
+// Minimal pooled effect factory — reuses a pool stored in useGameState to avoid GC churn.
+export function getVisualEffect(
+  id: number,
+  kind: VisualEffectKind,
+  position: { x: number; y: number },
+  remaining: number,
+  extras?: { text?: string; color?: string; scale?: number; intensity?: number; shake?: boolean; drift?: number },
+): VisualEffect {
+  return {
+    id,
+    kind,
+    position: { x: position.x, y: position.y },
+    remaining,
+    ...(extras?.text !== undefined ? { text: extras.text } : {}),
+    ...(extras?.color !== undefined ? { color: extras.color } : {}),
+    ...(extras?.scale !== undefined ? { scale: extras.scale } : {}),
+    ...(extras?.intensity !== undefined ? { intensity: extras.intensity } : {}),
+    ...(extras?.shake !== undefined ? { shake: extras.shake } : {}),
+    ...(extras?.drift !== undefined ? { drift: extras.drift } : {}),
+  };
+}
 
 export interface CollisionResult {
   killsGained: number;
@@ -89,14 +111,9 @@ function pushEffect(
   position: { x: number; y: number },
   duration: number,
   intensity?: number,
+  extras?: { text?: string; color?: string; scale?: number; shake?: boolean; drift?: number },
 ): void {
-  effects.push({
-    id: effectIdRef.value++,
-    kind,
-    position: { ...position },
-    remaining: duration,
-    ...(intensity !== undefined ? { intensity } : {}),
-  });
+  effects.push(getVisualEffect(effectIdRef.value++, kind, position, duration, { intensity, ...extras }));
 }
 
 function pushScreenShakeForDamage(
@@ -127,6 +144,7 @@ export function updateProjectileMotion(
   delta: number,
   visualEffects: VisualEffect[],
   effectIdRef: { value: number },
+  reclaimProjectile?: (p: ProjectileState) => void,
 ): void {
   for (let i = projectiles.length - 1; i >= 0; i -= 1) {
     const projectile = projectiles[i];
@@ -141,6 +159,9 @@ export function updateProjectileMotion(
       pushEffect(visualEffects, effectIdRef, splashKind, projectile.position, 0.38);
       if (projectile.kind === "playerCannon" || projectile.kind === "enemyBrute") {
         pushEffect(visualEffects, effectIdRef, "waterRippleSmall", projectile.position, 0.38);
+      }
+      if (reclaimProjectile) {
+        reclaimProjectile(projectile);
       }
       projectiles.splice(i, 1);
     }
@@ -276,16 +297,12 @@ export function resolveCollisions(
         const damageScale = projectile.damage > 80 ? 1.6 : projectile.damage > 60 ? 1.4 : projectile.damage > 40 ? 1.2 : projectile.damage > 20 ? 1.05 : 0.9;
         // Horizontal drift so rapid hits don't stack vertically — based on unique id to spread them
         const driftOffset = ((effectIdRef.value + projectile.id) % 11) * 0.12 - 0.6;
-        visualEffects.push({
-          id: effectIdRef.value++,
-          kind: "damageNumber",
-          position: { x: enemy.position.x + driftOffset, y: enemy.position.y },
-          remaining: 0.9,
+        visualEffects.push(getVisualEffect(effectIdRef.value++, "damageNumber", { x: enemy.position.x + driftOffset, y: enemy.position.y }, 0.9, {
           text: projectile.damage.toString(),
           color: isCrit ? "#ff8c00" : "#ffffff",
           scale: damageScale,
           shake: isCrit,
-        });
+        }));
 
         // Screen shake scales with damage — big hits shake the camera harder
         pushScreenShakeForDamage(visualEffects, effectIdRef, player.position, projectile.damage, 0.25);
@@ -351,15 +368,10 @@ export function resolveCollisions(
           if (audioEvents) {
             audioEvents.push({ id: effectIdRef.value++, sfx: "hit", position: h.position });
           }
-          
-          visualEffects.push({
-            id: effectIdRef.value++,
-            kind: "damageNumber",
-            position: { ...h.position },
-            remaining: 0.8,
+          visualEffects.push(getVisualEffect(effectIdRef.value++, "damageNumber", { ...h.position }, 0.8, {
             text: projectile.damage.toString(),
             color: "#aaaaaa",
-          });
+          }));
 
           if (h.hp <= 0) {
             spawnHarvestableDrops(h, spawnedPickups, pickupIdRef, harvestResourceMultiplier, harvestGemValueBonus);
@@ -421,17 +433,13 @@ export function resolveCollisions(
     const touching = distance(h.position, player.position) <= PLAYER_HIT_RADIUS + h.radius;
     
     if (touching) {
-      h.hp -= 50 * ramDamageMultiplier; 
+      h.hp -= 50 * ramDamageMultiplier;
       pushEffect(visualEffects, effectIdRef, "screenShake", player.position, 0.25);
       pushEffect(visualEffects, effectIdRef, "hitBurst", h.position, 0.4);
-      visualEffects.push({
-        id: effectIdRef.value++,
-        kind: "damageNumber",
-        position: { ...h.position },
-        remaining: 0.8,
+      visualEffects.push(getVisualEffect(effectIdRef.value++, "damageNumber", { ...h.position }, 0.8, {
         text: "RAM!",
         color: "#fffaaa",
-      });
+      }));
 
       if (h.hp <= 0) {
         spawnHarvestableDrops(h, spawnedPickups, pickupIdRef, harvestResourceMultiplier, harvestGemValueBonus);

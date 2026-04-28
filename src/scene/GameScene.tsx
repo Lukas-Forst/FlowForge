@@ -584,8 +584,8 @@ export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = nul
       {snapshot.mines.map((mine) => (
         <SeaMineVisual key={`mine-${mine.id}`} mine={mine} />
       ))}
-      <CombatProjectiles projectiles={snapshot.projectiles} />
-      <ArenaVisualEffects effects={snapshot.visualEffects} particleScale={particleScale} />
+      <CombatProjectiles projectiles={snapshot.projectiles} playerPosition={snapshot.player.position} />
+      <ArenaVisualEffects effects={snapshot.visualEffects} playerPosition={snapshot.player.position} particleScale={particleScale} />
 
       {snapshot.pickups.map((pickup) => (
         <PickupProp key={pickup.id} pickup={pickup} />

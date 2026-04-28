@@ -245,7 +245,7 @@ function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): R
   );
 }
 
-function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement | null {
+function VisualEffectSprite({ effect, particleScale = 1 }: { effect: VisualEffect; particleScale?: number }): ReactElement | null {
   const max = EFFECT_DURATION[effect.kind];
   const t = Math.max(0, Math.min(1, 1 - effect.remaining / max));
 
@@ -671,22 +671,30 @@ function VisualEffectSprite({ effect }: { effect: VisualEffect }): ReactElement 
   );
 }
 
-export function CombatProjectiles({ projectiles }: { projectiles: ProjectileState[] }): ReactElement {
+export function CombatProjectiles({ projectiles, playerPosition }: { projectiles: ProjectileState[]; playerPosition: { x: number; y: number } }): ReactElement {
   return (
     <>
-      {projectiles.map((p) => (
-        <ProjectileVisual key={p.id} projectile={p} />
-      ))}
+      {projectiles.map((p) => {
+        const dx = p.position.x - playerPosition.x;
+        const dz = p.position.y - playerPosition.y;
+        if (dx * dx + dz * dz > 80 * 80) return null;
+        return <ProjectileVisual key={p.id} projectile={p} />;
+      })}
     </>
   );
 }
 
-export function ArenaVisualEffects({ effects, particleScale = 1 }: { effects: VisualEffect[]; particleScale?: number }): ReactElement {
+const CULL_DISTANCE_SQ = 80 * 80;
+
+export function ArenaVisualEffects({ effects, playerPosition, particleScale = 1 }: { effects: VisualEffect[]; playerPosition: { x: number; y: number }; particleScale?: number }): ReactElement {
   return (
     <>
-      {effects.map((e) => (
-        <VisualEffectSprite key={e.id} effect={e} />
-      ))}
+      {effects.map((e) => {
+        const dx = e.position.x - playerPosition.x;
+        const dz = e.position.y - playerPosition.y;
+        if (dx * dx + dz * dz > CULL_DISTANCE_SQ) return null;
+        return <VisualEffectSprite key={e.id} effect={e} particleScale={particleScale} />;
+      })}
     </>
   );
 }
