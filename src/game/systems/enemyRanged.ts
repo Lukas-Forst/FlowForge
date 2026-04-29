@@ -32,6 +32,10 @@ export function runEnemyRangedAttacks(
   delta: number,
   playerCannonCharging?: boolean, // true when cannon cooldown > 0 (player charging)
 ): void {
+  // Avoid "burst stacking": if multiple snipers' cooldowns hit 0 in the same sim tick,
+  // only allow one to actually fire. Others have their cooldown reset below.
+  let sniperShotThisTick = false;
+
   for (const enemy of enemies) {
     if (enemy.type === "swarmer") {
       // Swarmers: add small random separation offset each frame to avoid perfect stacking.
@@ -109,6 +113,20 @@ export function runEnemyRangedAttacks(
     const spawnLead = 0.65;
     const spawnX = enemy.position.x + toward.x * spawnLead + flankOffset.x;
     const spawnY = enemy.position.y + toward.y * spawnLead + flankOffset.y;
+
+    if (enemy.type === "sniper") {
+      if (sniperShotThisTick) {
+        // Suppress additional sniper shots this tick by resetting cooldown.
+        // This keeps behavior deterministic enough while preventing 3-beam overburst.
+        enemy.rangedCooldown = ENEMY_RANGED_COOLDOWN.sniper;
+        if (distance(enemy.position, player.position) < 9) {
+          enemy.rangedCooldown *= 1.25;
+        }
+        continue;
+      }
+      sniperShotThisTick = true;
+    }
+
     projectiles.push({
       id: projectileIdRef.value++,
       kind: projectileKindForEnemy(enemy.type),

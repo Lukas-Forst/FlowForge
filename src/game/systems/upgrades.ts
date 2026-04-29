@@ -241,12 +241,14 @@ export function getUpgradeDelta(type: UpgradeType, currentStacks: number, upgrad
     case "pierce": {
       const cur = currentStacks;
       const next = cur + 1;
-      return { current: cur, next, delta: next > 0 ? Math.round((1 / cur) * 100) : 100 };
+      const delta = cur <= 0 ? 100 : Math.round((1 / cur) * 100);
+      return { current: cur, next, delta };
     }
     case "armor": {
       const cur = currentStacks * 15;
       const next = (currentStacks + 1) * 15;
-      return { current: cur, next, delta: Math.round((1 / cur) * 100) };
+      const delta = cur <= 0 ? 100 : Math.round((15 / cur) * 100);
+      return { current: cur, next, delta };
     }
     case "coinMagnet": {
       const cur = currentStacks * 0.3 + 1.4;

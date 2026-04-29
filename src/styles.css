@@ -278,6 +278,8 @@ button:hover {
 }
 
 .tutorial-skip-btn {
+}
+
 .tutorial-hint {
   margin-top: 0.6rem;
   font-size: 0.88rem;
@@ -432,22 +434,13 @@ button:hover {
 }
 
 .pulse-meter.special.ready .pulse-meter-fill {
-  animation: pulse-glow 0.9s ease-in-out infinite alternate, special-ready-sweep 0.75s ease-in-out infinite;
+  /* Keep emphasis without shifting meter position horizontally. */
+  animation: pulse-glow 0.9s ease-in-out infinite alternate;
 }
 
-@keyframes special-ready-sweep {
-  0% { transform: translateX(-3%); }
-  50% { transform: translateX(0); }
-  100% { transform: translateX(3%); }
-}@keyframes pulse-glow {
+@keyframes pulse-glow {
   from { filter: brightness(1); }
   to { filter: brightness(1.5); }
-}
-
-@keyframes special-ready-sweep {
-  0% { transform: translateX(-3%); }
-  50% { transform: translateX(0); }
-  100% { transform: translateX(3%); }
 }
 
 .pulse-meter.damage-flash {

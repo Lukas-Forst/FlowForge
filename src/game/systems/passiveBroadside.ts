@@ -6,7 +6,15 @@ import {
   CANNON_BROADSIDE_SPREAD_RADIANS,
 } from "../constants";
 import { angleFromDirection, directionFromAngle, perpRight } from "../utils";
-import type { EnemyState, PlayerState, ProjectileState, UpgradeStats, VisualEffect } from "../types";
+import type { AudioEvent, EnemyState, PlayerState, ProjectileState, UpgradeStats, VisualEffect } from "../types";
+
+export interface PendingBroadsideShot {
+  delay: number;
+  x: number;
+  y: number;
+  angle: number;
+  pierceRemaining: number;
+}
 
 export function getPassiveBroadsideInterval(upgrades: UpgradeStats): number {
   const sideGunStacks = upgrades.stacks.sideGuns ?? 0;
@@ -25,6 +33,7 @@ export function runPassiveBroadside(
   audioEvents: AudioEvent[],
   delta: number,
   enemies: EnemyState[],
+  pendingShots: PendingBroadsideShot[],
 ): void {
   intervalTimerRef.value -= delta;
   if (intervalTimerRef.value > 0) {
@@ -118,33 +127,57 @@ export function runPassiveBroadside(
     });
   }
 
-  // Fire the broadside with a short delay so the charge has time to display
-  setTimeout(() => {
-    for (const origin of allOrigins) {
-      projectiles.push({
-        id: projectileIdRef.value++,
-        kind: "playerCannon",
-        position: { x: origin.x, y: origin.y },
-        velocity: {
-          x: directionFromAngle(origin.angle).x * CANNON_PROJECTILE_SPEED,
-          y: directionFromAngle(origin.angle).y * CANNON_PROJECTILE_SPEED,
-        },
-        ttl: 1.45,
-        damage: CANNON_PROJECTILE_DAMAGE * 0.58,
-        radius: 0.42,
-        pierceRemaining: pierceCount,
-      });
-      visualEffects.push({
-        id: effectIdRef.value++,
-        kind: "muzzleFlash",
-        position: { x: origin.x, y: origin.y },
-        remaining: 0.08,
-      });
-      audioEvents.push({
-        id: effectIdRef.value++,
-        sfx: "cannon_fire",
-        position: { x: origin.x, y: origin.y },
-      });
+  for (const origin of allOrigins) {
+    pendingShots.push({
+      delay: 0.3,
+      x: origin.x,
+      y: origin.y,
+      angle: origin.angle,
+      pierceRemaining: pierceCount,
+    });
+  }
+}
+
+export function updatePendingBroadsideShots(
+  pendingShots: PendingBroadsideShot[],
+  delta: number,
+  projectileIdRef: { value: number },
+  projectiles: ProjectileState[],
+  effectIdRef: { value: number },
+  visualEffects: VisualEffect[],
+  audioEvents: AudioEvent[],
+): void {
+  for (let i = pendingShots.length - 1; i >= 0; i -= 1) {
+    const shot = pendingShots[i];
+    shot.delay -= delta;
+    if (shot.delay > 0) {
+      continue;
     }
-  }, 300);
+    const dir = directionFromAngle(shot.angle);
+    projectiles.push({
+      id: projectileIdRef.value++,
+      kind: "playerCannon",
+      position: { x: shot.x, y: shot.y },
+      velocity: {
+        x: dir.x * CANNON_PROJECTILE_SPEED,
+        y: dir.y * CANNON_PROJECTILE_SPEED,
+      },
+      ttl: 1.45,
+      damage: CANNON_PROJECTILE_DAMAGE * 0.58,
+      radius: 0.42,
+      pierceRemaining: shot.pierceRemaining,
+    });
+    visualEffects.push({
+      id: effectIdRef.value++,
+      kind: "muzzleFlash",
+      position: { x: shot.x, y: shot.y },
+      remaining: 0.08,
+    });
+    audioEvents.push({
+      id: effectIdRef.value++,
+      sfx: "cannon_fire",
+      position: { x: shot.x, y: shot.y },
+    });
+    pendingShots.splice(i, 1);
+  }
 }

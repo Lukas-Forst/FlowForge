@@ -36,15 +36,15 @@ export function createAudioManager(ctx: AudioContext): AudioManager {
 
   return {
     drain(queue, listenerX?: number) {
-      while (queue.length > 0) {
-        const ev = queue.shift();
-        if (!ev) break;
+      for (let i = 0; i < queue.length; i += 1) {
+        const ev = queue[i];
         let pan = 0;
         if (ev.position !== undefined && listenerX !== undefined) {
           pan = computePan(ev.position.x, listenerX);
         }
         playSynth(ctx, sfxBus, ev.sfx, ev.volume ?? 1, ev.pitch ?? 1, pan);
       }
+      queue.length = 0;
     },
     setMasterVolume(v) {
       master.gain.value = Math.max(0, Math.min(1, v));

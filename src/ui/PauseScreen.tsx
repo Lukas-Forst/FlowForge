@@ -1,8 +1,8 @@
 import type { ReactElement } from "react";
-import type { GameSnapshot } from "../game/types";
+import type { UiSnapshot } from "../game/types";
 
 interface PauseScreenProps {
-  snapshot: GameSnapshot;
+  snapshot: UiSnapshot;
   onResume: () => void;
   onQuit: () => void;
   onShowControls?: () => void;

@@ -35,8 +35,8 @@ import {
   retargetNextUpgradeThreshold,
 } from "./systems/upgrades";
 import { BASE_PASSIVE_BROADSIDE_INTERVAL, UPGRADE_OPTIONS } from "./constants";
-import type { FlashMessage, GameSnapshot, MovementKey, MultiplayerWorldState, RunRecord, UpgradeType } from "./types";
-import { runPassiveBroadside } from "./systems/passiveBroadside";
+import type { FlashMessage, GameSnapshot, MovementKey, MultiplayerWorldState, RunRecord, UiSnapshot, UpgradeType } from "./types";
+import { runPassiveBroadside, updatePendingBroadsideShots, type PendingBroadsideShot } from "./systems/passiveBroadside";
 import { directionFromAngle, distance, perpRight } from "./utils";
 
 const VIBE_PORTAL_UNLOCK_TIME = 120;
@@ -270,38 +270,48 @@ function createInitialSnapshot(phase: GameSnapshot["phase"] = "loading"): GameSn
   };
 }
 
-function copySnapshot(snapshot: GameSnapshot): GameSnapshot {
+function buildMinimapEnemies(snapshot: GameSnapshot, maxEntries = 40): UiSnapshot["minimapEnemies"] {
+  const px = snapshot.player.position.x;
+  const py = snapshot.player.position.y;
+  const nearest: Array<{ enemy: GameSnapshot["enemies"][number]; d2: number }> = [];
+
+  for (const enemy of snapshot.enemies) {
+    const dx = enemy.position.x - px;
+    const dy = enemy.position.y - py;
+    const d2 = dx * dx + dy * dy;
+
+    if (nearest.length < maxEntries) {
+      nearest.push({ enemy, d2 });
+      nearest.sort((a, b) => a.d2 - b.d2);
+      continue;
+    }
+
+    const farthestIdx = nearest.length - 1;
+    if (d2 < nearest[farthestIdx].d2) {
+      nearest[farthestIdx] = { enemy, d2 };
+      nearest.sort((a, b) => a.d2 - b.d2);
+    }
+  }
+
+  return nearest.map(({ enemy }) => ({
+    id: enemy.id,
+    x: enemy.position.x,
+    y: enemy.position.y,
+    type: enemy.type,
+  }));
+}
+
+function copySnapshot(snapshot: GameSnapshot): UiSnapshot {
+  const boss = snapshot.enemies.find((enemy) => enemy.type === "boss");
+  const eliteCount = snapshot.enemies.reduce((n, enemy) => n + (enemy.isElite ? 1 : 0), 0);
+
   return {
-    ...snapshot,
     loading: { ...snapshot.loading },
     player: { ...snapshot.player, position: { ...snapshot.player.position } },
-    enemies: snapshot.enemies.map((enemy) => ({ ...enemy, position: { ...enemy.position } })),
-    harvestables: snapshot.harvestables.map((h) => ({ ...h, position: { ...h.position } })),
-    projectiles: snapshot.projectiles.map((projectile) => ({
-      ...projectile,
-      position: { ...projectile.position },
-      velocity: { ...projectile.velocity },
-    })),
-    delayedAoEs: snapshot.delayedAoEs.map((aoe) => ({
-      ...aoe,
-      position: { ...aoe.position },
-    })),
-    mines: snapshot.mines.map((mine) => ({
-      ...mine,
-      position: { ...mine.position },
-      velocity: { ...mine.velocity },
-    })),
-    oilSlicks: snapshot.oilSlicks.map((slick) => ({ ...slick, position: { ...slick.position } })),
-    visualEffects: snapshot.visualEffects.map((effect) => ({
-      ...effect,
-      position: { ...effect.position },
-    })),
-    audioEvents: snapshot.audioEvents.map((audio) => ({ ...audio })),
-    postFxPulse: snapshot.postFxPulse ? { ...snapshot.postFxPulse } : null,
-    pickups: snapshot.pickups.map((pickup) => ({ ...pickup, position: { ...pickup.position } })),
-    upgrades: { ...snapshot.upgrades },
+    phase: snapshot.phase,
+    upgrades: { ...snapshot.upgrades, stacks: { ...snapshot.upgrades.stacks } },
     cooldowns: { ...snapshot.cooldowns },
-    stats: { ...snapshot.stats },
+    stats: { ...snapshot.stats, combatLog: snapshot.stats.combatLog.slice() },
     pendingUpgradeOptions: snapshot.pendingUpgradeOptions.map((option) => ({ ...option })),
     pendingUpgradeContext: snapshot.pendingUpgradeContext,
     message: snapshot.message ? { ...snapshot.message } : null,
@@ -310,11 +320,18 @@ function copySnapshot(snapshot: GameSnapshot): GameSnapshot {
       position: { ...snapshot.vibePortal.position },
     },
     runClock: { ...snapshot.runClock },
+    runBiome: snapshot.runBiome,
+    spawnIntensity: snapshot.spawnIntensity,
+    megaBoss: snapshot.megaBoss ? { ...snapshot.megaBoss } : null,
+    bossState: boss ? { hp: boss.hp, maxHp: boss.maxHp, type: boss.type } : null,
+    eliteCount,
+    minimapEnemies: buildMinimapEnemies(snapshot),
   };
 }
 
 export interface UseGameStateApi {
-  snapshot: GameSnapshot;
+  snapshot: UiSnapshot;
+  simStateRef: { current: GameSnapshot };
   startRun: () => void;
   restartRun: () => void;
   setMovementKey: (key: MovementKey, pressed: boolean) => void;
@@ -332,8 +349,8 @@ export interface UseGameStateApi {
 }
 
 export function useGameState(): UseGameStateApi {
-  const [snapshot, setSnapshot] = useState<GameSnapshot>(() => createInitialSnapshot("loading"));
-  const stateRef = useRef<GameSnapshot>(snapshot);
+  const stateRef = useRef<GameSnapshot>(createInitialSnapshot("loading"));
+  const [snapshot, setSnapshot] = useState<UiSnapshot>(() => copySnapshot(stateRef.current));
   const inputRef = useRef({ w: false, a: false, s: false, d: false });
   const enemyIdRef = useRef({ value: 1 });
   const harvestableIdRef = useRef({ value: 1 });
@@ -364,6 +381,7 @@ export function useGameState(): UseGameStateApi {
   const killStreakFlashRef = useRef({ value: false });
   const lastPlayerPosRef = useRef({ x: 0, y: 0 });
   const playerWakeTimerRef = useRef({ value: 0 });
+  const pendingBroadsideShotsRef = useRef<PendingBroadsideShot[]>([]);
 
   const syncState = useCallback(() => {
     setSnapshot(copySnapshot(stateRef.current));
@@ -371,6 +389,15 @@ export function useGameState(): UseGameStateApi {
 
   const setMessage = useCallback((message: FlashMessage | null) => {
     stateRef.current.message = message;
+  }, []);
+
+  const resetDebugPerfCounters = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const dbg = (window as typeof window & { __dbg?: Record<string, number> }).__dbg ?? {};
+    dbg.droppedEnemies = 0;
+    dbg.droppedProjectiles = 0;
+    dbg.droppedVfx = 0;
+    (window as typeof window & { __dbg?: Record<string, number> }).__dbg = dbg;
   }, []);
 
   const resetForRun = useCallback((phase: GameSnapshot["phase"]) => {
@@ -400,8 +427,10 @@ export function useGameState(): UseGameStateApi {
     phantomFleetAttackTimerRef.current.value = 0.24;
     droneSwarmRemainingRef.current.value = 0;
     droneSwarmAttackTimerRef.current.value = 0.2;
+    pendingBroadsideShotsRef.current = [];
+    resetDebugPerfCounters();
     syncState();
-  }, [syncState]);
+  }, [resetDebugPerfCounters, syncState]);
 
   const startRun = useCallback(() => {
     resetForRun("playing");
@@ -892,6 +921,16 @@ export function useGameState(): UseGameStateApi {
       state.audioEvents,
       step,
       state.enemies,
+      pendingBroadsideShotsRef.current,
+    );
+    updatePendingBroadsideShots(
+      pendingBroadsideShotsRef.current,
+      step,
+      projectileIdRef.current,
+      state.projectiles,
+      effectIdRef.current,
+      state.visualEffects,
+      state.audioEvents,
     );
     const spawnInt = computeRunSpawnIntensity(rc.elapsedTotal);
     state.spawnIntensity = Math.max(
@@ -1119,6 +1158,7 @@ export function useGameState(): UseGameStateApi {
         ramDamageMultiplier: 1 + (state.upgrades.stacks.ramProw ?? 0) * 0.75 + ((state.upgrades.stacks.ironclad ?? 0) > 0 ? 0.75 : 0),
         ramReflectBonus: (state.upgrades.stacks.ironclad ?? 0) > 0 ? 1.5 : 0,
       },
+      state.cooldowns.invulnRemaining > 0,
     );
 
     if (collisionResult.spawnedPickups) {
@@ -1149,34 +1189,31 @@ export function useGameState(): UseGameStateApi {
       }
     }
     
-    // Apply invulnerability frame block + armor mitigation.
-    if (state.cooldowns.invulnRemaining <= 0) {
-      const mitigatedDamage = applyDamageMitigation(collisionResult.playerDamageTaken, state.upgrades);
-      state.player.hp = Math.max(0, state.player.hp - mitigatedDamage);
-      if (mitigatedDamage > 0) {
-        state.stats.currentUnscathedStreak = 0;
-      } else {
-        state.stats.currentUnscathedStreak += step;
-        state.stats.longestUnscathedStreak = Math.max(state.stats.longestUnscathedStreak, state.stats.currentUnscathedStreak);
-      }
+    const mitigatedDamage = applyDamageMitigation(collisionResult.playerDamageTaken, state.upgrades);
+    state.player.hp = Math.max(0, state.player.hp - mitigatedDamage);
+    if (mitigatedDamage > 0) {
+      state.stats.currentUnscathedStreak = 0;
+    } else {
+      state.stats.currentUnscathedStreak += step;
+      state.stats.longestUnscathedStreak = Math.max(state.stats.longestUnscathedStreak, state.stats.currentUnscathedStreak);
+    }
 
-      // Kill streak: if player took no damage this tick, count kills gained and grow streak.
-      const killsGainedThisTick = state.stats.enemiesKilled - killsBefore;
-      if (killsGainedThisTick > 0 && mitigatedDamage === 0) {
-        killStreakRef.current.value += killsGainedThisTick;
-        state.stats.killStreak = killStreakRef.current.value;
-        state.stats.killStreakBest = Math.max(state.stats.killStreakBest, killStreakRef.current.value);
-        killStreakFlashRef.current.value = false;
-        state.stats.killStreakFlash = false;
-      } else if (mitigatedDamage > 0) {
-        // Streak broken — flash if it was a real streak.
-        if (killStreakRef.current.value >= 2) {
-          killStreakFlashRef.current.value = true;
-          state.stats.killStreakFlash = true;
-        }
-        killStreakRef.current.value = 0;
-        state.stats.killStreak = 0;
+    // Kill streak: if player took no damage this tick, count kills gained and grow streak.
+    const killsGainedThisTick = state.stats.enemiesKilled - killsBefore;
+    if (killsGainedThisTick > 0 && mitigatedDamage === 0) {
+      killStreakRef.current.value += killsGainedThisTick;
+      state.stats.killStreak = killStreakRef.current.value;
+      state.stats.killStreakBest = Math.max(state.stats.killStreakBest, killStreakRef.current.value);
+      killStreakFlashRef.current.value = false;
+      state.stats.killStreakFlash = false;
+    } else if (mitigatedDamage > 0) {
+      // Streak broken — flash if it was a real streak.
+      if (killStreakRef.current.value >= 2) {
+        killStreakFlashRef.current.value = true;
+        state.stats.killStreakFlash = true;
       }
+      killStreakRef.current.value = 0;
+      state.stats.killStreak = 0;
     }
 
     // Update combat log — last 5 events
@@ -1207,11 +1244,11 @@ export function useGameState(): UseGameStateApi {
     );
     state.stats.collectedCoins += coinsGained;
 
-    if (collisionResult.playerDamageTaken > 0 && state.cooldowns.invulnRemaining <= 0) {
+    if (collisionResult.playerDamageTaken > 0) {
       state.audioEvents.push({ id: effectIdRef.current.value++, sfx: "damage_taken" });
     }
 
-    if ((collisionResult.playerDamageTaken > 0 && state.cooldowns.invulnRemaining <= 0) || collisionResult.cannonHits > 0) {
+    if (collisionResult.playerDamageTaken > 0 || collisionResult.cannonHits > 0) {
       hitPauseTimerRef.current.value = 0.1;
     }
 
@@ -1289,6 +1326,7 @@ export function useGameState(): UseGameStateApi {
 
   return {
     snapshot,
+    simStateRef: stateRef,
     startRun,
     restartRun,
     setMovementKey,

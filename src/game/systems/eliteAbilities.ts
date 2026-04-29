@@ -31,6 +31,9 @@ export function runEliteAbilities(
   delta: number,
   playerCannonCharging?: boolean,
 ): void {
+  // Prevent burst stacking when multiple (elite) snipers try to fire in the same sim tick.
+  let eliteSniperShotThisTick = false;
+
   for (const enemy of enemies) {
     if (!enemy.isElite) continue;
     if (enemy.type !== "corsair" && enemy.type !== "brute" && enemy.type !== "bomber" && enemy.type !== "sniper") continue;
@@ -118,6 +121,11 @@ export function runEliteAbilities(
         y: player.position.y - enemy.position.y,
       });
       if (toward.x !== 0 || toward.y !== 0) {
+        if (eliteSniperShotThisTick) {
+          enemy.rangedCooldown = ELITE_SNIPER_BASE_COOLDOWN;
+          continue;
+        }
+        eliteSniperShotThisTick = true;
         let flankOffset = { x: 0, y: 0 };
         if (enemy.flankTimer != null && enemy.flankTimer > 0) {
           flankOffset = lateralOffset(toward, 0.5 * (enemy.flankDir ?? 1));

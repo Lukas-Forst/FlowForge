@@ -6,10 +6,10 @@ import * as THREE from "three";
 import { ShipSmoke } from "../effects/ShipSmoke";
 import { PLAYER_SHIP_MODEL_CONFIG, ShipModelVisual } from "../models/ShipModelVisual";
 
-export interface PlayerShipProps extends ThreeElements["group"] {
+export type PlayerShipProps = ThreeElements["group"] & {
   upgradeLevel: number;
   invulnRemaining?: number;
-}
+};
 
 const SHOW_DECK_CANNON_ATTACHMENTS = false;
 const GHOST_SPARKLE_COUNT = 8;

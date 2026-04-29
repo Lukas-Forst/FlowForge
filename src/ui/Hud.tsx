@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { useRef } from "react";
-import type { GameSnapshot, EnemyState } from "../game/types";
+import type { MinimapEnemyState, UiSnapshot } from "../game/types";
 import { AnimatedNumber } from "./AnimatedNumber";
 import { BiomeBadge } from "./BiomeBadge";
 import { BossFrame } from "./BossFrame";
@@ -12,7 +12,7 @@ import { getRunPhaseHudLabels } from "./runPhaseHud";
 import { XPBar } from "./XPBar";
 
 interface HudProps {
-  snapshot: GameSnapshot;
+  snapshot: UiSnapshot;
 }
 
 function cooldownPercent(remaining: number, duration: number): number {
@@ -41,10 +41,9 @@ export function Hud({ snapshot }: HudProps): ReactElement {
   const extraNeedsUnlock = !snapshot.upgrades.activeExtraAbility;
   const safeTime = Math.max(0, snapshot.stats.timeSurvived);
   const xpProgress = snapshot.upgrades.nextThreshold > 0 ? Math.min(1, Math.max(0, snapshot.stats.collectedCoins / snapshot.upgrades.nextThreshold)) : 0;
-  const boss = snapshot.enemies.find((e) => e.type === "boss");
   const eliteOnField =
     snapshot.runClock.phase === "elite"
-      ? snapshot.enemies.reduce((n, e) => n + (e.isElite ? 1 : 0), 0)
+      ? snapshot.eliteCount
       : undefined;
   const runPhase = getRunPhaseHudLabels(snapshot.runClock, eliteOnField);
 
@@ -68,7 +67,7 @@ export function Hud({ snapshot }: HudProps): ReactElement {
       {/* Mini-map */}
       <MiniMap
         playerPosition={snapshot.player.position}
-        enemies={snapshot.enemies}
+        enemies={snapshot.minimapEnemies}
         worldHalf={135}
       />
 
@@ -122,8 +121,8 @@ export function Hud({ snapshot }: HudProps): ReactElement {
 
       <BossFrame
         megaBoss={snapshot.megaBoss}
-        bossHp={boss?.hp ?? 0}
-        bossMaxHp={boss?.maxHp ?? 1}
+        bossHp={snapshot.bossState?.hp ?? 0}
+        bossMaxHp={snapshot.bossState?.maxHp ?? 1}
       />
       <KillStreakHud snapshot={snapshot} />
       {snapshot.stats.combatLog.length > 0 ? (
@@ -143,7 +142,7 @@ export function Hud({ snapshot }: HudProps): ReactElement {
 
 interface MiniMapProps {
   playerPosition: { x: number; y: number };
-  enemies: EnemyState[];
+  enemies: MinimapEnemyState[];
   worldHalf: number;
 }
 
@@ -182,9 +181,9 @@ function MiniMap({ playerPosition, enemies, worldHalf }: MiniMapProps): ReactEle
         }}
       />
       {/* Enemy dots */}
-      {enemies.slice(0, 40).map((e) => {
-        const mx = (e.position.x - playerPosition.x) * scale + mapSize / 2;
-        const my = (e.position.y - playerPosition.y) * scale + mapSize / 2;
+      {enemies.map((e) => {
+        const mx = (e.x - playerPosition.x) * scale + mapSize / 2;
+        const my = (e.y - playerPosition.y) * scale + mapSize / 2;
         if (mx < -4 || mx > mapSize + 4 || my < -4 || my > mapSize + 4) return null;
         const isBoss = e.type === "boss";
         const isShore = e.type === "shore_battery";

@@ -1,9 +1,9 @@
 import type { ReactElement } from "react";
 import { useEffect, useRef, useState } from "react";
-import type { GameSnapshot } from "../game/types";
+import type { UiSnapshot } from "../game/types";
 
 interface KillStreakHudProps {
-  snapshot: GameSnapshot;
+  snapshot: UiSnapshot;
 }
 
 /** Kills streak HUD — top-right corner, below the existing score block. */

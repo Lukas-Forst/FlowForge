@@ -329,6 +329,19 @@ export interface RunRecord {
   date: string;
 }
 
+export interface BossHudState {
+  hp: number;
+  maxHp: number;
+  type: EnemyType;
+}
+
+export interface MinimapEnemyState {
+  id: number;
+  x: number;
+  y: number;
+  type: EnemyType;
+}
+
 export interface GameSnapshot {
   phase: RunPhase;
   loading: LoadingState;
@@ -358,6 +371,26 @@ export interface GameSnapshot {
   };
   runBiome: BiomeType;
   megaBoss: MegaBossState | null;
+}
+
+export interface UiSnapshot {
+  phase: RunPhase;
+  loading: LoadingState;
+  player: PlayerState;
+  upgrades: UpgradeStats;
+  cooldowns: Cooldowns;
+  stats: GameStats;
+  pendingUpgradeOptions: UpgradeOption[];
+  pendingUpgradeContext: "levelup" | "eliteExtra";
+  message: FlashMessage | null;
+  vibePortal: VibePortalState;
+  spawnIntensity: number;
+  runClock: GameSnapshot["runClock"];
+  runBiome: BiomeType;
+  megaBoss: MegaBossState | null;
+  bossState: BossHudState | null;
+  eliteCount: number;
+  minimapEnemies: MinimapEnemyState[];
 }
 
 export type BiomeType = "open_sea" | "island_chain" | "deep_waters" | "boss_storm";

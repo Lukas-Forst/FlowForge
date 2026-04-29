@@ -88,6 +88,7 @@ function buildVibePortalUrl(snapshot: ReturnType<typeof useGameState>["snapshot"
 export default function App(): ReactElement {
   const {
     snapshot,
+    simStateRef,
     startRun,
     restartRun,
     setMovementKey,
@@ -137,6 +138,13 @@ export default function App(): ReactElement {
   });
   const [showControlsHelp, setShowControlsHelp] = useState(false);
   const [flashSignal, setFlashSignal] = useState(0);
+  const [fastRenderEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("ff_fast_render") === "true";
+    } catch {
+      return false;
+    }
+  });
   const snapshotRef = useRef(snapshot);
   snapshotRef.current = snapshot;
   const showTutorialRef = useRef(showTutorial);
@@ -190,6 +198,10 @@ export default function App(): ReactElement {
 
       const movement = MOVEMENT_KEYS[event.key.toLowerCase()];
       if (movement) {
+        if (showTutorial && snapshot.phase === "playing") {
+          try { localStorage.setItem("hasSeenTutorial", "true"); } catch { /* ignore */ }
+          setShowTutorial(false);
+        }
         setMovementKey(movement, true);
         return;
       }
@@ -317,17 +329,11 @@ export default function App(): ReactElement {
           socket.send(JSON.stringify({ type: "player_update", player: basePlayer }));
           if (net.mode === "host") {
             const world: MultiplayerWorldState = {
-              runClock: { ...latest.runClock },
+              runClock: latest.runClock,
               runBiome: latest.runBiome,
               spawnIntensity: latest.spawnIntensity,
-              enemies: latest.enemies.map((enemy) => ({
-                ...enemy,
-                position: { ...enemy.position },
-              })),
-              pickups: latest.pickups.map((pickup) => ({
-                ...pickup,
-                position: { ...pickup.position },
-              })),
+              enemies: latest.enemies,
+              pickups: latest.pickups,
               sharedCoins: latest.stats.collectedCoins,
             };
             socket.send(JSON.stringify({ type: "world_update", world, hostPlayer: basePlayer }));
@@ -565,7 +571,13 @@ export default function App(): ReactElement {
         </>
       ) : (
         <>
-          <GameScene snapshot={snapshot} remotePlayers={remotePlayers} localPlayerBadge={localPlayerBadge} />
+          <GameScene
+            snapshot={snapshot}
+            simStateRef={simStateRef}
+            fastRenderEnabled={fastRenderEnabled}
+            remotePlayers={remotePlayers}
+            localPlayerBadge={localPlayerBadge}
+          />
           {showTutorial && snapshot.phase === "playing" ? <TutorialOverlay onFinish={finishTutorial} /> : null}
           {showControlsHelp ? (
             <ControlsHelpModal onClose={() => setShowControlsHelp(false)} onResetTutorial={resetTutorialPreference} />

@@ -1,6 +1,7 @@
-import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { EnemyState, PlayerState, ProjectileState, UpgradeStats, VisualEffect, AudioEvent } from "../types";
-import { getPassiveBroadsideInterval, runPassiveBroadside } from "./passiveBroadside";
+import { getPassiveBroadsideInterval, runPassiveBroadside, updatePendingBroadsideShots } from "./passiveBroadside";
+import type { PendingBroadsideShot } from "./passiveBroadside";
 
 function createPlayer(): PlayerState {
   return {
@@ -37,18 +38,13 @@ describe("getPassiveBroadsideInterval", () => {
 });
 
 describe("runPassiveBroadside", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it("fires one shot per side at baseline", () => {
     const projectiles: ProjectileState[] = [];
     const effects: VisualEffect[] = [];
     const timer = { value: 0 };
+    const audioEvents: AudioEvent[] = [];
+    const enemies: EnemyState[] = [];
+    const pendingShots: PendingBroadsideShot[] = [];
     runPassiveBroadside(
       createPlayer(),
       createUpgrades(),
@@ -57,10 +53,20 @@ describe("runPassiveBroadside", () => {
       projectiles,
       effects,
       { value: 1 },
+      audioEvents,
       0.016,
-      [],
+      enemies,
+      pendingShots,
     );
-    vi.advanceTimersByTime(400);
+    updatePendingBroadsideShots(
+      pendingShots,
+      0.3,
+      { value: 1 },
+      projectiles,
+      { value: 1 },
+      effects,
+      audioEvents,
+    );
     expect(projectiles).toHaveLength(2);
   });
 
@@ -70,6 +76,9 @@ describe("runPassiveBroadside", () => {
     const timer = { value: 0 };
     const upgrades = createUpgrades();
     upgrades.stacks.sideGuns = 2;
+    const audioEvents: AudioEvent[] = [];
+    const enemies: EnemyState[] = [];
+    const pendingShots: PendingBroadsideShot[] = [];
 
     runPassiveBroadside(
       createPlayer(),
@@ -79,10 +88,20 @@ describe("runPassiveBroadside", () => {
       projectiles,
       effects,
       { value: 1 },
+      audioEvents,
       0.016,
-      [],
+      enemies,
+      pendingShots,
     );
-    vi.advanceTimersByTime(400);
+    updatePendingBroadsideShots(
+      pendingShots,
+      0.3,
+      { value: 1 },
+      projectiles,
+      { value: 1 },
+      effects,
+      audioEvents,
+    );
     expect(projectiles).toHaveLength(6);
   });
 
@@ -92,6 +111,9 @@ describe("runPassiveBroadside", () => {
     const timer = { value: 0 };
     const upgrades = createUpgrades();
     upgrades.stacks.pierce = 2;
+    const audioEvents: AudioEvent[] = [];
+    const enemies: EnemyState[] = [];
+    const pendingShots: PendingBroadsideShot[] = [];
 
     runPassiveBroadside(
       createPlayer(),
@@ -101,19 +123,20 @@ describe("runPassiveBroadside", () => {
       projectiles,
       effects,
       { value: 1 },
-      0.016,
-      [],
-    );
-    vi.advanceTimersByTime(400);
-    expect(projectiles.every((p) => p.pierceRemaining === 2)).toBe(true);
-  });
-});
-1 },
       audioEvents,
       0.016,
-      [],
+      enemies,
+      pendingShots,
     );
-    vi.advanceTimersByTime(400);
+    updatePendingBroadsideShots(
+      pendingShots,
+      0.3,
+      { value: 1 },
+      projectiles,
+      { value: 1 },
+      effects,
+      audioEvents,
+    );
     expect(projectiles.every((p) => p.pierceRemaining === 2)).toBe(true);
   });
 });

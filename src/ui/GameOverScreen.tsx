@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 import { EVOLUTION_UPGRADE_TYPES, UPGRADE_OPTIONS } from "../game/constants";
-import type { GameSnapshot, UpgradeType } from "../game/types";
+import type { UiSnapshot, UpgradeType } from "../game/types";
 import { formatBiomeName } from "./BiomeBadge";
 import {
   addXp,
@@ -18,11 +18,11 @@ import {
 } from "../game/captainProgress";
 
 interface GameOverScreenProps {
-  snapshot: GameSnapshot;
+  snapshot: UiSnapshot;
   onRestart: () => void;
 }
 
-function getTopUpgrades(snapshot: GameSnapshot, limit: number): string[] {
+function getTopUpgrades(snapshot: UiSnapshot, limit: number): string[] {
   return (Object.keys(snapshot.upgrades.stacks) as UpgradeType[])
     .filter((type) => (snapshot.upgrades.stacks[type] ?? 0) > 0)
     .sort((a, b) => {
@@ -34,11 +34,11 @@ function getTopUpgrades(snapshot: GameSnapshot, limit: number): string[] {
     .map((type) => `${UPGRADE_OPTIONS[type].label} x${snapshot.upgrades.stacks[type] ?? 0}`);
 }
 
-function getEvolutions(snapshot: GameSnapshot): string[] {
+function getEvolutions(snapshot: UiSnapshot): string[] {
   return EVOLUTION_UPGRADE_TYPES.filter((type) => (snapshot.upgrades.stacks[type] ?? 0) > 0).map((type) => UPGRADE_OPTIONS[type].label);
 }
 
-function buildRunSummaryText(snapshot: GameSnapshot, topUpgrades: string[], evolutions: string[]): string {
+function buildRunSummaryText(snapshot: UiSnapshot, topUpgrades: string[], evolutions: string[]): string {
   const lines = [
     `FlowForge run`,
     `Score: ${snapshot.stats.score}`,
@@ -56,7 +56,7 @@ function buildRunSummaryText(snapshot: GameSnapshot, topUpgrades: string[], evol
 }
 
 function createRunReportImage(
-  snapshot: GameSnapshot,
+  snapshot: UiSnapshot,
   topEvolution: string,
   topUpgrades: string[],
   evolutions: string[],

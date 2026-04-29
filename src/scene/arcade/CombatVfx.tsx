@@ -88,6 +88,15 @@ function projectileCore(kind: ProjectileKind): {
         metalness: 0.42,
         roughness: 0.48,
       };
+    case "enemySniper":
+      return {
+        radius: 0.14,
+        color: "#f2d7ff",
+        emissive: "#c54bff",
+        emissiveIntensity: 2.4,
+        metalness: 0.18,
+        roughness: 0.34,
+      };
     default:
       return {
         radius: 0.22,
@@ -98,6 +107,59 @@ function projectileCore(kind: ProjectileKind): {
         roughness: 0.5,
       };
   }
+}
+
+function SniperBeamVisual({ p }: { p: ProjectileState }): ReactElement {
+  const groupRef = useRef<THREE.Group>(null);
+  const core = projectileCore(p.kind);
+  const vx = p.velocity.x;
+  const vz = p.velocity.y;
+  const speed = Math.hypot(vx, vz);
+  const yaw = speed > 0.05 ? Math.atan2(vx, vz) : 0;
+
+  // A fixed-length beam reads better than a dot; tie slight length to speed/remaining TTL.
+  const beamLen = 3.6 + Math.min(1.0, speed * 0.035) + (p.ttl / 3.8) * 0.8;
+  const beamThickness = 0.08;
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime + (p.id % 19) * 0.07;
+    if (!groupRef.current) return;
+
+    // Subtle flicker for a laser feel.
+    const flicker = 0.75 + Math.max(0, Math.sin(t * 18)) * 0.25;
+    groupRef.current.scale.setScalar(flicker);
+  });
+
+  return (
+    <group ref={groupRef} position={[p.position.x, 0.56, p.position.y]} rotation={[0, yaw, 0]}>
+      {/* Beam body (aligned to local Z axis). */}
+      <mesh position={[0, 0, -beamLen * 0.5]}>
+        <boxGeometry args={[beamThickness, beamThickness, beamLen]} />
+        <meshStandardMaterial
+          color={core.color}
+          emissive={core.emissive}
+          emissiveIntensity={core.emissiveIntensity}
+          metalness={0.05}
+          roughness={0.35}
+          transparent
+          opacity={0.65}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* Core at current projectile position. */}
+      <mesh>
+        <sphereGeometry args={[core.radius, 10, 10]} />
+        <meshStandardMaterial
+          color={core.color}
+          emissive={core.emissive}
+          emissiveIntensity={core.emissiveIntensity}
+          metalness={core.metalness}
+          roughness={core.roughness}
+        />
+      </mesh>
+    </group>
+  );
 }
 
 function TorpedoVisual({ p }: { p: ProjectileState }): ReactElement {
@@ -160,6 +222,7 @@ function TorpedoVisual({ p }: { p: ProjectileState }): ReactElement {
 
 function ProjectileVisual({ projectile: p }: { projectile: ProjectileState }): ReactElement {
   if (p.kind === "playerTorpedo") return <TorpedoVisual p={p} />;
+  if (p.kind === "enemySniper") return <SniperBeamVisual p={p} />;
 
   const groupRef = useRef<THREE.Group>(null);
   const exhaustRef = useRef<THREE.Mesh>(null);
@@ -671,25 +734,183 @@ function VisualEffectSprite({ effect, particleScale = 1 }: { effect: VisualEffec
   );
 }
 
-export function CombatProjectiles({ projectiles, playerPosition }: { projectiles: ProjectileState[]; playerPosition: { x: number; y: number } }): ReactElement {
+const CULL_DISTANCE_SQ = 80 * 80;
+const FAST_PROJECTILE_MAX = 256;
+const FAST_SNIPER_BEAM_MAX = 64;
+const FAST_TOTAL_PROJECTILES_MAX = FAST_PROJECTILE_MAX + FAST_SNIPER_BEAM_MAX;
+const FAST_VFX_TOTAL_MAX = 96;
+const FAST_VFX_KIND_LIMITS: Partial<Record<VisualEffectKind, number>> = {
+  muzzleFlash: 32,
+  broadsideCharge: 32,
+  waterRippleSmall: 24,
+  projectileSplash: 24,
+  hitBurst: 28,
+  damageNumber: 20,
+};
+
+function bumpDroppedProjectilesCounter(dropped: number): void {
+  if (dropped <= 0 || typeof window === "undefined") return;
+  const dbg = (window as typeof window & { __dbg?: { droppedProjectiles?: number } }).__dbg ?? {};
+  dbg.droppedProjectiles = (dbg.droppedProjectiles ?? 0) + dropped;
+  (window as typeof window & { __dbg?: { droppedProjectiles?: number } }).__dbg = dbg;
+}
+
+function bumpDroppedVfxCounter(dropped: number): void {
+  if (dropped <= 0 || typeof window === "undefined") return;
+  const dbg = (window as typeof window & { __dbg?: { droppedVfx?: number } }).__dbg ?? {};
+  dbg.droppedVfx = (dbg.droppedVfx ?? 0) + dropped;
+  (window as typeof window & { __dbg?: { droppedVfx?: number } }).__dbg = dbg;
+}
+
+function selectFastVfx(effects: VisualEffect[], playerPosition: { x: number; y: number }): VisualEffect[] {
+  const nearby = effects.filter((e) => {
+    const dx = e.position.x - playerPosition.x;
+    const dz = e.position.y - playerPosition.y;
+    return dx * dx + dz * dz <= CULL_DISTANCE_SQ;
+  });
+
+  const selected: VisualEffect[] = [];
+  const perKindCount = new Map<VisualEffectKind, number>();
+
+  // LRU-ish policy: prefer most recent entries (higher id / later push order).
+  for (let i = nearby.length - 1; i >= 0; i -= 1) {
+    if (selected.length >= FAST_VFX_TOTAL_MAX) break;
+    const effect = nearby[i];
+    const kindCount = perKindCount.get(effect.kind) ?? 0;
+    const kindLimit = FAST_VFX_KIND_LIMITS[effect.kind] ?? FAST_VFX_TOTAL_MAX;
+    if (kindCount >= kindLimit) continue;
+    selected.push(effect);
+    perKindCount.set(effect.kind, kindCount + 1);
+  }
+
+  const dropped = Math.max(0, nearby.length - selected.length);
+  bumpDroppedVfxCounter(dropped);
+
+  // Keep stable-ish draw order by id ascending.
+  selected.sort((a, b) => a.id - b.id);
+  return selected;
+}
+
+function FastCombatProjectiles({
+  projectiles,
+  playerPosition,
+}: {
+  projectiles: ProjectileState[];
+  playerPosition: { x: number; y: number };
+}): ReactElement {
+  const orbRef = useRef<THREE.InstancedMesh>(null);
+  const beamRef = useRef<THREE.InstancedMesh>(null);
+  const tempObj = useMemo(() => new THREE.Object3D(), []);
+
+  useFrame(() => {
+    const nearbyProjectiles: ProjectileState[] = [];
+    const nearbyEnemies: ProjectileState[] = [];
+    for (const p of projectiles) {
+      const dx = p.position.x - playerPosition.x;
+      const dz = p.position.y - playerPosition.y;
+      if (dx * dx + dz * dz > CULL_DISTANCE_SQ) continue;
+      if (p.kind === "playerAuto" || p.kind === "playerCannon" || p.kind === "playerTorpedo") {
+        nearbyProjectiles.push(p);
+      } else {
+        nearbyEnemies.push(p);
+      }
+    }
+
+    // Priority order: player projectiles first, then enemy projectiles.
+    const selected = nearbyProjectiles.concat(nearbyEnemies).slice(0, FAST_TOTAL_PROJECTILES_MAX);
+    const droppedCount = Math.max(0, nearbyProjectiles.length + nearbyEnemies.length - selected.length);
+    bumpDroppedProjectilesCounter(droppedCount);
+
+    let orbCount = 0;
+    let beamCount = 0;
+
+    for (const p of selected) {
+      const speed = Math.hypot(p.velocity.x, p.velocity.y);
+      const yaw = speed > 0.05 ? Math.atan2(p.velocity.x, p.velocity.y) : 0;
+
+      if (p.kind === "enemySniper") {
+        if (beamCount >= FAST_SNIPER_BEAM_MAX) continue;
+        tempObj.position.set(p.position.x, 0.56, p.position.y);
+        tempObj.rotation.set(0, yaw, 0);
+        tempObj.scale.set(0.08, 0.08, 3.2);
+        tempObj.updateMatrix();
+        beamRef.current?.setMatrixAt(beamCount, tempObj.matrix);
+        beamCount += 1;
+      } else {
+        if (orbCount >= FAST_PROJECTILE_MAX) continue;
+        const radius = Math.max(0.08, Math.min(0.5, p.radius ?? 0.2));
+        tempObj.position.set(p.position.x, 0.56, p.position.y);
+        tempObj.rotation.set(0, yaw, 0);
+        tempObj.scale.set(radius, radius, radius);
+        tempObj.updateMatrix();
+        orbRef.current?.setMatrixAt(orbCount, tempObj.matrix);
+        orbCount += 1;
+      }
+    }
+
+    if (orbRef.current) {
+      orbRef.current.count = orbCount;
+      orbRef.current.instanceMatrix.needsUpdate = true;
+    }
+    if (beamRef.current) {
+      beamRef.current.count = beamCount;
+      beamRef.current.instanceMatrix.needsUpdate = true;
+    }
+  });
+
+  return (
+    <>
+      <instancedMesh ref={orbRef} args={[undefined, undefined, FAST_PROJECTILE_MAX]} frustumCulled={false}>
+        <sphereGeometry args={[1, 8, 8]} />
+        <meshStandardMaterial color="#ffd7aa" emissive="#ff8d3a" emissiveIntensity={0.9} metalness={0.2} roughness={0.45} />
+      </instancedMesh>
+      <instancedMesh ref={beamRef} args={[undefined, undefined, FAST_SNIPER_BEAM_MAX]} frustumCulled={false}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshBasicMaterial color="#f2d7ff" transparent opacity={0.65} depthWrite={false} />
+      </instancedMesh>
+    </>
+  );
+}
+
+export function CombatProjectiles({
+  projectiles,
+  playerPosition,
+  fastPath = false,
+}: {
+  projectiles: ProjectileState[];
+  playerPosition: { x: number; y: number };
+  fastPath?: boolean;
+}): ReactElement {
+  if (fastPath) {
+    return <FastCombatProjectiles projectiles={projectiles} playerPosition={playerPosition} />;
+  }
   return (
     <>
       {projectiles.map((p) => {
         const dx = p.position.x - playerPosition.x;
         const dz = p.position.y - playerPosition.y;
-        if (dx * dx + dz * dz > 80 * 80) return null;
+        if (dx * dx + dz * dz > CULL_DISTANCE_SQ) return null;
         return <ProjectileVisual key={p.id} projectile={p} />;
       })}
     </>
   );
 }
 
-const CULL_DISTANCE_SQ = 80 * 80;
-
-export function ArenaVisualEffects({ effects, playerPosition, particleScale = 1 }: { effects: VisualEffect[]; playerPosition: { x: number; y: number }; particleScale?: number }): ReactElement {
+export function ArenaVisualEffects({
+  effects,
+  playerPosition,
+  particleScale = 1,
+  fastPath = false,
+}: {
+  effects: VisualEffect[];
+  playerPosition: { x: number; y: number };
+  particleScale?: number;
+  fastPath?: boolean;
+}): ReactElement {
+  const renderList = fastPath ? selectFastVfx(effects, playerPosition) : effects;
   return (
     <>
-      {effects.map((e) => {
+      {renderList.map((e) => {
         const dx = e.position.x - playerPosition.x;
         const dz = e.position.y - playerPosition.y;
         if (dx * dx + dz * dz > CULL_DISTANCE_SQ) return null;
