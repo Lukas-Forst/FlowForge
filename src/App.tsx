@@ -24,6 +24,21 @@ const MOVEMENT_KEYS: Record<string, MovementKey> = {
   d: "d",
 };
 
+const MOVEMENT_CODES: Record<string, MovementKey> = {
+  KeyW: "w",
+  KeyA: "a",
+  KeyS: "s",
+  KeyD: "d",
+  ArrowUp: "w",
+  ArrowLeft: "a",
+  ArrowDown: "s",
+  ArrowRight: "d",
+};
+
+function getMovementFromKeyboardEvent(event: KeyboardEvent): MovementKey | undefined {
+  return MOVEMENT_KEYS[event.key.toLowerCase()] ?? MOVEMENT_CODES[event.code];
+}
+
 function isRecognizedAbilityKey(code: string): boolean {
   return code === "Space" || code === "ShiftLeft" || code === "ShiftRight" || code === "KeyE";
 }
@@ -196,7 +211,7 @@ export default function App(): ReactElement {
         }
       }
 
-      const movement = MOVEMENT_KEYS[event.key.toLowerCase()];
+      const movement = getMovementFromKeyboardEvent(event);
       if (movement) {
         if (showTutorial && snapshot.phase === "playing") {
           try { localStorage.setItem("hasSeenTutorial", "true"); } catch { /* ignore */ }
@@ -244,19 +259,20 @@ export default function App(): ReactElement {
     };
 
     const onKeyUp = (event: KeyboardEvent): void => {
-      const movement = MOVEMENT_KEYS[event.key.toLowerCase()];
+      const movement = getMovementFromKeyboardEvent(event);
       if (movement) {
         setMovementKey(movement, false);
       }
     };
 
+    const onVisibilityChange = (): void => { if (document.hidden) clearMovement(); };
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
-    window.addEventListener("blur", clearMovement);
+    document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
-      window.removeEventListener("blur", clearMovement);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [
     restartRun,
@@ -299,15 +315,14 @@ export default function App(): ReactElement {
       last = now;
       const snap = snapshotRef.current;
       const simBlockedByUi =
-        (showTutorialRef.current && snap.phase === "playing") ||
-        (showControlsHelpRef.current && (snap.phase === "playing" || snap.phase === "upgrade"));
+        showControlsHelpRef.current && (snap.phase === "playing" || snap.phase === "upgrade");
       if (!simBlockedByUi) {
         tick(delta);
       }
       const mgr = audioMgrRef.current;
       if (mgr) {
         mgr.drain(consumeAudioEvents(), snap.player.position.x);
-        mgr.updateMusic(snap);
+        mgr.updateMusic(simStateRef.current);
       }
 
       netSendTimerRef.current += delta;

@@ -24,7 +24,9 @@
       "Bash(npm list *)",
       "Bash(node *)",
       "Bash(npx vite *)",
-      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('three:', d.get\\('dependencies',{}\\).get\\('three','NOT FOUND'\\)\\); print\\('vite-plugin-static-copy:', d.get\\('devDependencies',{}\\).get\\('vite-plugin-static-copy','NOT FOUND'\\)\\)\")"
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('three:', d.get\\('dependencies',{}\\).get\\('three','NOT FOUND'\\)\\); print\\('vite-plugin-static-copy:', d.get\\('devDependencies',{}\\).get\\('vite-plugin-static-copy','NOT FOUND'\\)\\)\")",
+      "Bash(npx tsc *)",
+      "Bash(npx vitest *)"
     ]
   }
 }
