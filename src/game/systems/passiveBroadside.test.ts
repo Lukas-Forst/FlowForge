@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
-import type { EnemyState, PlayerState, ProjectileState, UpgradeStats, VisualEffect } from "../types";
+import type { EnemyState, PlayerState, ProjectileState, UpgradeStats, VisualEffect, AudioEvent } from "../types";
 import { getPassiveBroadsideInterval, runPassiveBroadside } from "./passiveBroadside";
 
 function createPlayer(): PlayerState {
@@ -101,6 +101,15 @@ describe("runPassiveBroadside", () => {
       projectiles,
       effects,
       { value: 1 },
+      0.016,
+      [],
+    );
+    vi.advanceTimersByTime(400);
+    expect(projectiles.every((p) => p.pierceRemaining === 2)).toBe(true);
+  });
+});
+1 },
+      audioEvents,
       0.016,
       [],
     );

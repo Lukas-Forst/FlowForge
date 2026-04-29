@@ -22,6 +22,7 @@ export function runPassiveBroadside(
   projectiles: ProjectileState[],
   visualEffects: VisualEffect[],
   effectIdRef: { value: number },
+  audioEvents: AudioEvent[],
   delta: number,
   enemies: EnemyState[],
 ): void {
@@ -138,6 +139,11 @@ export function runPassiveBroadside(
         kind: "muzzleFlash",
         position: { x: origin.x, y: origin.y },
         remaining: 0.08,
+      });
+      audioEvents.push({
+        id: effectIdRef.value++,
+        sfx: "cannon_fire",
+        position: { x: origin.x, y: origin.y },
       });
     }
   }, 300);

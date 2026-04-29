@@ -28,6 +28,7 @@ export interface CollisionResult {
   killsGained: number;
   eliteKillsGained: number;
   playerDamageTaken: number;
+  invulnBlocked: boolean; // true when player was hit but damage was zeroed by invuln
   spawnedPickups: PickupState[];
   cannonHits: number;
   maxHitDealt: number;
@@ -254,13 +255,11 @@ export function resolveCollisions(
 
     if (isEnemyProjectileKind(projectile.kind)) {
       if (distance(player.position, projectile.position) <= PLAYER_HIT_RADIUS + projectile.radius) {
-        playerDamageTaken += projectile.damage;
-        if (projectile.damage > 60) critsGained += 1;
-        pushEffect(visualEffects, effectIdRef, "hitBurst", projectile.position, 0.22);
-        pushScreenShakeForDamage(visualEffects, effectIdRef, player.position, projectile.damage, 0.35);
         if (audioEvents) {
           audioEvents.push({ id: effectIdRef.value++, sfx: "hit", position: projectile.position });
         }
+        pushEffect(visualEffects, effectIdRef, "hitBurst", projectile.position, 0.22);
+        pushScreenShakeForDamage(visualEffects, effectIdRef, player.position, projectile.damage, 0.35);
         projectiles.splice(projectileIdx, 1);
       }
       continue;
@@ -453,5 +452,8 @@ export function resolveCollisions(
     }
   }
 
-  return { killsGained, eliteKillsGained, playerDamageTaken, spawnedPickups, cannonHits, maxHitDealt, critsGained, critsDealt };
+  return { killsGained, eliteKillsGained, playerDamageTaken, invulnBlocked, spawnedPickups, cannonHits, maxHitDealt, critsGained, critsDealt };
 }
+itsDealt };
+}
+

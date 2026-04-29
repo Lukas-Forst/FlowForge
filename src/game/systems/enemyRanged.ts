@@ -49,11 +49,13 @@ export function runEnemyRangedAttacks(
 
     const telegraphThreshold = (() => {
       switch (enemy.type) {
-        case "brute":   return 0.8;
-        case "sniper":  return 1.2;
-        case "corsair": return 0.4;
-        case "bomber":  return 0.25;
-        default:        return 0;
+        case "brute":          return 0.8;
+        case "sniper":         return 1.2;
+        case "corsair":        return 0.4;
+        case "bomber":         return 0.25;
+        case "boss":           return 0.7;
+        case "shore_battery":  return 0.6;
+        default:               return 0;
       }
     })();
 

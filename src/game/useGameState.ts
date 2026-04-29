@@ -889,6 +889,7 @@ export function useGameState(): UseGameStateApi {
       state.projectiles,
       state.visualEffects,
       effectIdRef.current,
+      state.audioEvents,
       step,
       state.enemies,
     );
@@ -1182,8 +1183,10 @@ export function useGameState(): UseGameStateApi {
     if (collisionResult.critsDealt > 0) {
       state.stats.combatLog = [`⚡ ${collisionResult.critsDealt}x CRIT!`, ...state.stats.combatLog].slice(0, 5);
     }
-    if (collisionResult.critsGained > 0) {
+    if (collisionResult.critsGained > 0 && !collisionResult.invulnBlocked) {
       state.stats.combatLog = [`💥 Took ${collisionResult.critsGained}x crit!`, ...state.stats.combatLog].slice(0, 5);
+    } else if (collisionResult.invulnBlocked) {
+      state.stats.combatLog = [`🛡️ Blocked!`, ...state.stats.combatLog].slice(0, 5);
     }
     if (collisionResult.killsGained > 0) {
       state.stats.combatLog = [`💀 +${collisionResult.killsGained} kill${collisionResult.killsGained > 1 ? "s" : ""}`, ...state.stats.combatLog].slice(0, 5);

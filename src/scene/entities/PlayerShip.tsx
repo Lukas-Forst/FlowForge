@@ -5,6 +5,7 @@ import { PLAYER_SHIP_MODEL_CONFIG, ShipModelVisual } from "../models/ShipModelVi
 
 type PlayerShipProps = ThreeElements["group"] & {
   upgradeLevel: number;
+  invulnRemaining?: number;
 };
 
 const SHOW_DECK_CANNON_ATTACHMENTS = false;
