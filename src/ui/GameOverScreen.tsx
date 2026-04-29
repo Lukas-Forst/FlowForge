@@ -8,10 +8,13 @@ import {
   calculateRunXp,
   loadBestRun,
   loadCaptainProgress,
+  loadRunHistory,
+  pushRunHistory,
   saveBestRun,
   saveCaptainProgress,
   type BestRun,
   type CaptainProgress,
+  type RunRecord,
 } from "../game/captainProgress";
 
 interface GameOverScreenProps {
@@ -144,6 +147,7 @@ export function GameOverScreen({ snapshot, onRestart }: GameOverScreenProps): Re
   // ── Captain progress ──────────────────────────────────────────────
   const [captainProgress, setCaptainProgress] = useState<CaptainProgress>(() => loadCaptainProgress());
   const [bestRun, setBestRun] = useState<BestRun | null>(() => loadBestRun());
+  const [runHistory, setRunHistory] = useState<RunRecord[]>(() => loadRunHistory());
   const [levelUpFlash, setLevelUpFlash] = useState<number>(0); // count of levels gained this run
   const [xpGainedThisRun, setXpGainedThisRun] = useState<number>(0);
 
@@ -169,9 +173,21 @@ export function GameOverScreen({ snapshot, onRestart }: GameOverScreenProps): Re
       xp,
       updated.captainLevel,
     );
+    pushRunHistory(
+      {
+        score: snapshot.stats.score,
+        timeSurvived: snapshot.stats.timeSurvived,
+        enemiesKilled: snapshot.stats.enemiesKilled,
+        collectedCoins: snapshot.stats.collectedCoins,
+        evolutionsUnlocked: snapshot.stats.evolutionsUnlocked,
+      },
+      xp,
+      updated.captainLevel,
+    );
 
     setCaptainProgress(updated);
     setBestRun(loadBestRun());
+    setRunHistory(loadRunHistory());
     setXpGainedThisRun(xp);
     if (levelsGained > 0) {
       setLevelUpFlash(levelsGained);
@@ -291,6 +307,26 @@ export function GameOverScreen({ snapshot, onRestart }: GameOverScreenProps): Re
                 <span>Kills</span>
                 <span>{bestRun.enemiesKilled}</span>
               </div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Run history — last 5 runs */}
+        {runHistory.length > 1 ? (
+          <div className="run-history-panel">
+            <div className="run-history-title">📜 Past Runs</div>
+            <div className="run-history-list">
+              {runHistory.slice(1, 6).map((run, i) => {
+                const date = new Date(run.date);
+                const label = date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+                return (
+                  <div key={i} className="run-history-row">
+                    <span className="run-history-label">{label}</span>
+                    <span className="run-history-score">{run.score.toLocaleString()}</span>
+                    <span className="run-history-time">{run.timeSurvived.toFixed(0)}s</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : null}

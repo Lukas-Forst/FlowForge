@@ -1427,3 +1427,33 @@ button:hover {
   85% { transform: scale(1) translateY(0); }
   100% { transform: scale(1.05) translateY(-8px); }
 }
+
+/* ── Ghost Hull Badge ────────────────────────────────────────────── */
+.ghost-badge {
+  position: fixed;
+  top: 68px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(180, 200, 255, 0.15);
+  border: 1px solid rgba(180, 220, 255, 0.55);
+  color: #c8e8ff;
+  font-family: "Luckiest Guy", system-ui, sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 3px;
+  padding: 5px 18px;
+  border-radius: 20px;
+  pointer-events: none;
+  z-index: 42;
+  animation: ghost-pulse 0.65s ease-in-out infinite alternate;
+  text-shadow: 0 0 10px rgba(200, 230, 255, 0.8);
+}
+
+@keyframes ghost-pulse {
+  from { opacity: 0.75; transform: translateX(-50%) scale(0.97); }
+  to   { opacity: 1;    transform: translateX(-50%) scale(1.03); }
+}
+
+/* ── Mini-map ────────────────────────────────────────────────────── */
+.mini-map {
+  box-shadow: 0 0 12px rgba(80, 160, 255, 0.18);
+}

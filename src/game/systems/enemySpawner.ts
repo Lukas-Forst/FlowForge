@@ -31,10 +31,12 @@ function pickEnemyType(elapsedTimeSec: number): EnemyType {
     if (roll < 0.8) return "bomber";
     return "brute";
   }
-  if (roll < 0.2) return "swarmer";
-  if (roll < 0.45) return "corsair";
-  if (roll < 0.7) return "bomber";
-  if (roll < 0.85) return "sniper";
+  // Phase 3-4: late game (>150s) — add shore_battery spawns
+  if (roll < 0.08) return "shore_battery";
+  if (roll < 0.23) return "swarmer";
+  if (roll < 0.48) return "corsair";
+  if (roll < 0.73) return "bomber";
+  if (roll < 0.88) return "sniper";
   return "brute";
 }
 

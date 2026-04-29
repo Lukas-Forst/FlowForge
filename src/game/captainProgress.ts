@@ -23,9 +23,23 @@ export interface BestRun {
   date: string;
 }
 
+/** Full run record for runHistory (same shape as BestRun) */
+export interface RunRecord {
+  score: number;
+  timeSurvived: number;
+  enemiesKilled: number;
+  collectedCoins: number;
+  evolutionsUnlocked: number;
+  xpGained: number;
+  captainLevel: number;
+  date: string;
+}
+
 const STORAGE_KEY_LEVEL = "flowforge.captain.level";
 const STORAGE_KEY_XP = "flowforge.captain.xp";
 const STORAGE_KEY_BEST = "flowforge.captain.bestRun";
+const STORAGE_KEY_HISTORY = "flowforge.runHistory";
+const MAX_RUN_HISTORY = 20;
 
 /** Level titles — cosmetic milestones */
 const CAPTAIN_TITLES: Record<number, string> = {
@@ -133,6 +147,43 @@ export function loadBestRun(): BestRun | null {
   } catch {
     return null;
   }
+}
+
+/** Load run history from localStorage */
+export function loadRunHistory(): RunRecord[] {
+  const raw = localStorage.getItem(STORAGE_KEY_HISTORY);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as RunRecord[];
+  } catch {
+    return [];
+  }
+}
+
+/** Push a completed run onto the history, capping at MAX_RUN_HISTORY */
+export function pushRunHistory(stats: {
+  score: number;
+  timeSurvived: number;
+  enemiesKilled: number;
+  collectedCoins: number;
+  evolutionsUnlocked: number;
+}, xpGained: number, captainLevel: number): void {
+  const record: RunRecord = {
+    score: stats.score,
+    timeSurvived: stats.timeSurvived,
+    enemiesKilled: stats.enemiesKilled,
+    collectedCoins: stats.collectedCoins,
+    evolutionsUnlocked: stats.evolutionsUnlocked,
+    xpGained,
+    captainLevel,
+    date: new Date().toISOString(),
+  };
+  const history = loadRunHistory();
+  history.unshift(record);
+  if (history.length > MAX_RUN_HISTORY) {
+    history.splice(MAX_RUN_HISTORY);
+  }
+  localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history));
 }
 
 /** Save best run if the new run is better */

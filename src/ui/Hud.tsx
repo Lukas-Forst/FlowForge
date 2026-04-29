@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { useRef } from "react";
-import type { GameSnapshot } from "../game/types";
+import type { GameSnapshot, EnemyState } from "../game/types";
 import { AnimatedNumber } from "./AnimatedNumber";
 import { BiomeBadge } from "./BiomeBadge";
 import { BossFrame } from "./BossFrame";
@@ -48,6 +48,9 @@ export function Hud({ snapshot }: HudProps): ReactElement {
       : undefined;
   const runPhase = getRunPhaseHudLabels(snapshot.runClock, eliteOnField);
 
+  // Ghost Hull indicator
+  const isGhosted = snapshot.cooldowns.invulnRemaining > 0;
+
   return (
     <>
       <XPBar progress={xpProgress} level={snapshot.upgrades.level} />
@@ -56,6 +59,18 @@ export function Hud({ snapshot }: HudProps): ReactElement {
         <span className="hud-wave-phase">{runPhase.phase}</span>
         <span className="hud-wave-detail">{runPhase.detail}</span>
       </div>
+
+      {/* Ghost Hull badge */}
+      {isGhosted && (
+        <div className="ghost-badge">{`GHOST ${snapshot.cooldowns.invulnRemaining.toFixed(1)}s`}</div>
+      )}
+
+      {/* Mini-map */}
+      <MiniMap
+        playerPosition={snapshot.player.position}
+        enemies={snapshot.enemies}
+        worldHalf={135}
+      />
 
       <div className="hud-v2">
         <div className="hud-v2-corner top-right">
@@ -123,5 +138,72 @@ export function Hud({ snapshot }: HudProps): ReactElement {
       ) : null}
       {snapshot.message ? <div className="toast">{snapshot.message.text}</div> : null}
     </>
+  );
+}
+
+interface MiniMapProps {
+  playerPosition: { x: number; y: number };
+  enemies: EnemyState[];
+  worldHalf: number;
+}
+
+function MiniMap({ playerPosition, enemies, worldHalf }: MiniMapProps): ReactElement {
+  const mapSize = 120;
+  const scale = mapSize / (worldHalf * 2);
+
+  return (
+    <div
+      className="mini-map"
+      style={{
+        position: "fixed",
+        bottom: 12,
+        right: 12,
+        width: mapSize,
+        height: mapSize,
+        background: "rgba(10, 25, 45, 0.72)",
+        borderRadius: 8,
+        border: "1px solid rgba(100, 180, 255, 0.25)",
+        overflow: "hidden",
+        zIndex: 41,
+        pointerEvents: "none",
+      }}
+    >
+      {/* Player dot — always centered */}
+      <div
+        style={{
+          position: "absolute",
+          left: mapSize / 2 - 3,
+          top: mapSize / 2 - 3,
+          width: 6,
+          height: 6,
+          borderRadius: "50%",
+          background: "#ffffff",
+          boxShadow: "0 0 4px #fff",
+        }}
+      />
+      {/* Enemy dots */}
+      {enemies.slice(0, 40).map((e) => {
+        const mx = (e.position.x - playerPosition.x) * scale + mapSize / 2;
+        const my = (e.position.y - playerPosition.y) * scale + mapSize / 2;
+        if (mx < -4 || mx > mapSize + 4 || my < -4 || my > mapSize + 4) return null;
+        const isBoss = e.type === "boss";
+        const isShore = e.type === "shore_battery";
+        return (
+          <div
+            key={e.id}
+            style={{
+              position: "absolute",
+              left: mx - (isBoss ? 4 : 2.5),
+              top: my - (isBoss ? 4 : 2.5),
+              width: isBoss ? 8 : 5,
+              height: isBoss ? 8 : 5,
+              borderRadius: "50%",
+              background: isShore ? "#ff9f43" : isBoss ? "#ff4444" : "#ff7070",
+              boxShadow: isBoss ? "0 0 5px #ff0000" : undefined,
+            }}
+          />
+        );
+      })}
+    </div>
   );
 }

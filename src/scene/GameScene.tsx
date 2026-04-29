@@ -536,7 +536,10 @@ export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = nul
       />
 
       <group position={[snapshot.player.position.x, 0, snapshot.player.position.y]} rotation={[0, snapshot.player.facing, 0]}>
-        <PlayerShip upgradeLevel={snapshot.upgrades.level} />
+        <PlayerShip
+          upgradeLevel={snapshot.upgrades.level}
+          invulnRemaining={snapshot.cooldowns.invulnRemaining}
+        />
         {localPlayerBadge ? (
           <PlayerNameTag name={localPlayerBadge.name} emoji={localPlayerBadge.emoji} color={localPlayerBadge.color} />
         ) : null}
