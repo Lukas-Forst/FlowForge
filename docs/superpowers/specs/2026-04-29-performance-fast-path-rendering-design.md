@@ -41,7 +41,7 @@ Replace the current `GameSnapshot` (which includes full entity arrays) with a tr
 - `vibePortal`
 - `bossState` — derived field: `{ hp, maxHp, type } | null` extracted from `stateRef.current.enemies` at sync time, replaces raw enemy scan in HUD
 - `eliteCount` — derived scalar: count of `isElite` enemies at sync time, replaces `snapshot.enemies.reduce` in HUD
-- `minimapEnemies` — derived array: `{ x, y, type }[]` (position + type only, no full EnemyState), extracted at sync time for minimap rendering
+- `minimapEnemies` — derived array: `{ x, y, type }[]` (position + type only, no full EnemyState), capped at 40 entries (nearest 40 by squared distance), extracted at sync time for minimap rendering
 
 Removed from snapshot: `enemies[]`, `projectiles[]`, `visualEffects[]`, `audioEvents[]`, `delayedAoEs[]`, `mines[]`, `oilSlicks[]`, `harvestables[]`, `pickups[]`, `postFxPulse`.
 
@@ -60,7 +60,7 @@ Create a fixed-size pool of 64 `<group>` refs at scene mount. A `useFrame` callb
 
 Each pool slot renders the same ship mesh geometry as today. HP bars and boss UI remain as React components driven by `UiSnapshot.bossState` and `UiSnapshot.eliteCount` — no per-frame reconciliation.
 
-**Overflow policy (enemies):** Pool cap is 64. If `enemies.length > 64`, the excess enemies are invisible. Prioritization: sort by distance to player ascending before pool assignment — closest enemies are always visible. A dev-mode counter `window.__dbg.droppedEnemies` increments when overflow occurs. In practice, max spawned enemies per wave is well below 64.
+**Overflow policy (enemies):** Pool cap is 64. If `enemies.length > 64`, the excess enemies are invisible. Prioritization: partial top-k selection by squared distance (no full sort) — iterate enemies once, maintain a 64-slot min-heap or simple linear pass to keep the 64 nearest. This avoids introducing an O(n log n) sort on the hot path. A dev-mode counter `window.__dbg.droppedEnemies` increments when overflow occurs. In practice, max spawned enemies per wave is well below 64.
 
 ### 4. Projectile rendering — `InstancedMesh` (`CombatVfx.tsx`)
 
@@ -156,7 +156,7 @@ No existing UI consumer reads raw entity arrays except `Hud.tsx` for boss HP, el
 | `src/App.tsx` | Accept `stateRef` from `useGameState`; pass to scene components |
 | `src/game/types.ts` | Add `UiSnapshot` interface; deprecate raw entity arrays from `GameSnapshot` |
 
-**Untouched:** All simulation files (`collision.ts`, `passiveBroadside.ts`, `useGameState.ts` tick logic, enemy AI, etc.)
+**Simulation math/behavior unchanged.** Only snapshot bridging and data plumbing change in `useGameState.ts` — the tick logic, enemy AI, collision, and all other simulation files are untouched.
 
 ---
 
@@ -169,12 +169,12 @@ No existing UI consumer reads raw entity arrays except `Hud.tsx` for boss HP, el
 | Check | Method |
 |---|---|
 | Entity count parity | After each tick, `pool.visibleCount === stateRef.current.enemies.length` (assert in dev mode) |
-| Projectile count parity | `instancedMesh.count` matches `stateRef.current.projectiles.length` (capped at instance max) |
+| Projectile count parity | `activeInstanceCount === Math.min(projectiles.length, maxInstances)` — asserted in dev mode after each `useFrame` write |
 | No-NaN transforms | `useFrame` asserts `!isNaN(position.x)` before writing; logs warning and skips on violation |
 | Pause freeze | When `phase === "paused"`, pool positions must not change between frames — verified by snapshot comparison in test harness |
 | Gameover freeze | Same as pause |
 | UiSnapshot consistency | `bossState.hp` matches `stateRef.current.enemies.find(boss).hp` at the frame it was derived — checked in dev mode after each `syncState()` |
-| Overflow counter | `window.__dbg.droppedEnemies/Projectiles/Vfx` remain 0 in normal play (wave up to wave 5) |
+| Overflow counter | `window.__dbg.droppedEnemies/Projectiles/Vfx` remain 0 in normal play (wave up to wave 5); counters reset to 0 on `startRun`/`restartRun` for clean per-run profiling |
 | DPR resize | Resizing the window does not shift damage number positions — manual test |
 
 ---
@@ -183,7 +183,7 @@ No existing UI consumer reads raw entity arrays except `Hud.tsx` for boss HP, el
 
 **Feature flag:** `localStorage.getItem("ff_fast_render") === "true"` controls which rendering path is active. Default `false` (current renderer). Setting the flag switches to the new pool/instanced path.
 
-**Fallback:** If the flag is absent or `"false"`, the existing `snapshot.enemies.map(...)` path remains in place and untouched. The two paths coexist in the same files during rollout via a single ternary at the render site.
+**Fallback:** If the flag is absent or `"false"`, the old render path stays active. Because `UiSnapshot` drops raw entity arrays, the old path cannot read `snapshot.enemies` — instead it reads `stateRef.current.enemies` directly (same data, different source). This means the fallback path is also migrated off `snapshot` entity arrays; the only difference between the two paths is whether rendering uses pools/instancing or individual React components. `stateRef` is exposed from `useGameState` for both paths.
 
 **Graduation:** Once the new path is validated at 60 FPS across wave 1–10, remove the flag and delete the old render path. No backwards-compat shim needed after deletion.
 
