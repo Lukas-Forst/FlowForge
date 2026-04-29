@@ -554,23 +554,29 @@ export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = nul
         </group>
       ))}
 
-      {snapshot.enemies.map((enemy) => (
-        <group key={enemy.id}>
-          <EnemyShip
-            type={enemy.type}
-            isElite={enemy.isElite}
-            hitFlashTimer={enemy.hitFlashTimer}
-            position={[enemy.position.x, 0, enemy.position.y]}
-            rotation={[0, enemy.facing, 0]}
-          />
-          <ShipWakeFoam
-            x={enemy.position.x}
-            z={enemy.position.y}
-            facing={enemy.facing}
-            sizeScale={enemy.type === "brute" ? 1.05 : enemy.type === "bomber" ? 0.86 : 0.78}
-          />
-        </group>
-      ))}
+      {snapshot.enemies.map((enemy) => {
+        const hpRatio = enemy.maxHp > 0 ? enemy.currentHp / enemy.maxHp : 1;
+        const damageState: "healthy" | "smoking" | "on_fire" | "sinking" =
+          hpRatio > 0.75 ? "healthy" : hpRatio > 0.5 ? "smoking" : hpRatio > 0.25 ? "on_fire" : "sinking";
+        return (
+          <group key={enemy.id}>
+            <EnemyShip
+              type={enemy.type}
+              isElite={enemy.isElite}
+              hitFlashTimer={enemy.hitFlashTimer}
+              damageState={enemy.type === "boss" || enemy.type === "shore_battery" ? damageState : undefined}
+              position={[enemy.position.x, 0, enemy.position.y]}
+              rotation={[0, enemy.facing, 0]}
+            />
+            <ShipWakeFoam
+              x={enemy.position.x}
+              z={enemy.position.y}
+              facing={enemy.facing}
+              sizeScale={enemy.type === "brute" ? 1.05 : enemy.type === "bomber" ? 0.86 : 0.78}
+            />
+          </group>
+        );
+      })}
 
       {snapshot.delayedAoEs.filter((aoe) => aoe.visualType === "depthCharge").map((aoe) => (
         <DepthChargeBarrel key={`dc-${aoe.id}`} aoe={aoe} />

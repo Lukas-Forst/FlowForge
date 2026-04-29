@@ -12,6 +12,7 @@ type EnemyShipProps = ThreeElements["group"] & {
   type: EnemyType;
   isElite?: boolean;
   hitFlashTimer?: number;
+  damageState?: "healthy" | "smoking" | "on_fire" | "sinking";
 };
 
 const ENEMY_MODEL_CONFIGS: Record<EnemyType, ShipModelConfig> = {
@@ -265,7 +266,59 @@ function EliteAura({ isBoss }: { isBoss: boolean }): ReactElement {
   );
 }
 
-export function EnemyShip({ type, isElite = false, hitFlashTimer, ...props }: EnemyShipProps): ReactElement {
+function BossFloatGroup({
+  type,
+  damageState,
+  children,
+}: {
+  type: EnemyType;
+  damageState?: EnemyShipProps["damageState"];
+  children: React.ReactNode;
+}): ReactElement {
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame((state) => {
+    const isBoss = type === "boss" || type === "shore_battery";
+    if (!isBoss || !groupRef.current) return;
+
+    const t = state.clock.elapsedTime;
+
+    // Y bob — primary float
+    const bobY = Math.sin(t * 2.094) * 0.15;
+    // Roll (Z) — ±2°, period ~4s
+    const rollZ = Math.sin(t * 1.571) * 0.0349;
+    // Pitch (X) — ±1°, period ~5s, phase offset so not lockstep with roll
+    const pitchX = Math.sin(t * 1.257 + 0.6) * 0.0175;
+
+    groupRef.current.position.y = bobY;
+    groupRef.current.rotation.z = rollZ;
+    groupRef.current.rotation.x = pitchX;
+
+    // Sinking state — ship submerges as HP drops
+    if (damageState === "sinking") {
+      const sinkDepth = 0.4; // max 0.4 units below original Y
+      groupRef.current.position.y = bobY - sinkDepth;
+      // More violent rocking when sinking
+      groupRef.current.rotation.z = Math.sin(t * 2.5) * 0.087; // ±5°
+      groupRef.current.rotation.x = Math.sin(t * 2.0 + 0.8) * 0.052; // ±3°
+    }
+  });
+
+  return <group ref={groupRef}>{children}</group>;
+}
+
+function getSmokeIntensity(type: EnemyType, damageState?: EnemyShipProps["damageState"]): number {
+  let base = 0.75;
+  if (type === "bomber" || type === "swarmer") base = 0.95;
+  if (type === "brute" || type === "sniper" || type === "boss" || type === "shore_battery") base = 1.35;
+
+  if (damageState === "smoking") return base * 1.8;
+  if (damageState === "on_fire") return base * 2.4;
+  if (damageState === "sinking") return base * 0.5;
+  return base;
+}
+
+export function EnemyShip({ type, isElite = false, hitFlashTimer, damageState, ...props }: EnemyShipProps): ReactElement {
   let variant: ReactElement = <CorsairMesh />;
   if (type === "bomber" || type === "swarmer") {
     variant = <BomberMesh />;
@@ -275,14 +328,11 @@ export function EnemyShip({ type, isElite = false, hitFlashTimer, ...props }: En
   }
 
   let smokeStacks: Array<[number, number, number]> = [[0, 1.65, 0]];
-  let smokeIntensity = 0.75;
   if (type === "bomber" || type === "swarmer") {
     smokeStacks = [[-0.32, 2.0, 0], [0.32, 2.0, 0]];
-    smokeIntensity = 0.95;
   }
   if (type === "brute" || type === "sniper" || type === "boss" || type === "shore_battery") {
     smokeStacks = [[0, 2.2, 0]];
-    smokeIntensity = 1.35;
   }
 
   const isBoss = type === "boss" || type === "shore_battery";
@@ -292,22 +342,26 @@ export function EnemyShip({ type, isElite = false, hitFlashTimer, ...props }: En
   // Hit flash: white overlay fades as timer approaches 0
   const flashOpacity = hitFlashTimer != null ? Math.max(0, hitFlashTimer / 0.1) * 0.6 : 0;
 
+  const smokeIntensity = getSmokeIntensity(type, damageState);
+
   return (
     <group scale={scale} {...props}>
-      {showAura ? <EliteAura isBoss={isBoss} /> : null}
-      <ShipModelVisual
-        config={ENEMY_MODEL_CONFIGS[type]}
-        fallback={variant}
-        eliteTint={isElite}
-      />
-      <ShipSmoke stackPositions={smokeStacks} intensity={isElite ? smokeIntensity * 1.4 : smokeIntensity} />
-      {/* White hit-flash overlay */}
-      {flashOpacity > 0 && (
-        <mesh position={[0, 0.85, 0]} scale={[2.0, 1.5, 3.5]}>
-          <sphereGeometry args={[1, 10, 8]} />
-          <meshBasicMaterial color="#ffffff" transparent opacity={flashOpacity} depthWrite={false} side={THREE.BackSide} />
-        </mesh>
-      )}
+      <BossFloatGroup type={type} damageState={damageState}>
+        {showAura ? <EliteAura isBoss={isBoss} /> : null}
+        <ShipModelVisual
+          config={ENEMY_MODEL_CONFIGS[type]}
+          fallback={variant}
+          eliteTint={isElite}
+        />
+        <ShipSmoke stackPositions={smokeStacks} intensity={smokeIntensity} />
+        {/* White hit-flash overlay */}
+        {flashOpacity > 0 && (
+          <mesh position={[0, 0.85, 0]} scale={[2.0, 1.5, 3.5]}>
+            <sphereGeometry args={[1, 10, 8]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={flashOpacity} depthWrite={false} side={THREE.BackSide} />
+          </mesh>
+        )}
+      </BossFloatGroup>
     </group>
   );
 }
