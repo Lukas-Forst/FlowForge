@@ -18,7 +18,7 @@ Split game state into two tiers:
 
 **Tier 1 — Simulation refs** (unchanged): `stateRef.current` holds all simulation state including `enemies[]`, `projectiles[]`, `visualEffects[]`. The simulation reads/writes these as-is.
 
-**Tier 2 — React UI snapshot** (trimmed): `setSnapshot` is called with a small `UiSnapshot` containing only scalar/UI fields — `hp`, `maxHp`, `score`, `phase`, `upgrades`, `wave`, `boss`, `runHistory`, `message`. No entity arrays.
+**Tier 2 — React UI snapshot** (trimmed): `setSnapshot` is called with a small `UiSnapshot` containing only scalar/UI fields. No entity arrays.
 
 Fast-path rendering reads `stateRef.current` directly from a R3F `useFrame` callback, mutating Three.js object refs in place. Zero React re-renders per frame for simulation entities.
 
@@ -28,37 +28,121 @@ Fast-path rendering reads `stateRef.current` directly from a R3F `useFrame` call
 
 ### 1. `UiSnapshot` type (`useGameState.ts`)
 
-Replace the current `GameSnapshot` with a trimmed interface containing only UI-relevant fields. Remove `enemies`, `projectiles`, `visualEffects`, `audioEvents` from the snapshot type entirely.
+Replace the current `GameSnapshot` (which includes full entity arrays) with a trimmed `UiSnapshot` interface. `copySnapshot()` becomes cheap — copies ~10 scalars and small objects, no array slicing. The 32 `syncState()` call sites stay unchanged; they just become fast.
 
-`copySnapshot()` becomes cheap — copies ~10 scalars and small objects, no array slicing. The 32 `syncState()` call sites stay unchanged; they just become fast.
+`UiSnapshot` fields:
+- `phase`, `loading`
+- `player` (hp, maxHp, baseSpeed, position, facing — position/facing kept for player ship rendering and camera)
+- `upgrades` (full object — needed by HUD, upgrade screen, PlayerShip visual)
+- `cooldowns` (full object — needed by HUD)
+- `stats` (full object — needed by HUD, GameOver, KillStreakHud)
+- `message`, `runBiome`, `runClock`, `megaBoss`
+- `pendingUpgradeOptions`, `pendingUpgradeContext`
+- `vibePortal`
+- `bossState` — derived field: `{ hp, maxHp, type } | null` extracted from `stateRef.current.enemies` at sync time, replaces raw enemy scan in HUD
+- `eliteCount` — derived scalar: count of `isElite` enemies at sync time, replaces `snapshot.enemies.reduce` in HUD
+- `minimapEnemies` — derived array: `{ x, y, type }[]` (position + type only, no full EnemyState), extracted at sync time for minimap rendering
 
-### 2. Enemy rendering — object pool (`GameScene.tsx`)
+Removed from snapshot: `enemies[]`, `projectiles[]`, `visualEffects[]`, `audioEvents[]`, `delayedAoEs[]`, `mines[]`, `oilSlicks[]`, `harvestables[]`, `pickups[]`, `postFxPulse`.
+
+### 2. Sync boundary semantics
+
+`syncState()` is called at the end of each `tick()` invocation. The rule: **scene rendering and UI always reflect the same simulation tick N**. `stateRef.current` and `UiSnapshot` are both written in the same synchronous call stack before the browser paints — no async gap between them.
+
+Pause / gameover guard: when `phase` is `"paused"`, `"upgrade"`, or `"gameover"`, the RAF loop skips calling `tick()` entirely (existing behavior). The pool `useFrame` callbacks must check `phase` and skip position writes when paused — pool objects remain frozen at their last positions. This prevents stateRef from advancing while React UI shows a pause/gameover overlay.
+
+### 3. Enemy rendering — object pool (`GameScene.tsx`)
 
 Create a fixed-size pool of 64 `<group>` refs at scene mount. A `useFrame` callback iterates `stateRef.current.enemies`:
 
-- For each active enemy: set `pool[i].position`, `pool[i].rotation.y`, `pool[i].visible = true`
-- For unused slots: `pool[i].visible = false`
+- Active enemy `i < enemies.length`: set `pool[i].position`, `pool[i].rotation.y`, `pool[i].visible = true`
+- Unused slots: `pool[i].visible = false`
 
-Each pool slot renders the same ship mesh geometry as today. HP bars and boss UI remain React components since they update slowly and don't reconcile every frame.
+Each pool slot renders the same ship mesh geometry as today. HP bars and boss UI remain as React components driven by `UiSnapshot.bossState` and `UiSnapshot.eliteCount` — no per-frame reconciliation.
 
-### 3. Projectile rendering — `InstancedMesh` (`CombatVfx.tsx`)
+**Overflow policy (enemies):** Pool cap is 64. If `enemies.length > 64`, the excess enemies are invisible. Prioritization: sort by distance to player ascending before pool assignment — closest enemies are always visible. A dev-mode counter `window.__dbg.droppedEnemies` increments when overflow occurs. In practice, max spawned enemies per wave is well below 64.
 
-One `InstancedMesh` with 256 instances replaces all individual projectile `<mesh>` components. In `useFrame`, active projectiles set instance matrices; inactive instances are scaled to zero. One GPU draw call regardless of projectile count.
+### 4. Projectile rendering — `InstancedMesh` (`CombatVfx.tsx`)
 
-Distinct projectile shapes (torpedoes, sniper beams) each get their own small `InstancedMesh`.
+One `InstancedMesh` per projectile shape replaces all individual `<mesh>` components:
 
-### 4. VFX rendering — pool per effect type (`CombatVfx.tsx`)
+| Group | InstancedMesh instances |
+|---|---|
+| `playerCannon`, `enemyCannon` (sphere) | 256 |
+| `torpedo` (elongated capsule) | 32 |
+| `sniperBeam` (thin cylinder) | 16 |
 
-Fixed pools per visual effect kind:
-- `broadsideCharge`: 32 slots
-- `muzzleFlash`: 32 slots
-- `explosion`: 16 slots
+In `useFrame`, active projectiles set instance matrices; inactive instances are scaled to `(0,0,0)`. One draw call per group.
 
-`useFrame` reads `stateRef.current.visualEffects`, positions active effects, drives opacity/scale directly on material refs using the `remaining` timer from simulation state.
+**Overflow policy (projectiles):** If `projectiles.length > instance count`, excess projectiles are not rendered. Prioritization: player projectiles first, then enemy projectiles sorted by distance. `window.__dbg.droppedProjectiles` counter in dev mode.
 
-### 5. Damage numbers — DOM overlay
+### 5. VFX rendering — pool per effect type (`CombatVfx.tsx`)
 
-Replace `drei Text` (expensive SDF font rendering) with absolute-positioned `<span>` elements in a `<div>` overlay outside the R3F canvas. World positions are projected to screen space once per frame. Since damage numbers are few (<10 at once) and short-lived (~0.5s), React is appropriate here.
+**Opaque/additive effects — `InstancedMesh` safe:**
+
+| Effect kind | Slots | Rendering |
+|---|---|---|
+| `muzzleFlash` | 32 | `InstancedMesh`, additive blend |
+| `broadsideCharge` | 32 | `InstancedMesh`, additive blend |
+
+**Transparent/sorted effects — individual pooled meshes:**
+
+| Effect kind | Slots | Rendering | Reason |
+|---|---|---|---|
+| `explosion` | 16 | Pooled `<mesh>` refs | Depth-sorted transparency; instancing causes z-fighting |
+| `ringBarrage` | 8 | Pooled `<mesh>` refs | Expanding ring needs per-instance scale animation |
+| `shockwave` | 8 | Pooled `<mesh>` refs | Same — radial scale animation |
+
+`useFrame` drives opacity and scale directly on material/object refs using the `remaining` timer from simulation state.
+
+**Overflow policy (VFX):** Excess effects are silently dropped (VFX are cosmetic). Prioritization: LRU — the oldest active slot is reused. `window.__dbg.droppedVfx` counter in dev mode.
+
+`postFxPulse` (screen flash on damage): read from `stateRef.current.postFxPulse` in `useFrame`, drives a fullscreen quad opacity — no React state needed.
+
+### 6. Damage numbers — DOM overlay
+
+Replace `drei Text` with absolute-positioned `<span>` elements in a `<div>` overlay outside the R3F canvas.
+
+**Projection:** Each active damage number's world position is projected to screen space once per frame using Three.js `Vector3.project(camera)`. Result is converted to CSS `left`/`top` with DPR applied: `left = (ndc.x + 1) / 2 * canvas.clientWidth`, `top = (-ndc.y + 1) / 2 * canvas.clientHeight`. DPR is not applied to CSS pixels — `canvas.clientWidth` already accounts for it.
+
+**Resize handling:** The overlay `<div>` is `position: absolute; inset: 0; pointer-events: none` over the canvas. It resizes automatically with the canvas container. No explicit resize listener needed.
+
+**Offscreen culling:** Skip rendering numbers whose projected NDC coordinates fall outside `[-1.1, 1.1]` on either axis.
+
+**Z-order:** Overlay sits above the canvas via `z-index`. Pointer events are disabled (`pointer-events: none`).
+
+**Max node fallback:** Cap at 20 simultaneous damage numbers. If exceeded, oldest numbers are evicted. In practice peak is ~8 (broadside volley hits).
+
+**React is appropriate here** since damage numbers are sparse (<20), short-lived (~0.5s), and not created every frame — only on hit events which are infrequent relative to frame rate.
+
+---
+
+## Compatibility / Migration Matrix
+
+Every current `snapshot.*` consumer and its new data source after this change:
+
+| Consumer | Field(s) | Old source | New source |
+|---|---|---|---|
+| `App.tsx` | `phase`, `loading`, `vibePortal`, `upgrades`, `cooldowns`, `pendingUpgradeOptions/Context` | `snapshot` | `UiSnapshot` (unchanged) |
+| `App.tsx` | `player.position/facing/hp` (multiplayer sync) | `snapshot.player` | `UiSnapshot.player` (unchanged) |
+| `GameScene.tsx` | `player.position/facing` (camera, PlayerShip, wake foam) | `snapshot.player` | `UiSnapshot.player` (unchanged — player is slow enough for React) |
+| `GameScene.tsx` | `upgrades.level`, `cooldowns.invulnRemaining` | `snapshot` | `UiSnapshot` (unchanged) |
+| `GameScene.tsx` | `vibePortal` | `snapshot.vibePortal` | `UiSnapshot.vibePortal` (unchanged) |
+| `GameScene.tsx` | `runBiome`, `runClock` | `snapshot` | `UiSnapshot` (unchanged) |
+| `GameScene.tsx` | `enemies[]` (enemy ship components) | `snapshot.enemies` | **`stateRef` via pool + `useFrame`** |
+| `GameScene.tsx` | `projectiles[]` | `snapshot.projectiles` | **`stateRef` via `InstancedMesh` + `useFrame`** |
+| `GameScene.tsx` | `visualEffects[]` | `snapshot.visualEffects` | **`stateRef` via pool + `useFrame`** |
+| `GameScene.tsx` | `postFxPulse` | `snapshot.postFxPulse` | **`stateRef` via `useFrame`** |
+| `GameScene.tsx` | `delayedAoEs[]`, `mines[]`, `oilSlicks[]` | `snapshot.*` | **`stateRef` via pool + `useFrame`** |
+| `Hud.tsx` | `enemies.find(boss)` (boss HP bar) | `snapshot.enemies` | **`UiSnapshot.bossState`** (derived at sync time) |
+| `Hud.tsx` | `enemies.reduce(eliteCount)` | `snapshot.enemies` | **`UiSnapshot.eliteCount`** (derived at sync time) |
+| `Hud.tsx` | `enemies[]` (minimap) | `snapshot.enemies` | **`UiSnapshot.minimapEnemies`** (position+type only, derived at sync time) |
+| `Hud.tsx` | `player`, `upgrades`, `cooldowns`, `stats`, `runClock`, `message`, `vibePortal`, `megaBoss`, `runBiome` | `snapshot` | `UiSnapshot` (unchanged) |
+| `GameOverScreen.tsx` | `stats`, `upgrades`, `runBiome` | `snapshot` | `UiSnapshot` (unchanged) |
+| `PauseScreen.tsx` | `stats` | `snapshot` | `UiSnapshot` (unchanged) |
+| `KillStreakHud.tsx` | `stats.killStreak*` | `snapshot.stats` | `UiSnapshot.stats` (unchanged) |
+
+No existing UI consumer reads raw entity arrays except `Hud.tsx` for boss HP, elite count, and minimap — all three are replaced with derived scalar/lightweight fields in `UiSnapshot`.
 
 ---
 
@@ -66,28 +150,58 @@ Replace `drei Text` (expensive SDF font rendering) with absolute-positioned `<sp
 
 | File | Change |
 |---|---|
-| `src/game/useGameState.ts` | Introduce `UiSnapshot` type; trim `copySnapshot` to scalar fields only; remove entity arrays from snapshot |
+| `src/game/useGameState.ts` | Introduce `UiSnapshot` type; trim `copySnapshot` to scalar + derived fields; expose `stateRef` from hook return |
 | `src/scene/arcade/CombatVfx.tsx` | Replace projectile/VFX component maps with `InstancedMesh` + pool + `useFrame` |
-| `src/scene/GameScene.tsx` | Replace enemy component map with 64-slot object pool + `useFrame` |
-| `src/App.tsx` | Pass `stateRef` down to scene components that need it for `useFrame` reads |
+| `src/scene/GameScene.tsx` | Replace enemy/aoe/mine/slick component maps with pool + `useFrame`; read `stateRef` for fast-path entities |
+| `src/App.tsx` | Accept `stateRef` from `useGameState`; pass to scene components |
+| `src/game/types.ts` | Add `UiSnapshot` interface; deprecate raw entity arrays from `GameSnapshot` |
 
 **Untouched:** All simulation files (`collision.ts`, `passiveBroadside.ts`, `useGameState.ts` tick logic, enemy AI, etc.)
+
+---
+
+## Test Plan
+
+**Existing simulation tests:** Stay green — simulation is untouched.
+
+**New rendering layer acceptance criteria:**
+
+| Check | Method |
+|---|---|
+| Entity count parity | After each tick, `pool.visibleCount === stateRef.current.enemies.length` (assert in dev mode) |
+| Projectile count parity | `instancedMesh.count` matches `stateRef.current.projectiles.length` (capped at instance max) |
+| No-NaN transforms | `useFrame` asserts `!isNaN(position.x)` before writing; logs warning and skips on violation |
+| Pause freeze | When `phase === "paused"`, pool positions must not change between frames — verified by snapshot comparison in test harness |
+| Gameover freeze | Same as pause |
+| UiSnapshot consistency | `bossState.hp` matches `stateRef.current.enemies.find(boss).hp` at the frame it was derived — checked in dev mode after each `syncState()` |
+| Overflow counter | `window.__dbg.droppedEnemies/Projectiles/Vfx` remain 0 in normal play (wave up to wave 5) |
+| DPR resize | Resizing the window does not shift damage number positions — manual test |
+
+---
+
+## Rollout Plan
+
+**Feature flag:** `localStorage.getItem("ff_fast_render") === "true"` controls which rendering path is active. Default `false` (current renderer). Setting the flag switches to the new pool/instanced path.
+
+**Fallback:** If the flag is absent or `"false"`, the existing `snapshot.enemies.map(...)` path remains in place and untouched. The two paths coexist in the same files during rollout via a single ternary at the render site.
+
+**Graduation:** Once the new path is validated at 60 FPS across wave 1–10, remove the flag and delete the old render path. No backwards-compat shim needed after deletion.
 
 ---
 
 ## What Stays the Same
 
 - All game simulation logic — no behavioral changes
-- Enemy HP bars, boss health UI, score/wave UI — remain React components
+- Player ship rendering — still driven by `UiSnapshot.player` via React
+- Enemy HP bars, boss health UI, score/wave UI — React components driven by derived UiSnapshot fields
 - Audio event draining — unchanged
 - Upgrade/shop UI — unchanged
-- All existing tests — simulation is untouched, tests stay green
 
 ---
 
 ## Expected Outcome
 
-- Zero React reconciliation per frame for enemies, projectiles, VFX
+- Zero React reconciliation per frame for enemies, projectiles, VFX, mines, slicks, AoEs
 - Projectiles: N draw calls → 1–3 draw calls (one `InstancedMesh` per shape type)
 - `copySnapshot` allocation cost: O(entity count) → O(1)
 - Target: stable 60 FPS in heavy combat (sniper + wave enemies + active broadside)
