@@ -628,6 +628,7 @@ export function useGameState(): UseGameStateApi {
         phantomFleetRemainingRef.current.value = PHANTOM_FLEET_ACTIVE_TIME;
         phantomFleetAttackTimerRef.current.value = 0.1;
       }
+      state.audioEvents.push({ id: effectIdRef.current.value++, sfx: "boost_activate" });
       setMessage(null);
     }
     syncState();

@@ -911,11 +911,21 @@ button:hover {
 }
 
 .screen-flash.fire {
-  animation: flash-once 120ms ease-out;
+  animation: flash-once 200ms ease-out;
+}
+
+.screen-flash.elite {
+  background: linear-gradient(135deg, rgba(160, 220, 255, 0.9), rgba(220, 240, 255, 0.85));
+  animation: flash-once-elite 240ms ease-out;
 }
 
 @keyframes flash-once {
-  0% { opacity: 0.08; }
+  0% { opacity: 0.18; }
+  100% { opacity: 0; }
+}
+
+@keyframes flash-once-elite {
+  0% { opacity: 0.22; }
   100% { opacity: 0; }
 }
 
@@ -925,18 +935,32 @@ button:hover {
   left: -100%;
   width: 100%;
   padding: 14px 0;
-  background: linear-gradient(90deg, transparent 0%, #ff5577 15%, #ffaa33 50%, #ff5577 85%, transparent 100%);
+  background: linear-gradient(90deg,
+    transparent 0%,
+    #ff2255 8%,
+    #ff7744 25%,
+    #ffcc00 50%,
+    #ff7744 75%,
+    #ff2255 92%,
+    transparent 100%);
   color: #fff;
   font-family: "Luckiest Guy", system-ui, sans-serif;
   font-size: 46px;
   font-weight: 800;
   letter-spacing: 6px;
   text-align: center;
-  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  text-shadow:
+    0 0 16px rgba(255, 80, 40, 0.9),
+    0 0 40px rgba(255, 140, 60, 0.6),
+    0 6px 16px rgba(0, 0, 0, 0.7);
   pointer-events: none;
   z-index: 90;
   opacity: 0;
   transform: skewY(-2deg);
+  box-shadow:
+    0 0 60px rgba(255, 80, 40, 0.5),
+    0 0 120px rgba(255, 120, 40, 0.25),
+    inset 0 0 40px rgba(255, 220, 120, 0.15);
 }
 
 .levelup-ribbon.fire {
@@ -945,7 +969,8 @@ button:hover {
 
 @keyframes levelup-sweep {
   0% { left: -100%; opacity: 0; }
-  25% { left: 0%; opacity: 1; }
+  20% { left: 0%; opacity: 1; filter: brightness(1.5); }
+  35% { left: 0%; opacity: 1; filter: brightness(1.2); }
   75% { left: 0%; opacity: 1; }
   100% { left: 100%; opacity: 0; }
 }
@@ -1251,17 +1276,26 @@ button:hover {
 
 .combat-log__entry {
   font-family: "Press Start 2P", "Courier New", monospace;
-  font-size: 0.55rem;
+  font-size: 0.72rem;
   line-height: 1;
   color: #e0e0e0;
-  background: rgba(0, 0, 0, 0.55);
-  padding: 3px 8px;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  text-shadow: 1px 1px 0 #000;
+  background: rgba(0, 0, 0, 0.72);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  text-shadow: 1px 1px 0 #000, 0 0 6px rgba(255, 255, 255, 0.2);
   animation: combat-log-in 0.2s ease-out;
   white-space: nowrap;
 }
+
+/* Event type pills — matched by prefix text content */
+.combat-log__entry[data-evt*="CRIT"]    { background: rgba(255,140,0,0.65); border-color: rgba(255,180,50,0.5); color: #fff3c0; }
+.combat-log__entry[data-evt*="KILL"]   { background: rgba(220,40,40,0.7);  border-color: rgba(255,80,80,0.5);  color: #ffe0e0; }
+.combat-log__entry[data-evt*="BOSS"]   { background: rgba(180,0,255,0.65); border-color: rgba(220,80,255,0.5); color: #f0d0ff; }
+.combat-log__entry[data-evt*="ELITE"]  { background: rgba(0,180,255,0.6);  border-color: rgba(80,220,255,0.5); color: #d0f4ff; }
+.combat-log__entry[data-evt*="BONUS"]  { background: rgba(80,200,80,0.6);  border-color: rgba(120,255,120,0.4); color: #d8ffe0; }
+.combat-log__entry[data-evt*="GOLD"]   { background: rgba(255,200,0,0.6);  border-color: rgba(255,220,80,0.5); color: #fff8c0; }
+.combat-log__entry[data-evt*="BOOST"]  { background: rgba(60,120,255,0.6); border-color: rgba(100,160,255,0.5); color: #d8e8ff; }
 
 @keyframes combat-log-in {
   from { opacity: 0; transform: translateY(6px) scale(0.9); }

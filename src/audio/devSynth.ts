@@ -14,11 +14,12 @@ export function computePan(
 }
 
 const RECIPES: Record<SfxId, { freq: number; wave: OscillatorType; durationMs: number; sweepTo?: number }> = {
-  cannon_fire: { freq: 120, wave: "sawtooth", durationMs: 200, sweepTo: 60 },
+  cannon_fire: { freq: 280, wave: "sawtooth", durationMs: 180, sweepTo: 140 },
   hit: { freq: 220, wave: "square", durationMs: 150 },
   pickup: { freq: 660, wave: "sine", durationMs: 100, sweepTo: 1320 },
   upgrade_sting: { freq: 440, wave: "sine", durationMs: 500, sweepTo: 880 },
-  boss_cue: { freq: 80, wave: "sawtooth", durationMs: 1000 },
+  boss_cue: { freq: 55, wave: "sawtooth", durationMs: 800 },
+  boost_activate: { freq: 220, wave: "sine", durationMs: 280, sweepTo: 380 },
   damage_taken: { freq: 180, wave: "square", durationMs: 150, sweepTo: 90 },
   ship_destroyed: { freq: 100, wave: "sawtooth", durationMs: 400, sweepTo: 40 },
   harvestable_destroyed: { freq: 300, wave: "triangle", durationMs: 300, sweepTo: 450 },

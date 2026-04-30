@@ -36,8 +36,25 @@ export function StartScreen({ onPlaySolo, onCreateLobby, onJoinLobby, connection
   return (
     <div className="overlay center">
       <div className="panel" style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 400 }}>
-        <h1>FlowForge</h1>
-        <p>Sail the storm. Sink raiders. Upgrade your ship.</p>
+        {/* Ship silhouette SVG */}
+        <svg width="120" height="70" viewBox="0 0 120 70" style={{ marginBottom: "8px", opacity: 0.55, filter: "drop-shadow(0 0 8px rgba(100,200,255,0.5))" }}>
+          <polygon points="60,2 75,18 108,22 80,40 88,68 60,52 32,68 40,40 12,22 45,18" fill="rgba(100,200,255,0.7)" />
+          <polygon points="60,8 72,20 100,24 76,38 82,62 60,48 38,62 44,38 20,24 48,20" fill="rgba(60,160,220,0.5)" />
+        </svg>
+
+        <h1 style={{
+          fontFamily: '"Luckiest Guy", system-ui, sans-serif',
+          fontSize: "clamp(2.4rem, 5vw, 3.6rem)",
+          margin: "0 0 0.4rem",
+          background: "linear-gradient(180deg, #ffe066 0%, #ff9a3c 40%, #ff5577 100%)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+          textShadow: "none",
+          filter: "drop-shadow(0 0 14px rgba(255,150,80,0.65))",
+          letterSpacing: "2px",
+        }}>🛡️ FlowForge</h1>
+        <p style={{ margin: "0 0 1rem", opacity: 0.85, fontSize: "1.05rem", letterSpacing: "0.3px" }}>Sail the storm. Sink raiders. Upgrade your ship.</p>
 
         <div style={{ width: 300, height: 260, cursor: "grab" }}>
           <Canvas camera={{ position: [0, 2, 4], fov: 45 }}>

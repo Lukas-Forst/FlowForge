@@ -6,6 +6,7 @@ export type SfxId =
   | "pickup"
   | "upgrade_sting"
   | "boss_cue"
+  | "boost_activate"
   | "damage_taken"
   | "ship_destroyed"
   | "harvestable_destroyed";

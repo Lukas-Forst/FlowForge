@@ -128,7 +128,7 @@ export function Hud({ snapshot }: HudProps): ReactElement {
       {snapshot.stats.combatLog.length > 0 ? (
         <div className="combat-log" aria-live="polite">
           {snapshot.stats.combatLog.map((entry, i) => (
-            <span key={i} className="combat-log__entry">{entry}</span>
+            <span key={i} className="combat-log__entry" data-evt={entry}>{entry}</span>
           ))}
         </div>
       ) : null}
@@ -192,13 +192,15 @@ function MiniMap({ playerPosition, enemies, worldHalf }: MiniMapProps): ReactEle
             key={e.id}
             style={{
               position: "absolute",
-              left: mx - (isBoss ? 4 : 2.5),
-              top: my - (isBoss ? 4 : 2.5),
-              width: isBoss ? 8 : 5,
-              height: isBoss ? 8 : 5,
+              left: mx - (isBoss ? 5 : 3.5),
+              top: my - (isBoss ? 5 : 3.5),
+              width: isBoss ? 10 : 7,
+              height: isBoss ? 10 : 7,
               borderRadius: "50%",
               background: isShore ? "#ff9f43" : isBoss ? "#ff4444" : "#ff7070",
-              boxShadow: isBoss ? "0 0 5px #ff0000" : undefined,
+              boxShadow: isBoss
+                ? "0 0 5px #ff0000, 0 0 0 2px rgba(255,255,255,0.3)"
+                : "0 0 3px #fff",
             }}
           />
         );
