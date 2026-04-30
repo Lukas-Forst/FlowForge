@@ -168,7 +168,7 @@ function pushEffect(
   effects.push(getVisualEffect(effectIdRef.value++, kind, position, duration, { intensity, ...extras }));
 }
 
-function pushScreenShakeForDamage(
+export function pushScreenShakeForDamage(
   effects: VisualEffect[],
   effectIdRef: { value: number },
   position: { x: number; y: number },

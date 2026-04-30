@@ -14,6 +14,51 @@ interface UpgradeModalProps {
   variant?: "default" | "elite";
 }
 
+/** Emoji type-indicators shown above the card title */
+const TYPE_EMOJI: Partial<Record<UpgradeType, string>> = {
+  fireRate: "🔥",
+  speed: "⚡",
+  armor: "🛡️",
+  maxHp: "💚",
+  cooldown: "⏱️",
+  pierce: "🎯",
+  projectileCount: "🎯",
+  sideGuns: "💥",
+  coinMagnet: "🧲",
+  boostRepeat: "🌬️",
+  ringBarrage: "💍",
+  cannonSpread: "💫",
+  fullSteam: "🚂",
+  grapeshot: "🍇",
+  sternChaser: "↩️",
+  explosiveRounds: "💣",
+  ramProw: "⚡",
+  ghostHull: "👻",
+  afterburner: "🔥",
+  bilgePump: "🩸",
+  scavenger: "🦜",
+  sacrificeRig: "⚰️",
+  deepDredge: "⚓",
+  crowsNest: "🐦",
+  pressGang: "🏴",
+  deathBlossom: "🌹",
+  ghostTide: "🌊",
+  ironclad: "🔩",
+  tidalSweep: "🌀",
+  hellfireWake: "😈",
+  krakenCall: "🐙",
+  phantomFleet: "🚢",
+  cannonDrones: "🤖",
+  cannonFlare: "✨",
+  cannonChainShot: "⛓️",
+  boostMines: "💥",
+  boostRingBarrage: "💍",
+  boostAnchorDrop: "⚓",
+  extraTorpedo: "🚀",
+  extraDepthCharge: "💣",
+  extraOilSlick: "🛢️",
+};
+
 export function UpgradeModal({ options, onPick, title = "CHOOSE UPGRADE", stacks, upgrades, variant = "default" }: UpgradeModalProps): ReactElement {
   const [picked, setPicked] = useState<UpgradeOption["type"] | null>(null);
   const [hovered, setHovered] = useState<UpgradeOption["type"] | null>(null);
@@ -56,6 +101,7 @@ export function UpgradeModal({ options, onPick, title = "CHOOSE UPGRADE", stacks
               >
                 {option.icon ? <span className="upgrade-icon">{option.icon}</span> : null}
                 <span className="upgrade-rarity-pill">{option.rarity}</span>
+                {TYPE_EMOJI[option.type] ? <span className="upgrade-type-emoji">{TYPE_EMOJI[option.type]}</span> : null}
                 <strong>{option.label}</strong>
                 <span>{option.description}</span>
                 {ownedLine}

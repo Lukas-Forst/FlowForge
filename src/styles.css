@@ -1174,6 +1174,14 @@ button:hover {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
 }
 
+.upgrade-type-emoji {
+  font-size: 20px;
+  line-height: 1;
+  display: block;
+  margin-bottom: 4px;
+  opacity: 0.75;
+}
+
 .gameover-actions {
   display: flex;
   flex-direction: column;

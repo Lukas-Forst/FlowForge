@@ -11,7 +11,7 @@ import { runAutoAttack } from "./systems/autoAttack";
 import { getBoostSpeedMultiplier, tryActivateBoost } from "./systems/boostAbility";
 import { tryFireCannon } from "./systems/cannonAbility";
 import { triggerExtraAbility } from "./systems/abilityExecution";
-import { resolveCollisions, updateEnemyMovement } from "./systems/collision";
+import { resolveCollisions, updateEnemyMovement, pushScreenShakeForDamage } from "./systems/collision";
 import { updateProjectileMotion } from "./systems/collision";
 import { updateDelayedAoEs } from "./systems/delayedAoE";
 import { runEliteAbilities } from "./systems/eliteAbilities";
@@ -1250,7 +1250,11 @@ export function useGameState(): UseGameStateApi {
     }
 
     if (collisionResult.playerDamageTaken > 0 || collisionResult.cannonHits > 0) {
-      hitPauseTimerRef.current.value = 0.1;
+      hitPauseTimerRef.current.value = 0.18;
+    }
+    if (collisionResult.cannonHits > 0) {
+      // Push a small screen shake burst for cannon hits landing
+      pushScreenShakeForDamage(state.visualEffects, effectIdRef, state.player.position, 80, 0.28);
     }
 
     for (let i = state.visualEffects.length - 1; i >= 0; i -= 1) {

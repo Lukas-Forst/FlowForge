@@ -9,6 +9,7 @@ import { PLAYER_SHIP_MODEL_CONFIG, ShipModelVisual } from "../models/ShipModelVi
 export type PlayerShipProps = ThreeElements["group"] & {
   upgradeLevel: number;
   invulnRemaining?: number;
+  cannonReady?: boolean;
 };
 
 const SHOW_DECK_CANNON_ATTACHMENTS = false;
@@ -92,6 +93,37 @@ function DeckCannons({ upgradeLevel }: { upgradeLevel: number }): ReactElement {
   );
 }
 
+function CannonReadyGlow(): ReactElement {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const lightRef = useRef<THREE.PointLight>(null);
+
+  useFrame((_state, delta) => {
+    const t = Date.now() * 0.001;
+    const pulse = 0.65 + Math.sin(t * Math.PI * 2.2) * 0.35;
+    if (meshRef.current) {
+      const mat = meshRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.4 * pulse;
+      const scale = 1.0 + Math.sin(t * Math.PI * 3) * 0.08;
+      meshRef.current.scale.setScalar(scale);
+    }
+    if (lightRef.current) {
+      lightRef.current.intensity = pulse * 1.4;
+    }
+  });
+
+  return (
+    <>
+      {/* Golden ring around cannon area */}
+      <mesh ref={meshRef} position={[0, 0.38, -0.3]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.55, 0.85, 24]} />
+        <meshBasicMaterial color="#ffc040" transparent opacity={0.35} depthWrite={false} />
+      </mesh>
+      {/* Point light for the glow */}
+      <pointLight ref={lightRef} position={[0, 1.2, -0.3]} color="#ffb030" intensity={1.2} distance={4} />
+    </>
+  );
+}
+
 function PlayerShipPrimitive({ opacity = 1 }: { opacity?: number }): ReactElement {
   return (
     <>
@@ -134,7 +166,7 @@ function PlayerShipPrimitive({ opacity = 1 }: { opacity?: number }): ReactElemen
   );
 }
 
-export function PlayerShip({ upgradeLevel, invulnRemaining = 0, ...props }: PlayerShipProps): ReactElement {
+export function PlayerShip({ upgradeLevel, invulnRemaining = 0, cannonReady = false, ...props }: PlayerShipProps): ReactElement {
   const isGhosted = invulnRemaining > 0;
   const shipOpacity = isGhosted ? 0.5 : 1;
 
@@ -156,6 +188,9 @@ export function PlayerShip({ upgradeLevel, invulnRemaining = 0, ...props }: Play
       )}
       {!isGhosted && (
         <ShipSmoke stackPositions={[[-0.26, 1.95, -0.08], [0.26, 1.95, -0.08]]} intensity={1.1} />
+      )}
+      {cannonReady && (
+        <CannonReadyGlow />
       )}
       {SHOW_DECK_CANNON_ATTACHMENTS ? <DeckCannons upgradeLevel={upgradeLevel} /> : null}
     </group>

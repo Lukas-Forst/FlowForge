@@ -732,6 +732,7 @@ export function GameScene({
         <PlayerShip
           upgradeLevel={snapshot.upgrades.level}
           invulnRemaining={snapshot.cooldowns.invulnRemaining}
+          cannonReady={snapshot.cooldowns.cannonRemaining <= 0}
         />
         {localPlayerBadge ? (
           <PlayerNameTag name={localPlayerBadge.name} emoji={localPlayerBadge.emoji} color={localPlayerBadge.color} />
