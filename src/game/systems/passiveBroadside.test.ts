@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { PlayerState, ProjectileState, UpgradeStats, VisualEffect } from "../types";
-import { getPassiveBroadsideInterval, runPassiveBroadside } from "./passiveBroadside";
+import type { EnemyState, PlayerState, ProjectileState, UpgradeStats, VisualEffect, AudioEvent } from "../types";
+import { getPassiveBroadsideInterval, runPassiveBroadside, updatePendingBroadsideShots } from "./passiveBroadside";
+import type { PendingBroadsideShot } from "./passiveBroadside";
 
 function createPlayer(): PlayerState {
   return {
@@ -41,6 +42,9 @@ describe("runPassiveBroadside", () => {
     const projectiles: ProjectileState[] = [];
     const effects: VisualEffect[] = [];
     const timer = { value: 0 };
+    const audioEvents: AudioEvent[] = [];
+    const enemies: EnemyState[] = [];
+    const pendingShots: PendingBroadsideShot[] = [];
     runPassiveBroadside(
       createPlayer(),
       createUpgrades(),
@@ -49,7 +53,19 @@ describe("runPassiveBroadside", () => {
       projectiles,
       effects,
       { value: 1 },
+      audioEvents,
       0.016,
+      enemies,
+      pendingShots,
+    );
+    updatePendingBroadsideShots(
+      pendingShots,
+      0.3,
+      { value: 1 },
+      projectiles,
+      { value: 1 },
+      effects,
+      audioEvents,
     );
     expect(projectiles).toHaveLength(2);
   });
@@ -60,6 +76,9 @@ describe("runPassiveBroadside", () => {
     const timer = { value: 0 };
     const upgrades = createUpgrades();
     upgrades.stacks.sideGuns = 2;
+    const audioEvents: AudioEvent[] = [];
+    const enemies: EnemyState[] = [];
+    const pendingShots: PendingBroadsideShot[] = [];
 
     runPassiveBroadside(
       createPlayer(),
@@ -69,8 +88,55 @@ describe("runPassiveBroadside", () => {
       projectiles,
       effects,
       { value: 1 },
+      audioEvents,
       0.016,
+      enemies,
+      pendingShots,
+    );
+    updatePendingBroadsideShots(
+      pendingShots,
+      0.3,
+      { value: 1 },
+      projectiles,
+      { value: 1 },
+      effects,
+      audioEvents,
     );
     expect(projectiles).toHaveLength(6);
+  });
+
+  it("applies pierce upgrade to projectiles", () => {
+    const projectiles: ProjectileState[] = [];
+    const effects: VisualEffect[] = [];
+    const timer = { value: 0 };
+    const upgrades = createUpgrades();
+    upgrades.stacks.pierce = 2;
+    const audioEvents: AudioEvent[] = [];
+    const enemies: EnemyState[] = [];
+    const pendingShots: PendingBroadsideShot[] = [];
+
+    runPassiveBroadside(
+      createPlayer(),
+      upgrades,
+      timer,
+      { value: 1 },
+      projectiles,
+      effects,
+      { value: 1 },
+      audioEvents,
+      0.016,
+      enemies,
+      pendingShots,
+    );
+    updatePendingBroadsideShots(
+      pendingShots,
+      0.3,
+      { value: 1 },
+      projectiles,
+      { value: 1 },
+      effects,
+      audioEvents,
+    );
+    expect(projectiles.every((p) => p.pierceRemaining === 2)).toBe(true);
   });
 });

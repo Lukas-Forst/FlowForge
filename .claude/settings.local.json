@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git fsck *)",
+      "Bash(git fetch *)",
+      "Bash(git stash *)",
+      "Bash(git pull *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git *)",
+      "Bash(/home/dfs/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/scripts/start-server.sh *)",
+      "Bash(/home/dfs/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/scripts/stop-server.sh /home/dfs/FlowForge/.superpowers/brainstorm/47576-1776941133)",
+      "Bash(npm install *)",
+      "Bash(npm test *)",
+      "Read(//home/dfs/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/subagent-driven-development/**)",
+      "Bash(grep -E '\\(Zone\\\\.Identifier|\\\\.Identifier$\\)')",
+      "Bash(xargs cat *)",
+      "Bash(node -e \"require\\('/home/dfs/FlowForge/node_modules/vite-plugin-static-copy'\\)\")",
+      "Bash(npm run *)",
+      "Bash(npm ls *)",
+      "Bash(npm view *)",
+      "Bash(grep -E \"\\\\.\\(js|wasm\\)$\")",
+      "Bash(npm list *)",
+      "Bash(node *)",
+      "Bash(npx vite *)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('three:', d.get\\('dependencies',{}\\).get\\('three','NOT FOUND'\\)\\); print\\('vite-plugin-static-copy:', d.get\\('devDependencies',{}\\).get\\('vite-plugin-static-copy','NOT FOUND'\\)\\)\")",
+      "Bash(npx tsc *)",
+      "Bash(npx vitest *)"
+    ]
+  }
+}

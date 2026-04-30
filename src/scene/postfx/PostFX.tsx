@@ -15,24 +15,15 @@ export function PostFX({ pulse, quality = "full" }: PostFXProps): ReactElement {
   const chromaOffset = useMemo<[number, number]>(() => [0.0005 + strength * 0.004, 0.001 + strength * 0.006], [strength]);
 
   return (
-<<<<<<< HEAD
     <EffectComposer multisampling={4}>
       <Bloom intensity={Math.min(0.6, 0.45 + strength * 0.8)} luminanceThreshold={0.35} luminanceSmoothing={0.25} />
-=======
-    <EffectComposer multisampling={0}>
-      <Bloom intensity={0.45 + strength * 0.8} luminanceThreshold={0.35} luminanceSmoothing={0.25} />
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       {quality === "full" ? (
         <>
           <Vignette eskil={false} offset={0.15} darkness={0.42} />
           <ChromaticAberration blendFunction={BlendFunction.NORMAL} offset={chromaOffset} />
         </>
       ) : (
-<<<<<<< HEAD
         <Vignette eskil={false} offset={0.2} darkness={0.25} />
-=======
-        <></>
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       )}
     </EffectComposer>
   );

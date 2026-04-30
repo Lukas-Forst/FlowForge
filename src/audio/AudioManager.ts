@@ -1,5 +1,6 @@
 import type { AudioEvent } from "../game/types";
-import { playSynth } from "./devSynth";
+import { playSynth, computePan } from "./devSynth";
+import { createMusicSystem, type MusicSystem } from "./MusicSystem";
 
 export interface AudioManager {
   drain(queue: AudioEvent[]): void;
@@ -7,6 +8,12 @@ export interface AudioManager {
   getMasterVolume(): number;
   ambient(id: "sea_bed" | "boss_bed", fadeMs?: number): void;
   stopAmbient(fadeMs?: number): void;
+  /** Start procedural music (called when run begins). */
+  startMusic(): void;
+  /** Stop procedural music (called on game over / quit). */
+  stopMusic(): void;
+  /** Update music layers from game state. Call every tick. */
+  updateMusic(state: { enemies: unknown[]; megaBoss: { spawned: boolean } | null; phase: string }): void;
 }
 
 export function createAudioManager(ctx: AudioContext): AudioManager {
@@ -24,13 +31,20 @@ export function createAudioManager(ctx: AudioContext): AudioManager {
 
   let currentAmbient: AudioBufferSourceNode | null = null;
 
+  // Procedural layered music system
+  const music: MusicSystem = createMusicSystem(ctx, musicBus);
+
   return {
-    drain(queue) {
-      while (queue.length > 0) {
-        const ev = queue.shift();
-        if (!ev) break;
-        playSynth(ctx, sfxBus, ev.sfx, ev.volume ?? 1, ev.pitch ?? 1);
+    drain(queue, listenerX?: number) {
+      for (let i = 0; i < queue.length; i += 1) {
+        const ev = queue[i];
+        let pan = 0;
+        if (ev.position !== undefined && listenerX !== undefined) {
+          pan = computePan(ev.position.x, listenerX);
+        }
+        playSynth(ctx, sfxBus, ev.sfx, ev.volume ?? 1, ev.pitch ?? 1, pan);
       }
+      queue.length = 0;
     },
     setMasterVolume(v) {
       master.gain.value = Math.max(0, Math.min(1, v));
@@ -52,6 +66,15 @@ export function createAudioManager(ctx: AudioContext): AudioManager {
         }
         currentAmbient = null;
       }
+    },
+    startMusic() {
+      music.start();
+    },
+    stopMusic() {
+      music.stop();
+    },
+    updateMusic(state) {
+      music.update(state);
     },
   };
 }

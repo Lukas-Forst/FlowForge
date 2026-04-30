@@ -1,19 +1,18 @@
 import type { ReactElement } from "react";
 import { useRef } from "react";
-import type { GameSnapshot } from "../game/types";
+import type { MinimapEnemyState, UiSnapshot } from "../game/types";
 import { AnimatedNumber } from "./AnimatedNumber";
 import { BiomeBadge } from "./BiomeBadge";
 import { BossFrame } from "./BossFrame";
+import { KillStreakHud } from "./KillStreakHud";
 import { LevelPill } from "./LevelPill";
+import { BoostArc } from "./BoostArc";
 import { PulseMeter } from "./PulseMeter";
-<<<<<<< HEAD
 import { getRunPhaseHudLabels } from "./runPhaseHud";
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 import { XPBar } from "./XPBar";
 
 interface HudProps {
-  snapshot: GameSnapshot;
+  snapshot: UiSnapshot;
 }
 
 function cooldownPercent(remaining: number, duration: number): number {
@@ -30,7 +29,6 @@ export function Hud({ snapshot }: HudProps): ReactElement {
   const hpRatio = snapshot.player.maxHp > 0 ? Math.max(0, Math.min(1, snapshot.player.hp / snapshot.player.maxHp)) : 0;
   const cannonReady = snapshot.cooldowns.cannonRemaining <= 0;
   const boostReady = snapshot.cooldowns.boostRemaining <= 0;
-<<<<<<< HEAD
   const extraReady = snapshot.cooldowns.extraRemaining <= 0;
   const extraLabel =
     (snapshot.upgrades.stacks.extraTorpedo ?? 0) > 0
@@ -43,30 +41,35 @@ export function Hud({ snapshot }: HudProps): ReactElement {
   const extraNeedsUnlock = !snapshot.upgrades.activeExtraAbility;
   const safeTime = Math.max(0, snapshot.stats.timeSurvived);
   const xpProgress = snapshot.upgrades.nextThreshold > 0 ? Math.min(1, Math.max(0, snapshot.stats.collectedCoins / snapshot.upgrades.nextThreshold)) : 0;
-  const boss = snapshot.enemies.find((e) => e.type === "boss");
   const eliteOnField =
     snapshot.runClock.phase === "elite"
-      ? snapshot.enemies.reduce((n, e) => n + (e.isElite ? 1 : 0), 0)
+      ? snapshot.eliteCount
       : undefined;
   const runPhase = getRunPhaseHudLabels(snapshot.runClock, eliteOnField);
-=======
-  const extraReady = (snapshot.cooldowns.extraRemaining ?? 0) <= 0;
-  const safeTime = Math.max(0, snapshot.stats.timeSurvived);
-  const xpProgress = snapshot.upgrades.nextThreshold > 0 ? Math.min(1, Math.max(0, snapshot.stats.collectedCoins / snapshot.upgrades.nextThreshold)) : 0;
-  const boss = snapshot.enemies.find((e) => e.type === "boss");
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
+
+  // Ghost Hull indicator
+  const isGhosted = snapshot.cooldowns.invulnRemaining > 0;
 
   return (
     <>
       <XPBar progress={xpProgress} level={snapshot.upgrades.level} />
       <LevelPill level={snapshot.upgrades.level} />
-<<<<<<< HEAD
       <div className={`hud-wave-clock hud-wave-clock--${snapshot.runClock.phase}`} aria-live="polite">
         <span className="hud-wave-phase">{runPhase.phase}</span>
         <span className="hud-wave-detail">{runPhase.detail}</span>
       </div>
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
+
+      {/* Ghost Hull badge */}
+      {isGhosted && (
+        <div className="ghost-badge">{`GHOST ${snapshot.cooldowns.invulnRemaining.toFixed(1)}s`}</div>
+      )}
+
+      {/* Mini-map */}
+      <MiniMap
+        playerPosition={snapshot.player.position}
+        enemies={snapshot.minimapEnemies}
+        worldHalf={135}
+      />
 
       <div className="hud-v2">
         <div className="hud-v2-corner top-right">
@@ -96,11 +99,12 @@ export function Hud({ snapshot }: HudProps): ReactElement {
           </div>
           <div className="hud-v2-row">
             <span>SHIFT BOOST</span>
-            <div className="hud-v2-ability-bar">
-              <PulseMeter value={cooldownPercent(snapshot.cooldowns.boostRemaining, snapshot.cooldowns.boostDuration)} color="#88ddff" ready={boostReady} />
-            </div>
+            <BoostArc
+              value={cooldownPercent(snapshot.cooldowns.boostRemaining, snapshot.cooldowns.boostDuration)}
+              ready={boostReady}
+              active={snapshot.cooldowns.boostActiveRemaining > 0}
+            />
           </div>
-<<<<<<< HEAD
           <div className={`hud-v2-row ${extraNeedsUnlock ? "hud-v2-row--extra-empty" : ""}`}>
             <span>{extraNeedsUnlock ? "E SPECIAL (LOCKED)" : extraLabel}</span>
             <div className="hud-v2-ability-bar">
@@ -110,22 +114,97 @@ export function Hud({ snapshot }: HudProps): ReactElement {
                 ready={extraReady}
                 variant="special"
               />
-=======
-          <div className="hud-v2-row">
-            <span>E EXTRA</span>
-            <div className="hud-v2-ability-bar">
-              <PulseMeter value={cooldownPercent(snapshot.cooldowns.extraRemaining ?? 0, snapshot.cooldowns.extraDuration ?? 1)} color="#d28cff" ready={extraReady} />
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
             </div>
           </div>
         </div>
       </div>
 
-      {boss ? <BossFrame boss={boss} /> : null}
+      <BossFrame
+        megaBoss={snapshot.megaBoss}
+        bossHp={snapshot.bossState?.hp ?? 0}
+        bossMaxHp={snapshot.bossState?.maxHp ?? 1}
+      />
+      <KillStreakHud snapshot={snapshot} />
+      {snapshot.stats.combatLog.length > 0 ? (
+        <div className="combat-log" aria-live="polite">
+          {snapshot.stats.combatLog.map((entry, i) => (
+            <span key={i} className="combat-log__entry" data-evt={entry}>{entry}</span>
+          ))}
+        </div>
+      ) : null}
       {snapshot.vibePortal.visible && snapshot.vibePortal.near ? (
         <div className="portal-tooltip">Sail through to visit another Vibe Jam game 🌊</div>
       ) : null}
       {snapshot.message ? <div className="toast">{snapshot.message.text}</div> : null}
     </>
+  );
+}
+
+interface MiniMapProps {
+  playerPosition: { x: number; y: number };
+  enemies: MinimapEnemyState[];
+  worldHalf: number;
+}
+
+function MiniMap({ playerPosition, enemies, worldHalf }: MiniMapProps): ReactElement {
+  const mapSize = 120;
+  const scale = mapSize / (worldHalf * 2);
+
+  return (
+    <div
+      className="mini-map"
+      style={{
+        position: "fixed",
+        bottom: 12,
+        right: 12,
+        width: mapSize,
+        height: mapSize,
+        background: "rgba(10, 25, 45, 0.72)",
+        borderRadius: 8,
+        border: "1px solid rgba(100, 180, 255, 0.25)",
+        overflow: "hidden",
+        zIndex: 41,
+        pointerEvents: "none",
+      }}
+    >
+      {/* Player dot — always centered */}
+      <div
+        style={{
+          position: "absolute",
+          left: mapSize / 2 - 3,
+          top: mapSize / 2 - 3,
+          width: 6,
+          height: 6,
+          borderRadius: "50%",
+          background: "#ffffff",
+          boxShadow: "0 0 4px #fff",
+        }}
+      />
+      {/* Enemy dots */}
+      {enemies.map((e) => {
+        const mx = (e.x - playerPosition.x) * scale + mapSize / 2;
+        const my = (e.y - playerPosition.y) * scale + mapSize / 2;
+        if (mx < -4 || mx > mapSize + 4 || my < -4 || my > mapSize + 4) return null;
+        const isBoss = e.type === "boss";
+        const isShore = e.type === "shore_battery";
+        return (
+          <div
+            key={e.id}
+            style={{
+              position: "absolute",
+              left: mx - (isBoss ? 5 : 3.5),
+              top: my - (isBoss ? 5 : 3.5),
+              width: isBoss ? 10 : 7,
+              height: isBoss ? 10 : 7,
+              borderRadius: "50%",
+              background: isShore ? "#ff9f43" : isBoss ? "#ff4444" : "#ff7070",
+              boxShadow: isBoss
+                ? "0 0 5px #ff0000, 0 0 0 2px rgba(255,255,255,0.3)"
+                : "0 0 3px #fff",
+            }}
+          />
+        );
+      })}
+    </div>
   );
 }

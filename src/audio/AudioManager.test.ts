@@ -23,6 +23,7 @@ function makeFakeAudioContext() {
     currentTime: 0,
     createGain: () => ({ ...gainNode, connect: vi.fn().mockReturnThis() }),
     createOscillator: () => ({ ...osc, connect: vi.fn().mockReturnValue(gainNode) }),
+    createStereoPanner: () => ({ pan: { value: 0 }, connect: vi.fn().mockReturnThis() }),
     destination: { connect: vi.fn() },
   };
 }

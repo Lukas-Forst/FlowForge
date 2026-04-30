@@ -8,11 +8,7 @@ const BIOME_COLOR: Record<BiomeType, string> = {
   boss_storm: "#ff6060",
 };
 
-<<<<<<< HEAD
 export function formatBiomeName(biome: string): string {
-=======
-function formatBiomeName(biome: string): string {
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   return biome
     .split("_")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))

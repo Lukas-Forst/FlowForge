@@ -6,6 +6,7 @@ export type SfxId =
   | "pickup"
   | "upgrade_sting"
   | "boss_cue"
+  | "boost_activate"
   | "damage_taken"
   | "ship_destroyed"
   | "harvestable_destroyed";
@@ -17,6 +18,8 @@ export interface AudioEvent {
   sfx: SfxId;
   volume?: number;
   pitch?: number;
+  /** World position for stereo panning */
+  position?: { x: number; y: number };
 }
 
 export type PostFxEffect = "chromaticAb" | "flash";
@@ -43,24 +46,17 @@ export type UpgradeType =
   | "coinMagnet"
   | "armor"
   | "boostRepeat"
-<<<<<<< HEAD
   | "ringBarrage"
   | "cannonSpread"
   | "extraTorpedo"
   | "extraDepthCharge"
-=======
-  | "cannonSpread"
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   | "fullSteam"
   | "grapeshot"
   | "sternChaser"
   | "explosiveRounds"
   | "ramProw"
   | "ghostHull"
-<<<<<<< HEAD
   | "boostMines"
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   | "afterburner"
   | "bilgePump"
   | "scavenger"
@@ -119,6 +115,12 @@ export interface EnemyState {
   touchDamage: number;
   touchTimer: number;
   rangedCooldown: number;
+  /** Flash timer for hit reaction — renders white briefly then decays to 0. */
+  hitFlashTimer?: number;
+  /** Flanking timer — strafe laterally this many seconds before next ranged attack. */
+  flankTimer?: number;
+  /** Lateral strafe direction (±1) during flankTimer. */
+  flankDir?: number;
 }
 
 export type HarvestableType =
@@ -140,11 +142,7 @@ export interface HarvestableState {
   rotation: number;
 }
 
-<<<<<<< HEAD
 export type ProjectileKind = "playerAuto" | "playerCannon" | "playerTorpedo" | "enemyCorsair" | "enemyBomber" | "enemyBrute" | "enemySniper" | "enemyBoss" | "enemyBattery";
-=======
-export type ProjectileKind = "playerAuto" | "playerCannon" | "enemyCorsair" | "enemyBomber" | "enemyBrute" | "enemySniper" | "enemyBoss" | "enemyBattery";
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 
 export function isEnemyProjectileKind(kind: ProjectileKind): boolean {
   return kind === "enemyCorsair" || kind === "enemyBomber" || kind === "enemyBrute" || kind === "enemySniper" || kind === "enemyBoss" || kind === "enemyBattery";
@@ -161,7 +159,6 @@ export interface ProjectileState {
   pierceRemaining?: number;
 }
 
-<<<<<<< HEAD
 export interface DelayedAoEState {
   id: number;
   position: Vec2;
@@ -190,10 +187,7 @@ export interface OilSlickState {
   dotTimer: number;
 }
 
-export type VisualEffectKind = "waterSplash" | "hitBurst" | "depthBurst" | "muzzleFlash" | "waterRippleSmall" | "telegraphRing" | "damageNumber" | "enemyDeath" | "screenShake" | "broadsideCharge";
-=======
-export type VisualEffectKind = "waterSplash" | "hitBurst" | "muzzleFlash" | "waterRippleSmall" | "telegraphRing" | "damageNumber" | "enemyDeath" | "screenShake";
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
+export type VisualEffectKind = "waterSplash" | "hitBurst" | "depthBurst" | "muzzleFlash" | "waterRippleSmall" | "telegraphRing" | "damageNumber" | "enemyDeath" | "enemyDeathSmall" | "enemyDeathHeavy" | "enemyDeathExplosive" | "screenShake" | "broadsideCharge" | "cannonReady" | "playerWake" | "projectileSplash" | "afterimage";
 
 export interface VisualEffect {
   id: number;
@@ -202,10 +196,11 @@ export interface VisualEffect {
   remaining: number;
   text?: string;
   color?: string;
-<<<<<<< HEAD
   scale?: number; // for damage numbers: bigger damage = bigger text
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
+  intensity?: number; // for screenShake: scales shake magnitude (1.0 = baseline)
+  facing?: number; // for afterimage: the direction the ship was facing when ghost was spawned
+  shake?: boolean; // for damageNumber: crit shake/wiggle animation
+  drift?: number; // horizontal drift offset for damage numbers
 }
 
 export type PickupKind =
@@ -242,17 +237,10 @@ export interface Cooldowns {
   cannonDuration: number;
   boostRemaining: number;
   boostDuration: number;
-<<<<<<< HEAD
   extraRemaining: number;
   extraDuration: number;
   boostActiveRemaining: number;
   boostActiveDuration: number;
-=======
-  boostActiveRemaining: number;
-  boostActiveDuration: number;
-  extraRemaining?: number;
-  extraDuration?: number;
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   invulnRemaining: number;
   frenzyRemaining: number;
 }
@@ -267,6 +255,14 @@ export interface GameStats {
   biggestHit: number;
   /** Count of evolution upgrades taken (stacks ≥ 1). */
   evolutionsUnlocked: number;
+  /** Enemies killed consecutively without the player taking damage this run. */
+  killStreak: number;
+  /** Best killStreak achieved this run. */
+  killStreakBest: number;
+  /** Set to true briefly when the kill streak breaks; HUD reads and resets it. */
+  killStreakFlash: boolean;
+  /** Rolling combat log — last 5 events shown as scrolling strip in HUD. */
+  combatLog: string[];
 }
 
 export interface UpgradeOption {
@@ -275,6 +271,8 @@ export interface UpgradeOption {
   description: string;
   rarity: "common" | "uncommon" | "rare" | "epic";
   maxStacks: number;
+  /** Emoji icon displayed on the upgrade card */
+  icon?: string;
 }
 
 export interface InputState {
@@ -294,6 +292,12 @@ export interface VibePortalState {
   visible: boolean;
   near: boolean;
   triggered: boolean;
+}
+
+export interface MegaBossState {
+  spawned: boolean;
+  introRemaining: number; // seconds remaining in intro; 0 = intro done
+  name: string;
 }
 
 export interface MultiplayerPeerState {
@@ -326,6 +330,19 @@ export interface RunRecord {
   date: string;
 }
 
+export interface BossHudState {
+  hp: number;
+  maxHp: number;
+  type: EnemyType;
+}
+
+export interface MinimapEnemyState {
+  id: number;
+  x: number;
+  y: number;
+  type: EnemyType;
+}
+
 export interface GameSnapshot {
   phase: RunPhase;
   loading: LoadingState;
@@ -333,12 +350,9 @@ export interface GameSnapshot {
   enemies: EnemyState[];
   harvestables: HarvestableState[];
   projectiles: ProjectileState[];
-<<<<<<< HEAD
   delayedAoEs: DelayedAoEState[];
   mines: MineState[];
   oilSlicks: OilSlickState[];
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   visualEffects: VisualEffect[];
   audioEvents: AudioEvent[];
   postFxPulse: PostFxPulse | null;
@@ -347,10 +361,7 @@ export interface GameSnapshot {
   cooldowns: Cooldowns;
   stats: GameStats;
   pendingUpgradeOptions: UpgradeOption[];
-<<<<<<< HEAD
   pendingUpgradeContext: "levelup" | "eliteExtra";
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   message: FlashMessage | null;
   vibePortal: VibePortalState;
   spawnIntensity: number;
@@ -360,6 +371,27 @@ export interface GameSnapshot {
     elapsedTotal: number;
   };
   runBiome: BiomeType;
+  megaBoss: MegaBossState | null;
+}
+
+export interface UiSnapshot {
+  phase: RunPhase;
+  loading: LoadingState;
+  player: PlayerState;
+  upgrades: UpgradeStats;
+  cooldowns: Cooldowns;
+  stats: GameStats;
+  pendingUpgradeOptions: UpgradeOption[];
+  pendingUpgradeContext: "levelup" | "eliteExtra";
+  message: FlashMessage | null;
+  vibePortal: VibePortalState;
+  spawnIntensity: number;
+  runClock: GameSnapshot["runClock"];
+  runBiome: BiomeType;
+  megaBoss: MegaBossState | null;
+  bossState: BossHudState | null;
+  eliteCount: number;
+  minimapEnemies: MinimapEnemyState[];
 }
 
 export type BiomeType = "open_sea" | "island_chain" | "deep_waters" | "boss_storm";

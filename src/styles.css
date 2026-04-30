@@ -14,11 +14,7 @@ body {
   margin: 0;
   min-height: 100vh;
   overflow: hidden;
-<<<<<<< HEAD
-  background: radial-gradient(circle at top, #1a4a6e 0%, #0a2535 70%);
-=======
   background: radial-gradient(circle at top, #0f2f47 0%, #041521 70%);
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 }
 
 #root,
@@ -281,26 +277,9 @@ button:hover {
   margin-top: 0.35rem;
 }
 
-<<<<<<< HEAD
 .tutorial-skip-btn {
-  margin-top: 12px;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(0, 0, 0, 0.25);
-  color: #cfe9ff;
-  cursor: pointer;
 }
 
-.tutorial-skip-btn:hover {
-  border-color: #9edfff;
-  color: #fff;
-}
-
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 .tutorial-hint {
   margin-top: 0.6rem;
   font-size: 0.88rem;
@@ -445,7 +424,6 @@ button:hover {
   animation: pulse-glow 0.9s ease-in-out infinite alternate;
 }
 
-<<<<<<< HEAD
 .pulse-meter.special {
   border: 1px solid rgba(184, 162, 255, 0.45);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 14px rgba(143, 98, 255, 0.18);
@@ -456,25 +434,15 @@ button:hover {
 }
 
 .pulse-meter.special.ready .pulse-meter-fill {
-  animation: pulse-glow 0.9s ease-in-out infinite alternate, special-ready-sweep 0.75s ease-in-out infinite;
+  /* Keep emphasis without shifting meter position horizontally. */
+  animation: pulse-glow 0.9s ease-in-out infinite alternate;
 }
 
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 @keyframes pulse-glow {
   from { filter: brightness(1); }
   to { filter: brightness(1.5); }
 }
 
-<<<<<<< HEAD
-@keyframes special-ready-sweep {
-  0% { transform: translateX(-3%); }
-  50% { transform: translateX(0); }
-  100% { transform: translateX(3%); }
-}
-
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 .pulse-meter.damage-flash {
   animation: damage-flash 180ms ease-out;
 }
@@ -482,6 +450,27 @@ button:hover {
 @keyframes damage-flash {
   0% { background: rgba(255, 80, 80, 0.7); }
   100% { background: rgba(0, 0, 0, 0.35); }
+}
+
+/* ── Boost Arc ────────────────────────────────────────────── */
+.boost-arc {
+  width: 48px;
+  height: 48px;
+}
+
+.boost-arc-svg {
+  width: 48px;
+  height: 48px;
+}
+
+/* ready pulse */
+.boost-arc.ready {
+  animation: boost-ready-pulse 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes boost-ready-pulse {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.6); }
 }
 
 .xp-bar {
@@ -528,7 +517,6 @@ button:hover {
   z-index: 31;
 }
 
-<<<<<<< HEAD
 .hud-wave-clock {
   position: fixed;
   top: 14px;
@@ -652,8 +640,6 @@ button:hover {
   color: #cfe9ff;
 }
 
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 .level-pill.bump {
   animation: level-bump 360ms ease-out;
 }
@@ -721,6 +707,96 @@ button:hover {
   height: 100%;
   background: linear-gradient(90deg, #ff2020 0%, #ff7a3a 100%);
   transition: width 150ms ease-out;
+  position: relative;
+}
+
+/* Segmented HP bar dividers */
+.boss-bar-segments {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.boss-bar-segment-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(0, 0, 0, 0.5);
+  transform: translateX(-50%);
+}
+
+/* HP number below bar */
+.boss-hp-label {
+  color: #ff9090;
+  font-size: 11px;
+  letter-spacing: 1px;
+  margin-top: 3px;
+  font-family: monospace;
+  font-weight: 700;
+}
+
+/* Intro overlay */
+.boss-intro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  animation: boss-intro-fadeout 0.4s ease-out 1.6s forwards;
+}
+
+.boss-intro-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+@keyframes boss-intro-fadeout {
+  to {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.boss-intro-warning {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: "Luckiest Guy", system-ui, sans-serif;
+  font-size: 48px;
+  font-weight: 900;
+  color: #ff2020;
+  text-shadow: 0 0 20px rgba(255, 32, 32, 0.9), 0 0 40px rgba(255, 32, 32, 0.6);
+  animation: boss-intro-pulse 0.3s ease-in-out infinite alternate;
+}
+
+.boss-intro-icon {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.boss-intro-label {
+  letter-spacing: 6px;
+}
+
+@keyframes boss-intro-pulse {
+  from { transform: scale(1); }
+  to   { transform: scale(1.08); }
+}
+
+.boss-intro-name {
+  margin-top: 8px;
+  font-family: "Luckiest Guy", system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #ff9060;
+  letter-spacing: 4px;
+  text-shadow: 0 0 12px rgba(255, 144, 96, 0.8);
 }
 
 .hud-v2 {
@@ -764,7 +840,57 @@ button:hover {
 .hud-v2-hp-bar { width: 180px; }
 .hud-v2-ability-bar { width: 140px; }
 
-<<<<<<< HEAD
+/* Kill Streak HUD — top-right, below score */
+.kill-streak-hud {
+  position: fixed;
+  top: 108px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  pointer-events: none;
+  z-index: 40;
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2ecf0;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.55);
+  transition: color 0.1s ease;
+}
+
+.kill-streak-hud__line {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.kill-streak-hud__icon {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.kill-streak-hud__label {
+  opacity: 0.65;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  min-width: 32px;
+}
+
+.kill-streak-hud__value {
+  min-width: 24px;
+  text-align: right;
+}
+
+.kill-streak-hud--flash {
+  animation: kill-streak-flash 0.35s ease-out forwards;
+}
+
+@keyframes kill-streak-flash {
+  0%   { color: #ff4444; transform: scale(1.15); }
+  60%  { color: #ff4444; }
+  100% { color: #e2ecf0; transform: scale(1); }
+}
+
 .hud-v2-row--extra-empty span:first-child {
   color: #ffd983;
   animation: hud-extra-lock-pulse 0.9s ease-in-out infinite alternate;
@@ -775,8 +901,6 @@ button:hover {
   to { filter: brightness(1.35); }
 }
 
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 .screen-flash {
   position: fixed;
   inset: 0;
@@ -787,11 +911,21 @@ button:hover {
 }
 
 .screen-flash.fire {
-  animation: flash-once 120ms ease-out;
+  animation: flash-once 200ms ease-out;
+}
+
+.screen-flash.elite {
+  background: linear-gradient(135deg, rgba(160, 220, 255, 0.9), rgba(220, 240, 255, 0.85));
+  animation: flash-once-elite 240ms ease-out;
 }
 
 @keyframes flash-once {
-  0% { opacity: 0.08; }
+  0% { opacity: 0.18; }
+  100% { opacity: 0; }
+}
+
+@keyframes flash-once-elite {
+  0% { opacity: 0.22; }
   100% { opacity: 0; }
 }
 
@@ -801,18 +935,32 @@ button:hover {
   left: -100%;
   width: 100%;
   padding: 14px 0;
-  background: linear-gradient(90deg, transparent 0%, #ff5577 15%, #ffaa33 50%, #ff5577 85%, transparent 100%);
+  background: linear-gradient(90deg,
+    transparent 0%,
+    #ff2255 8%,
+    #ff7744 25%,
+    #ffcc00 50%,
+    #ff7744 75%,
+    #ff2255 92%,
+    transparent 100%);
   color: #fff;
   font-family: "Luckiest Guy", system-ui, sans-serif;
   font-size: 46px;
   font-weight: 800;
   letter-spacing: 6px;
   text-align: center;
-  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  text-shadow:
+    0 0 16px rgba(255, 80, 40, 0.9),
+    0 0 40px rgba(255, 140, 60, 0.6),
+    0 6px 16px rgba(0, 0, 0, 0.7);
   pointer-events: none;
   z-index: 90;
   opacity: 0;
   transform: skewY(-2deg);
+  box-shadow:
+    0 0 60px rgba(255, 80, 40, 0.5),
+    0 0 120px rgba(255, 120, 40, 0.25),
+    inset 0 0 40px rgba(255, 220, 120, 0.15);
 }
 
 .levelup-ribbon.fire {
@@ -821,7 +969,8 @@ button:hover {
 
 @keyframes levelup-sweep {
   0% { left: -100%; opacity: 0; }
-  25% { left: 0%; opacity: 1; }
+  20% { left: 0%; opacity: 1; filter: brightness(1.5); }
+  35% { left: 0%; opacity: 1; filter: brightness(1.2); }
   75% { left: 0%; opacity: 1; }
   100% { left: 100%; opacity: 0; }
 }
@@ -855,14 +1004,11 @@ button:hover {
   font-family: system-ui, sans-serif;
 }
 
-<<<<<<< HEAD
 .upgrade-modal-panel--elite {
   border-color: rgba(255, 210, 110, 0.5);
   box-shadow: 0 0 28px rgba(255, 190, 80, 0.22);
 }
 
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 .upgrade-grid-v2 {
   display: flex;
   gap: 12px;
@@ -910,7 +1056,6 @@ button:hover {
   100% { transform: scale(1); opacity: 0; filter: brightness(2.5); }
 }
 
-<<<<<<< HEAD
 .upgrade-rarity-pill {
   display: inline-block;
   font-size: 10px;
@@ -940,6 +1085,43 @@ button:hover {
   background: linear-gradient(90deg, #7a3cff, #ff3c9a);
 }
 
+/* Rarity glow borders */
+.upgrade-card--common {
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+}
+.upgrade-card--common:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 14px 2px rgba(255, 255, 255, 0.12);
+}
+
+.upgrade-card--uncommon {
+  border-color: rgba(76, 255, 76, 0.4);
+  box-shadow: 0 0 0 0 rgba(76, 255, 76, 0);
+}
+.upgrade-card--uncommon:hover {
+  border-color: #4cff4c;
+  box-shadow: 0 0 14px 3px rgba(76, 255, 76, 0.28);
+}
+
+.upgrade-card--rare {
+  border-color: rgba(76, 168, 255, 0.5);
+  box-shadow: 0 0 0 0 rgba(76, 168, 255, 0);
+}
+.upgrade-card--rare:hover {
+  border-color: #4ca8ff;
+  box-shadow: 0 0 14px 3px rgba(76, 168, 255, 0.35);
+}
+
+.upgrade-card--epic {
+  border-color: rgba(255, 192, 64, 0.55);
+  box-shadow: 0 0 0 0 rgba(255, 192, 64, 0);
+}
+.upgrade-card--epic:hover {
+  border-color: #ffc040;
+  box-shadow: 0 0 18px 4px rgba(255, 192, 64, 0.45);
+}
+
 .upgrade-owned {
   display: block;
   margin-top: 6px;
@@ -956,8 +1138,20 @@ button:hover {
   color: #9edfff;
 }
 
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
+.upgrade-tooltip-delta {
+  display: block;
+  margin-top: 10px;
+  padding: 7px 10px;
+  background: rgba(0, 0, 0, 0.72);
+  border: 1px solid rgba(255, 204, 102, 0.55);
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffe680;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 .upgrade-card strong {
   display: block;
   font-size: 18px;
@@ -970,6 +1164,22 @@ button:hover {
   font-size: 13px;
   line-height: 1.4;
   opacity: 0.85;
+}
+
+.upgrade-icon {
+  font-size: 28px;
+  line-height: 1;
+  display: block;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.upgrade-type-emoji {
+  font-size: 20px;
+  line-height: 1;
+  display: block;
+  margin-bottom: 4px;
+  opacity: 0.75;
 }
 
 .gameover-actions {
@@ -1056,4 +1266,229 @@ button:hover {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 12px;
+}
+
+/* ── Combat log strip ─────────────────────────────────── */
+.combat-log {
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.combat-log__entry {
+  font-family: "Press Start 2P", "Courier New", monospace;
+  font-size: 0.72rem;
+  line-height: 1;
+  color: #e0e0e0;
+  background: rgba(0, 0, 0, 0.72);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  text-shadow: 1px 1px 0 #000, 0 0 6px rgba(255, 255, 255, 0.2);
+  animation: combat-log-in 0.2s ease-out;
+  white-space: nowrap;
+}
+
+/* Event type pills — matched by prefix text content */
+.combat-log__entry[data-evt*="CRIT"]    { background: rgba(255,140,0,0.65); border-color: rgba(255,180,50,0.5); color: #fff3c0; }
+.combat-log__entry[data-evt*="KILL"]   { background: rgba(220,40,40,0.7);  border-color: rgba(255,80,80,0.5);  color: #ffe0e0; }
+.combat-log__entry[data-evt*="BOSS"]   { background: rgba(180,0,255,0.65); border-color: rgba(220,80,255,0.5); color: #f0d0ff; }
+.combat-log__entry[data-evt*="ELITE"]  { background: rgba(0,180,255,0.6);  border-color: rgba(80,220,255,0.5); color: #d0f4ff; }
+.combat-log__entry[data-evt*="BONUS"]  { background: rgba(80,200,80,0.6);  border-color: rgba(120,255,120,0.4); color: #d8ffe0; }
+.combat-log__entry[data-evt*="GOLD"]   { background: rgba(255,200,0,0.6);  border-color: rgba(255,220,80,0.5); color: #fff8c0; }
+.combat-log__entry[data-evt*="BOOST"]  { background: rgba(60,120,255,0.6); border-color: rgba(100,160,255,0.5); color: #d8e8ff; }
+
+@keyframes combat-log-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.9); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Captain Meta-Progression ─────────────────────────────────────── */
+.captain-meta-panel {
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 210, 80, 0.35);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 10px 0;
+}
+
+.captain-level-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.captain-title-label {
+  font-family: "Luckiest Guy", system-ui, sans-serif;
+  font-size: 1.1rem;
+  color: #ffd57a;
+  letter-spacing: 0.5px;
+}
+
+.captain-level-badge {
+  background: linear-gradient(135deg, #ff9a3c, #ff5577);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.9rem;
+  padding: 3px 10px;
+  border-radius: 14px;
+  letter-spacing: 0.5px;
+  font-family: "Luckiest Guy", system-ui, sans-serif;
+}
+
+.captain-xp-bar {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.captain-xp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffb83d 0%, #ff5577 100%);
+  border-radius: 4px;
+  transition: width 300ms ease-out;
+  box-shadow: 0 0 6px rgba(255, 150, 50, 0.5);
+}
+
+.captain-xp-label {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: #c8e6f5;
+  text-align: right;
+}
+
+/* ── Run Summary Panel ────────────────────────────────────────────── */
+.run-summary-panel {
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(120, 200, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 8px 0;
+}
+
+.run-summary-title {
+  font-family: "Luckiest Guy", system-ui, sans-serif;
+  font-size: 0.95rem;
+  color: #9edfff;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.run-summary-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.run-stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85em;
+  color: #c5dce8;
+}
+
+.run-stat-row.xp-earned {
+  color: #ffe066;
+  font-weight: 700;
+}
+
+/* ── Best Run Panel ────────────────────────────────────────────────── */
+.best-run-panel {
+  background: rgba(255, 200, 60, 0.06);
+  border: 1px solid rgba(255, 200, 60, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 8px 0;
+}
+
+.best-run-title {
+  font-family: "Luckiest Guy", system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: #ffd57a;
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+}
+
+/* ── Level-Up Flash Overlay ──────────────────────────────────────── */
+.levelup-flash-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 200;
+  animation: levelup-flash-fade 2.2s ease-out forwards;
+}
+
+.levelup-flash-text {
+  background: linear-gradient(135deg, #ff9a3c 0%, #ff5577 60%, #ffe066 100%);
+  color: #fff;
+  font-family: "Luckiest Guy", system-ui, sans-serif;
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  padding: 18px 36px;
+  border-radius: 16px;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 40px rgba(255, 100, 80, 0.5), 0 0 80px rgba(255, 150, 50, 0.3);
+  animation: levelup-flash-scale 2.2s ease-out forwards;
+  white-space: nowrap;
+}
+
+@keyframes levelup-flash-fade {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes levelup-flash-scale {
+  0% { transform: scale(0.4); filter: brightness(2); }
+  20% { transform: scale(1.08); filter: brightness(1.3); }
+  35% { transform: scale(1); filter: brightness(1); }
+  85% { transform: scale(1) translateY(0); }
+  100% { transform: scale(1.05) translateY(-8px); }
+}
+
+/* ── Ghost Hull Badge ────────────────────────────────────────────── */
+.ghost-badge {
+  position: fixed;
+  top: 68px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(180, 200, 255, 0.15);
+  border: 1px solid rgba(180, 220, 255, 0.55);
+  color: #c8e8ff;
+  font-family: "Luckiest Guy", system-ui, sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 3px;
+  padding: 5px 18px;
+  border-radius: 20px;
+  pointer-events: none;
+  z-index: 42;
+  animation: ghost-pulse 0.65s ease-in-out infinite alternate;
+  text-shadow: 0 0 10px rgba(200, 230, 255, 0.8);
+}
+
+@keyframes ghost-pulse {
+  from { opacity: 0.75; transform: translateX(-50%) scale(0.97); }
+  to   { opacity: 1;    transform: translateX(-50%) scale(1.03); }
+}
+
+/* ── Mini-map ────────────────────────────────────────────────────── */
+.mini-map {
+  box-shadow: 0 0 12px rgba(80, 160, 255, 0.18);
 }

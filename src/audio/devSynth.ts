@@ -1,20 +1,45 @@
 import type { SfxId } from "../game/types";
 
+/**
+ * Returns a pan value in [-1, +1] for stereo panning.
+ * Positive = right (source to the right of listener).
+ * Uses horizontal offset divided by a scale factor.
+ */
+export function computePan(
+  sourceX: number,
+  listenerX: number,
+  scale = 8
+): number {
+  return Math.max(-1, Math.min(1, (sourceX - listenerX) / scale));
+}
+
 const RECIPES: Record<SfxId, { freq: number; wave: OscillatorType; durationMs: number; sweepTo?: number }> = {
-  cannon_fire: { freq: 120, wave: "sawtooth", durationMs: 200, sweepTo: 60 },
+  cannon_fire: { freq: 280, wave: "sawtooth", durationMs: 180, sweepTo: 140 },
   hit: { freq: 220, wave: "square", durationMs: 150 },
   pickup: { freq: 660, wave: "sine", durationMs: 100, sweepTo: 1320 },
   upgrade_sting: { freq: 440, wave: "sine", durationMs: 500, sweepTo: 880 },
-  boss_cue: { freq: 80, wave: "sawtooth", durationMs: 1000 },
+  boss_cue: { freq: 55, wave: "sawtooth", durationMs: 800 },
+  boost_activate: { freq: 220, wave: "sine", durationMs: 280, sweepTo: 380 },
   damage_taken: { freq: 180, wave: "square", durationMs: 150, sweepTo: 90 },
   ship_destroyed: { freq: 100, wave: "sawtooth", durationMs: 400, sweepTo: 40 },
   harvestable_destroyed: { freq: 300, wave: "triangle", durationMs: 300, sweepTo: 450 },
 };
 
-export function playSynth(ctx: AudioContext, dest: AudioNode, sfx: SfxId, volume = 1, pitch = 1): void {
+export function playSynth(
+  ctx: AudioContext,
+  dest: AudioNode,
+  sfx: SfxId,
+  volume = 1,
+  pitch = 1,
+  pan = 0
+): void {
   const recipe = RECIPES[sfx];
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
+  const panner = ctx.createStereoPanner();
+
+  panner.pan.value = pan;
+
   osc.type = recipe.wave;
   osc.frequency.value = recipe.freq * pitch;
   if (recipe.sweepTo !== undefined) {
@@ -23,7 +48,7 @@ export function playSynth(ctx: AudioContext, dest: AudioNode, sfx: SfxId, volume
   gain.gain.setValueAtTime(0, ctx.currentTime);
   gain.gain.linearRampToValueAtTime(0.3 * volume, ctx.currentTime + 0.01);
   gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + recipe.durationMs / 1000);
-  osc.connect(gain).connect(dest);
+  osc.connect(gain).connect(panner).connect(dest);
   osc.start();
   osc.stop(ctx.currentTime + recipe.durationMs / 1000 + 0.05);
 }

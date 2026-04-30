@@ -8,18 +8,11 @@ import { WaterArena } from "./arcade/WaterArena";
 import { EnemyShip } from "./entities/Enemy";
 import { HarvestableEntity } from "./entities/HarvestableEntity";
 import { PlayerShip } from "./entities/PlayerShip";
-<<<<<<< HEAD
-import type { DelayedAoEState, GameSnapshot, MineState, MultiplayerPeerState, OilSlickState, PickupState } from "../game/types";
+import type { DelayedAoEState, GameSnapshot, MineState, MultiplayerPeerState, OilSlickState, PickupState, UiSnapshot } from "../game/types";
 import { getBlendedRunArcTheme } from "./biomeLerp";
 import { PostFX } from "./postfx/PostFX";
-import { pickFxQuality, type FxQuality } from "./postfx/qualityController";
+import { pickFxQuality, getParticleMultiplier, type FxQuality } from "./postfx/qualityController";
 import { isChromiumBased, getDefaultFxQuality } from "../utils/browserPerf";
-=======
-import type { PickupState, GameSnapshot, MultiplayerPeerState } from "../game/types";
-import { getBlendedRunArcTheme } from "./biomeLerp";
-import { PostFX } from "./postfx/PostFX";
-import { pickFxQuality, type FxQuality } from "./postfx/qualityController";
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 
 const ISO_OFFSET = 24;
 
@@ -118,26 +111,21 @@ function ShipWakeFoam({
   );
 }
 
-function CameraFollow({ snapshot }: { snapshot: GameSnapshot }): null {
+function CameraFollow({ snapshot, simStateRef }: { snapshot: UiSnapshot; simStateRef: { current: GameSnapshot } }): null {
   const { camera } = useThree();
   const desired = useMemo(() => new THREE.Vector3(), []);
   const target = useMemo(() => new THREE.Vector3(), []);
 
   useFrame((_state, delta) => {
     let shakeOffset = 0;
-    for (const effect of snapshot.visualEffects) {
+    for (const effect of simStateRef.current.visualEffects) {
       if (effect.kind === "screenShake") {
-<<<<<<< HEAD
         const remaining = Math.max(0, effect.remaining);
-        shakeOffset += remaining * remaining * 5; // quadratic for punchier big shakes
+        const intensity = effect.intensity ?? 1.0;
+        shakeOffset += remaining * remaining * 5 * intensity; // quadratic for punchier big shakes, scaled by intensity
       }
     }
-    shakeOffset = Math.min(shakeOffset, 0.8); // cap so it never gets ridiculous
-=======
-        shakeOffset += Math.max(0, effect.remaining) * 1.5;
-      }
-    }
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
+    shakeOffset = Math.min(shakeOffset, 2.0); // cap so it never gets ridiculous (raised from 0.8 to 2.0 to accommodate high-intensity shakes)
 
     target.set(snapshot.player.position.x, 0, snapshot.player.position.y);
     desired.set(
@@ -147,21 +135,12 @@ function CameraFollow({ snapshot }: { snapshot: GameSnapshot }): null {
     );
 
     // Exponential decay: closes ~89% of gap per frame at 60fps (near-snap follow).
-<<<<<<< HEAD
     const alpha = 1 - Math.pow(0.0005, delta);
     camera.position.lerp(desired, alpha);
 
     if (shakeOffset > 0) {
       camera.position.x += (Math.random() - 0.5) * shakeOffset * 1.2;
       camera.position.z += (Math.random() - 0.5) * shakeOffset * 1.2;
-=======
-    const alpha = 1 - Math.pow(0.001, delta);
-    camera.position.lerp(desired, alpha);
-
-    if (shakeOffset > 0) {
-      camera.position.x += (Math.random() - 0.5) * shakeOffset;
-      camera.position.z += (Math.random() - 0.5) * shakeOffset;
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
     }
 
     camera.lookAt(target.x, target.y, target.z);
@@ -171,19 +150,109 @@ function CameraFollow({ snapshot }: { snapshot: GameSnapshot }): null {
 }
 
 interface GameSceneProps {
-  snapshot: GameSnapshot;
+  snapshot: UiSnapshot;
+  simStateRef: { current: GameSnapshot };
+  fastRenderEnabled?: boolean;
   remotePlayers?: MultiplayerPeerState[];
   localPlayerBadge?: Pick<MultiplayerPeerState, "name" | "emoji" | "color"> | null;
 }
 
+const FAST_ENEMY_RENDER_CAP = 64;
+
+function setDroppedEnemiesCounter(dropped: number): void {
+  if (typeof window === "undefined") return;
+  const dbg = (window as typeof window & { __dbg?: { droppedEnemies?: number } }).__dbg ?? {};
+  dbg.droppedEnemies = Math.max(0, dropped);
+  (window as typeof window & { __dbg?: { droppedEnemies?: number } }).__dbg = dbg;
+}
+
+function FastEnemyCrowd({
+  enemies,
+  playerPosition,
+}: {
+  enemies: GameSnapshot["enemies"];
+  playerPosition: { x: number; y: number };
+}): ReactElement {
+  const normalRef = useRef<THREE.InstancedMesh>(null);
+  const eliteRef = useRef<THREE.InstancedMesh>(null);
+  const heavyRef = useRef<THREE.InstancedMesh>(null);
+  const tempObj = useMemo(() => new THREE.Object3D(), []);
+
+  useFrame(() => {
+    const px = playerPosition.x;
+    const py = playerPosition.y;
+    const nearest: Array<{ enemy: GameSnapshot["enemies"][number]; d2: number }> = [];
+
+    for (const enemy of enemies) {
+      const dx = enemy.position.x - px;
+      const dy = enemy.position.y - py;
+      const d2 = dx * dx + dy * dy;
+      if (nearest.length < FAST_ENEMY_RENDER_CAP) {
+        nearest.push({ enemy, d2 });
+        nearest.sort((a, b) => a.d2 - b.d2);
+      } else if (d2 < nearest[nearest.length - 1].d2) {
+        nearest[nearest.length - 1] = { enemy, d2 };
+        nearest.sort((a, b) => a.d2 - b.d2);
+      }
+    }
+    setDroppedEnemiesCounter(Math.max(0, enemies.length - nearest.length));
+
+    let normalCount = 0;
+    let eliteCount = 0;
+    let heavyCount = 0;
+    for (const { enemy } of nearest) {
+      const heavy = enemy.type === "boss" || enemy.type === "shore_battery" || enemy.type === "brute";
+      const mesh = heavy ? heavyRef.current : enemy.isElite ? eliteRef.current : normalRef.current;
+      if (!mesh) continue;
+      const idx = heavy ? heavyCount : enemy.isElite ? eliteCount : normalCount;
+
+      const scale = heavy ? 1.25 : enemy.type === "bomber" ? 0.9 : 1.0;
+      tempObj.position.set(enemy.position.x, 0.56, enemy.position.y);
+      tempObj.rotation.set(0, enemy.facing, 0);
+      tempObj.scale.set(scale, scale, scale * 1.25);
+      tempObj.updateMatrix();
+      mesh.setMatrixAt(idx, tempObj.matrix);
+
+      if (heavy) heavyCount += 1;
+      else if (enemy.isElite) eliteCount += 1;
+      else normalCount += 1;
+    }
+
+    if (normalRef.current) {
+      normalRef.current.count = normalCount;
+      normalRef.current.instanceMatrix.needsUpdate = true;
+    }
+    if (eliteRef.current) {
+      eliteRef.current.count = eliteCount;
+      eliteRef.current.instanceMatrix.needsUpdate = true;
+    }
+    if (heavyRef.current) {
+      heavyRef.current.count = heavyCount;
+      heavyRef.current.instanceMatrix.needsUpdate = true;
+    }
+  });
+
+  return (
+    <>
+      <instancedMesh ref={normalRef} args={[undefined, undefined, FAST_ENEMY_RENDER_CAP]} frustumCulled={false}>
+        <capsuleGeometry args={[0.55, 1.2, 6, 8]} />
+        <meshStandardMaterial color="#85543b" emissive="#2d1b12" emissiveIntensity={0.35} roughness={0.72} metalness={0.15} />
+      </instancedMesh>
+      <instancedMesh ref={eliteRef} args={[undefined, undefined, FAST_ENEMY_RENDER_CAP]} frustumCulled={false}>
+        <capsuleGeometry args={[0.58, 1.25, 6, 8]} />
+        <meshStandardMaterial color="#b48a62" emissive="#6b4d22" emissiveIntensity={0.55} roughness={0.64} metalness={0.22} />
+      </instancedMesh>
+      <instancedMesh ref={heavyRef} args={[undefined, undefined, FAST_ENEMY_RENDER_CAP]} frustumCulled={false}>
+        <capsuleGeometry args={[0.72, 1.45, 6, 8]} />
+        <meshStandardMaterial color="#9aa1ad" emissive="#30353c" emissiveIntensity={0.5} roughness={0.58} metalness={0.3} />
+      </instancedMesh>
+    </>
+  );
+}
+
 function FxQualityTracker({ onQuality }: { onQuality: (q: FxQuality) => void }): null {
-<<<<<<< HEAD
   const avgFpsRef = useRef(isChromiumBased() ? 30 : 60);
   const qualityRef = useRef<FxQuality>(getDefaultFxQuality());
-=======
-  const avgFpsRef = useRef(60);
-  const qualityRef = useRef<FxQuality>("full");
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
   const override = useMemo(() => {
     const qs = new URLSearchParams(window.location.search);
     const forced = qs.get("fx");
@@ -331,7 +400,6 @@ function VibePortal({
   );
 }
 
-<<<<<<< HEAD
 function DepthChargeBarrel({ aoe }: { aoe: DelayedAoEState }): ReactElement {
   const groupRef = useRef<THREE.Group>(null);
   const bubbleRefs = useRef<(THREE.Mesh | null)[]>([]);
@@ -451,8 +519,6 @@ function OilSlickOverlay({ slick }: { slick: OilSlickState }): ReactElement {
   );
 }
 
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
 function PlayerNameTag({
   name,
   emoji,
@@ -479,7 +545,6 @@ function PlayerNameTag({
   );
 }
 
-<<<<<<< HEAD
 function DelayedAoEIndicator({ aoe }: { aoe: DelayedAoEState }): ReactElement {
   const pulse = 0.78 + Math.sin(aoe.remaining * 8) * 0.1;
   const tint =
@@ -531,20 +596,111 @@ function SeaMineVisual({ mine }: { mine: MineState }): ReactElement {
   );
 }
 
-export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = null }: GameSceneProps): ReactElement {
+const FAST_DELAYED_AOE_MAX = 64;
+const FAST_MINE_MAX = 64;
+const FAST_OIL_SLICK_MAX = 64;
+
+function FastHazardOverlays({
+  delayedAoEs,
+  mines,
+  oilSlicks,
+}: {
+  delayedAoEs: DelayedAoEState[];
+  mines: MineState[];
+  oilSlicks: OilSlickState[];
+}): ReactElement {
+  const aoeRef = useRef<THREE.InstancedMesh>(null);
+  const mineRef = useRef<THREE.InstancedMesh>(null);
+  const oilRef = useRef<THREE.InstancedMesh>(null);
+  const tempObj = useMemo(() => new THREE.Object3D(), []);
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    let aoeCount = 0;
+    let mineCount = 0;
+    let oilCount = 0;
+
+    for (const aoe of delayedAoEs) {
+      if (aoeCount >= FAST_DELAYED_AOE_MAX) break;
+      const pulse = 0.78 + Math.sin(aoe.remaining * 8) * 0.1;
+      tempObj.position.set(aoe.position.x, 0.045, aoe.position.y);
+      tempObj.rotation.set(-Math.PI / 2, aoe.remaining * 0.3, 0);
+      tempObj.scale.set(aoe.radius * pulse, aoe.radius * pulse, 1);
+      tempObj.updateMatrix();
+      aoeRef.current?.setMatrixAt(aoeCount, tempObj.matrix);
+      aoeCount += 1;
+    }
+
+    for (const mine of mines) {
+      if (mineCount >= FAST_MINE_MAX) break;
+      const armed = mine.armingRemaining <= 0;
+      tempObj.position.set(mine.position.x, 0.25, mine.position.y);
+      tempObj.rotation.set(0, t * (armed ? 1.8 : 0.7), 0);
+      tempObj.scale.set(armed ? 1.06 : 1, armed ? 1.06 : 1, armed ? 1.06 : 1);
+      tempObj.updateMatrix();
+      mineRef.current?.setMatrixAt(mineCount, tempObj.matrix);
+      mineCount += 1;
+    }
+
+    for (const slick of oilSlicks) {
+      if (oilCount >= FAST_OIL_SLICK_MAX) break;
+      const fade = Math.min(1, slick.remaining * 0.4);
+      const wobble = 0.92 + Math.sin(t * 1.9 + slick.id) * 0.03;
+      tempObj.position.set(slick.position.x, 0.04, slick.position.y);
+      tempObj.rotation.set(-Math.PI / 2, 0, t * 0.08);
+      tempObj.scale.set(slick.radius * wobble, slick.radius * 0.72 * wobble, fade);
+      tempObj.updateMatrix();
+      oilRef.current?.setMatrixAt(oilCount, tempObj.matrix);
+      oilCount += 1;
+    }
+
+    if (aoeRef.current) {
+      aoeRef.current.count = aoeCount;
+      aoeRef.current.instanceMatrix.needsUpdate = true;
+    }
+    if (mineRef.current) {
+      mineRef.current.count = mineCount;
+      mineRef.current.instanceMatrix.needsUpdate = true;
+    }
+    if (oilRef.current) {
+      oilRef.current.count = oilCount;
+      oilRef.current.instanceMatrix.needsUpdate = true;
+    }
+  });
+
+  return (
+    <>
+      <instancedMesh ref={aoeRef} args={[undefined, undefined, FAST_DELAYED_AOE_MAX]} frustumCulled={false}>
+        <ringGeometry args={[0.72, 1, 24]} />
+        <meshBasicMaterial color="#c85a33" transparent opacity={0.4} depthWrite={false} />
+      </instancedMesh>
+      <instancedMesh ref={mineRef} args={[undefined, undefined, FAST_MINE_MAX]} frustumCulled={false}>
+        <sphereGeometry args={[0.28, 10, 10]} />
+        <meshStandardMaterial color="#3b404a" emissive="#242932" emissiveIntensity={0.4} />
+      </instancedMesh>
+      <instancedMesh ref={oilRef} args={[undefined, undefined, FAST_OIL_SLICK_MAX]} frustumCulled={false}>
+        <circleGeometry args={[1, 20]} />
+        <meshBasicMaterial color="#20160f" transparent opacity={0.45} depthWrite={false} />
+      </instancedMesh>
+    </>
+  );
+}
+
+export function GameScene({
+  snapshot,
+  simStateRef,
+  fastRenderEnabled = false,
+  remotePlayers = [],
+  localPlayerBadge = null,
+}: GameSceneProps): ReactElement {
+  const sim = simStateRef.current;
   const elapsed = snapshot.runClock.elapsedTotal;
   const theme = getBlendedRunArcTheme(elapsed);
-  const [fxQuality, setFxQuality] = useState<FxQuality>(getDefaultFxQuality);
+  const [fxQuality, setFxQuality] = useState<FxQuality>(getDefaultFxQuality());
+  const particleScale = useMemo(() => getParticleMultiplier(fxQuality), [fxQuality]);
+
   return (
     <Canvas shadows dpr={[1, 1.8]} gl={{ powerPreference: "high-performance" }} orthographic camera={{ position: [ISO_OFFSET, ISO_OFFSET, ISO_OFFSET], zoom: 22, near: 0.1, far: 600 }}>
-=======
-export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = null }: GameSceneProps): ReactElement {
-  const elapsed = snapshot.runClock.elapsedTotal;
-  const theme = getBlendedRunArcTheme(elapsed);
-  const [fxQuality, setFxQuality] = useState<FxQuality>("full");
-  return (
-    <Canvas shadows dpr={[1, 1.8]} orthographic camera={{ position: [ISO_OFFSET, ISO_OFFSET, ISO_OFFSET], zoom: 22, near: 0.1, far: 600 }}>
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
       <color attach="background" args={[theme.backgroundColor]} />
       <fog attach="fog" args={[theme.fog.color, theme.fog.near, theme.fog.far]} />
       <ambientLight intensity={theme.ambient.intensity} color={theme.ambient.color} />
@@ -563,7 +719,7 @@ export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = nul
       />
 
       <FxQualityTracker onQuality={setFxQuality} />
-      <CameraFollow snapshot={snapshot} />
+      <CameraFollow snapshot={snapshot} simStateRef={simStateRef} />
       <WaterArena
         playerX={snapshot.player.position.x}
         playerZ={snapshot.player.position.y}
@@ -573,7 +729,11 @@ export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = nul
       />
 
       <group position={[snapshot.player.position.x, 0, snapshot.player.position.y]} rotation={[0, snapshot.player.facing, 0]}>
-        <PlayerShip upgradeLevel={snapshot.upgrades.level} />
+        <PlayerShip
+          upgradeLevel={snapshot.upgrades.level}
+          invulnRemaining={snapshot.cooldowns.invulnRemaining}
+          cannonReady={snapshot.cooldowns.cannonRemaining <= 0}
+        />
         {localPlayerBadge ? (
           <PlayerNameTag name={localPlayerBadge.name} emoji={localPlayerBadge.emoji} color={localPlayerBadge.color} />
         ) : null}
@@ -591,48 +751,67 @@ export function GameScene({ snapshot, remotePlayers = [], localPlayerBadge = nul
         </group>
       ))}
 
-      {snapshot.enemies.map((enemy) => (
-        <group key={enemy.id}>
-          <EnemyShip
-            type={enemy.type}
-            isElite={enemy.isElite}
-            position={[enemy.position.x, 0, enemy.position.y]}
-            rotation={[0, enemy.facing, 0]}
-          />
-          <ShipWakeFoam
-            x={enemy.position.x}
-            z={enemy.position.y}
-            facing={enemy.facing}
-            sizeScale={enemy.type === "brute" ? 1.05 : enemy.type === "bomber" ? 0.86 : 0.78}
-          />
-        </group>
-      ))}
+      {fastRenderEnabled ? (
+        <FastEnemyCrowd enemies={sim.enemies} playerPosition={snapshot.player.position} />
+      ) : (
+        sim.enemies.map((enemy) => {
+          const hpRatio = enemy.maxHp > 0 ? enemy.hp / enemy.maxHp : 1;
+          const damageState: "healthy" | "smoking" | "on_fire" | "sinking" =
+            hpRatio > 0.75 ? "healthy" : hpRatio > 0.5 ? "smoking" : hpRatio > 0.25 ? "on_fire" : "sinking";
+          return (
+            <group key={enemy.id}>
+              <EnemyShip
+                type={enemy.type}
+                isElite={enemy.isElite}
+                hitFlashTimer={enemy.hitFlashTimer}
+                damageState={enemy.type === "boss" || enemy.type === "shore_battery" ? damageState : undefined}
+                position={[enemy.position.x, 0, enemy.position.y]}
+                rotation={[0, enemy.facing, 0]}
+              />
+              <ShipWakeFoam
+                x={enemy.position.x}
+                z={enemy.position.y}
+                facing={enemy.facing}
+                sizeScale={enemy.type === "brute" ? 1.05 : enemy.type === "bomber" ? 0.86 : 0.78}
+              />
+            </group>
+          );
+        })
+      )}
 
-<<<<<<< HEAD
-      {snapshot.delayedAoEs.filter((aoe) => aoe.visualType === "depthCharge").map((aoe) => (
-        <DepthChargeBarrel key={`dc-${aoe.id}`} aoe={aoe} />
-      ))}
-      {snapshot.delayedAoEs.filter((aoe) => aoe.visualType !== "depthCharge").map((aoe) => (
-        <DelayedAoEIndicator key={`aoe-${aoe.id}`} aoe={aoe} />
-      ))}
-      {snapshot.oilSlicks.map((slick) => (
-        <OilSlickOverlay key={`oil-${slick.id}`} slick={slick} />
-      ))}
-      {snapshot.mines.map((mine) => (
-        <SeaMineVisual key={`mine-${mine.id}`} mine={mine} />
-      ))}
-=======
->>>>>>> arklight/claude/improve-flowforge-playability-GWlZo
-      <CombatProjectiles projectiles={snapshot.projectiles} />
-      <ArenaVisualEffects effects={snapshot.visualEffects} />
+      {fastRenderEnabled ? (
+        <FastHazardOverlays delayedAoEs={sim.delayedAoEs} mines={sim.mines} oilSlicks={sim.oilSlicks} />
+      ) : (
+        <>
+          {sim.delayedAoEs.filter((aoe) => aoe.visualType === "depthCharge").map((aoe) => (
+            <DepthChargeBarrel key={`dc-${aoe.id}`} aoe={aoe} />
+          ))}
+          {sim.delayedAoEs.filter((aoe) => aoe.visualType !== "depthCharge").map((aoe) => (
+            <DelayedAoEIndicator key={`aoe-${aoe.id}`} aoe={aoe} />
+          ))}
+          {sim.oilSlicks.map((slick) => (
+            <OilSlickOverlay key={`oil-${slick.id}`} slick={slick} />
+          ))}
+          {sim.mines.map((mine) => (
+            <SeaMineVisual key={`mine-${mine.id}`} mine={mine} />
+          ))}
+        </>
+      )}
+      <CombatProjectiles projectiles={sim.projectiles} playerPosition={snapshot.player.position} fastPath={fastRenderEnabled} />
+      <ArenaVisualEffects
+        effects={sim.visualEffects}
+        playerPosition={snapshot.player.position}
+        particleScale={particleScale}
+        fastPath={fastRenderEnabled}
+      />
 
-      {snapshot.pickups.map((pickup) => (
+      {sim.pickups.map((pickup) => (
         <PickupProp key={pickup.id} pickup={pickup} />
       ))}
-      {snapshot.harvestables.map((h) => (
+      {sim.harvestables.map((h) => (
         <HarvestableEntity key={`harv-${h.id}`} state={h} />
       ))}
-      <PostFX pulse={snapshot.postFxPulse} quality={fxQuality} />
+      <PostFX pulse={sim.postFxPulse} quality={fxQuality} />
     </Canvas>
   );
 }

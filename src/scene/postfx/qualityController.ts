@@ -2,6 +2,10 @@ import type { PostFxPulse } from "../../game/types";
 
 export type FxQuality = "full" | "lite";
 
+export function getParticleMultiplier(quality: FxQuality): number {
+  return quality === "lite" ? 0.25 : 1.0;
+}
+
 export function pickFxQuality(current: FxQuality, fps: number): FxQuality {
   if (fps < 45) return "lite";
   if (fps > 56) return "full";
