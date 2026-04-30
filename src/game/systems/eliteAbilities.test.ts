@@ -125,4 +125,27 @@ describe("runEliteAbilities", () => {
     expect(projectiles).toHaveLength(1);
     expect(projectiles[0]?.kind).toBe("enemySniper");
   });
+
+  it("does not fire elite sniper shot before cooldown expires", () => {
+    const enemies: EnemyState[] = [makeEliteAny("sniper")];
+    enemies[0].rangedCooldown = 1.5;
+    const projectiles: ProjectileState[] = [];
+    const delayedAoEs: DelayedAoEState[] = [];
+    const visualEffects: VisualEffect[] = [];
+
+    runEliteAbilities(
+      enemies,
+      makePlayer(),
+      { value: 1 },
+      projectiles,
+      delayedAoEs,
+      { value: 1 },
+      visualEffects,
+      { value: 1 },
+      0.1,
+    );
+
+    expect(projectiles).toHaveLength(0);
+    expect(enemies[0]?.rangedCooldown).toBeCloseTo(1.4, 5);
+  });
 });

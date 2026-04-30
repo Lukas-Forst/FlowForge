@@ -55,6 +55,10 @@ export function runEliteAbilities(
       enemy.flankDir = Math.random() < 0.5 ? 1 : -1;
     }
 
+    if (enemy.rangedCooldown > 0) {
+      continue;
+    }
+
     if (enemy.type === "corsair") {
       const toward = normalize({
         x: player.position.x - enemy.position.x,
