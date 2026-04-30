@@ -3,7 +3,7 @@ import { playSynth, computePan } from "./devSynth";
 import { createMusicSystem, type MusicSystem } from "./MusicSystem";
 
 export interface AudioManager {
-  drain(queue: AudioEvent[]): void;
+  drain(queue: AudioEvent[], listenerX?: number): void;
   setMasterVolume(v: number): void;
   getMasterVolume(): number;
   ambient(id: "sea_bed" | "boss_bed", fadeMs?: number): void;

@@ -49,110 +49,6 @@ const KRAKEN_ACTIVE_TIME = 15;
 const PHANTOM_FLEET_ACTIVE_TIME = 8;
 const DRONE_SWARM_ACTIVE_TIME = 10;
 
-// ─── Object Pools ────────────────────────────────────────────────────────────
-// Reuse projectile/effect instances to reduce GC pressure during bursts.
-
-interface PooledProjectile {
-  id: number;
-  kind: import("./types").ProjectileKind;
-  position: { x: number; y: number };
-  velocity: { x: number; y: number };
-  ttl: number;
-  damage: number;
-  radius: number;
-  pierceRemaining?: number;
-}
-
-interface PooledVisualEffect {
-  id: number;
-  kind: import("./types").VisualEffectKind;
-  position: { x: number; y: number };
-  remaining: number;
-  text?: string;
-  color?: string;
-  scale?: number;
-  intensity?: number;
-  facing?: number;
-  shake?: boolean;
-  drift?: number;
-}
-
-const _projectilePool: PooledProjectile[] = [];
-const _effectPool: PooledVisualEffect[] = [];
-
-function getProjectile(id: number, kind: import("./types").ProjectileKind): PooledProjectile {
-  const pooled = _projectilePool.pop();
-  if (pooled) {
-    pooled.id = id;
-    pooled.kind = kind;
-    pooled.position.x = 0;
-    pooled.position.y = 0;
-    pooled.velocity.x = 0;
-    pooled.velocity.y = 0;
-    pooled.ttl = 0;
-    pooled.damage = 0;
-    pooled.radius = 0;
-    pooled.pierceRemaining = 0;
-    return pooled;
-  }
-  return {
-    id,
-    kind,
-    position: { x: 0, y: 0 },
-    velocity: { x: 0, y: 0 },
-    ttl: 0,
-    damage: 0,
-    radius: 0,
-    pierceRemaining: 0,
-  };
-}
-
-function reclaimProjectile(p: PooledProjectile): void {
-  _projectilePool.push(p);
-}
-
-function getVisualEffect(
-  id: number,
-  kind: import("./types").VisualEffectKind,
-  position: { x: number; y: number },
-  remaining: number,
-  extras?: Pick<PooledVisualEffect, "text" | "color" | "scale" | "intensity" | "facing" | "shake" | "drift">,
-): PooledVisualEffect {
-  const pooled = _effectPool.pop();
-  if (pooled) {
-    pooled.id = id;
-    pooled.kind = kind;
-    pooled.position.x = position.x;
-    pooled.position.y = position.y;
-    pooled.remaining = remaining;
-    pooled.text = extras?.text;
-    pooled.color = extras?.color;
-    pooled.scale = extras?.scale;
-    pooled.intensity = extras?.intensity;
-    pooled.facing = extras?.facing;
-    pooled.shake = extras?.shake;
-    pooled.drift = extras?.drift;
-    return pooled;
-  }
-  return {
-    id,
-    kind,
-    position: { x: position.x, y: position.y },
-    remaining,
-    ...(extras?.text !== undefined ? { text: extras.text } : {}),
-    ...(extras?.color !== undefined ? { color: extras.color } : {}),
-    ...(extras?.scale !== undefined ? { scale: extras.scale } : {}),
-    ...(extras?.intensity !== undefined ? { intensity: extras.intensity } : {}),
-    ...(extras?.facing !== undefined ? { facing: extras.facing } : {}),
-    ...(extras?.shake !== undefined ? { shake: extras.shake } : {}),
-    ...(extras?.drift !== undefined ? { drift: extras.drift } : {}),
-  };
-}
-
-function reclaimEffect(e: PooledVisualEffect): void {
-  _effectPool.push(e);
-}
-
 export function decayPostFxPulse(
   pulse: GameSnapshot["postFxPulse"],
   delta: number,
@@ -1165,7 +1061,6 @@ export function useGameState(): UseGameStateApi {
     if (collisionResult.spawnedPickups) {
       state.pickups.push(...collisionResult.spawnedPickups);
     }
-    const prevEnemyCount = state.enemies.length;
     state.stats.enemiesKilled += collisionResult.killsGained;
     if (collisionResult.eliteKillsGained > 0) {
       const eliteChoices = buildEliteExtraAbilityChoices(state.upgrades);
@@ -1254,7 +1149,7 @@ export function useGameState(): UseGameStateApi {
     }
     if (collisionResult.cannonHits > 0) {
       // Push a small screen shake burst for cannon hits landing
-      pushScreenShakeForDamage(state.visualEffects, effectIdRef, state.player.position, 80, 0.28);
+      pushScreenShakeForDamage(state.visualEffects, effectIdRef.current, state.player.position, 80, 0.28);
     }
 
     for (let i = state.visualEffects.length - 1; i >= 0; i -= 1) {

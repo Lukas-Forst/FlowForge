@@ -343,12 +343,13 @@ export default function App(): ReactElement {
           };
           socket.send(JSON.stringify({ type: "player_update", player: basePlayer }));
           if (net.mode === "host") {
+            const latestSim = simStateRef.current;
             const world: MultiplayerWorldState = {
               runClock: latest.runClock,
               runBiome: latest.runBiome,
               spawnIntensity: latest.spawnIntensity,
-              enemies: latest.enemies,
-              pickups: latest.pickups,
+              enemies: latestSim.enemies,
+              pickups: latestSim.pickups,
               sharedCoins: latest.stats.collectedCoins,
             };
             socket.send(JSON.stringify({ type: "world_update", world, hostPlayer: basePlayer }));

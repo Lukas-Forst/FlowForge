@@ -8,7 +8,6 @@ interface BoostArcProps {
 }
 
 export function BoostArc({ value, ready, active }: BoostArcProps): ReactElement {
-  const fillDeg = Math.max(0, Math.min(1, value)) * 360;
   const color = ready ? "#ffc040" : "#88ddff";
   return (
     <div className={`boost-arc ${ready ? "ready" : ""} ${active ? "active" : ""}`}>

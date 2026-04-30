@@ -15,12 +15,6 @@ export interface MusicState {
   bossVolume: number;   // 0-1, BOSS layer
 }
 
-interface LayerNodes {
-  gain: GainNode;
-  osc: OscillatorNode;
-  lfo: OscillatorNode | null; // for swell modulation
-}
-
 const FADE_SECS = 0.5;
 
 export interface MusicSystem {

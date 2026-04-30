@@ -95,7 +95,7 @@ export function runEnemyRangedAttacks(
     let flankOffset = { x: 0, y: 0 };
     if (enemy.flankTimer != null && enemy.flankTimer > 0) {
       // Still in strafe window — apply lateral offset.
-      flankOffset = lateralOffset(toward, 0.5 * enemy.flankDir);
+      flankOffset = lateralOffset(toward, 0.5 * (enemy.flankDir ?? 1));
     } else if (playerCannonCharging) {
       // Player charging cannon — try to sidestep.
       const sidestepDir = Math.random() < 0.5 ? 1 : -1;

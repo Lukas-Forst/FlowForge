@@ -18,7 +18,7 @@ const GHOST_SPARKLE_COUNT = 8;
 function GhostSparkles({ invulnRemaining }: { invulnRemaining: number }): ReactElement {
   const meshRefs = useRef<(THREE.Mesh | null)[]>([]);
   const sparkStates = useRef(
-    Array.from({ length: GHOST_SPARKLE_COUNT }, (_, i) => ({
+    Array.from({ length: GHOST_SPARKLE_COUNT }, () => ({
       t: Math.random(),
       speed: 1.5 + Math.random() * 1.5,
       radius: 0.5 + Math.random() * 1.2,
@@ -97,7 +97,7 @@ function CannonReadyGlow(): ReactElement {
   const meshRef = useRef<THREE.Mesh>(null);
   const lightRef = useRef<THREE.PointLight>(null);
 
-  useFrame((_state, delta) => {
+  useFrame(() => {
     const t = Date.now() * 0.001;
     const pulse = 0.65 + Math.sin(t * Math.PI * 2.2) * 0.35;
     if (meshRef.current) {

@@ -42,6 +42,10 @@ function makeSnapshot(): GameSnapshot {
       enemiesKilled: 0,
       collectedCoins: 0,
       score: 0,
+      killStreak: 0,
+      killStreakBest: 0,
+      killStreakFlash: false,
+      combatLog: [],
       longestUnscathedStreak: 0,
       currentUnscathedStreak: 0,
       biggestHit: 0,
@@ -54,6 +58,7 @@ function makeSnapshot(): GameSnapshot {
     spawnIntensity: 0,
     runClock: { phase: "wave", phaseTime: 0, elapsedTotal: 0 },
     runBiome: "open_sea",
+    megaBoss: null,
   };
 }
 

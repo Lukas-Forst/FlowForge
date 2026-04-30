@@ -260,7 +260,7 @@ export function getUpgradeDelta(type: UpgradeType, currentStacks: number, upgrad
   }
 }
 
-function formatDeltaLabel(type: UpgradeType, delta: { current: number; next: number; delta: number }): string {
+function formatDeltaLabel(type: UpgradeType, delta: { current: number; next: number; delta: number }): string | null {
   switch (type) {
     case "fireRate":
       return `${delta.current.toFixed(2)}x → ${delta.next.toFixed(2)}x (+${delta.delta}%)`;
