@@ -6,8 +6,8 @@ describe("shouldAdvanceSimThisTick", () => {
     expect(shouldAdvanceSimThisTick("playing")).toBe(true);
   });
 
-  it("advances during upgrade", () => {
-    expect(shouldAdvanceSimThisTick("upgrade")).toBe(true);
+  it("pauses during upgrade selection", () => {
+    expect(shouldAdvanceSimThisTick("upgrade")).toBe(false);
   });
 
   it("does not advance on non-sim phases", () => {

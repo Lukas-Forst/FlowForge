@@ -60,7 +60,7 @@ export function decayPostFxPulse(
 }
 
 export function shouldAdvanceSimThisTick(phase: GameSnapshot["phase"]): boolean {
-  return phase === "playing" || phase === "upgrade";
+  return phase === "playing";
 }
 
 function spawnRadialBarrage(
